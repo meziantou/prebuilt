@@ -10,7 +10,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 1.0.0
+  VERSION: 1.0.1
   PNGOUT_VERSION: 1.0.0 # manual version
   ZOPFLI_VERSION: 1.0.3 # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: 5.0.1 # https://github.com/shssoichiro/oxipng/releases
@@ -38,11 +38,11 @@ jobs:
     steps:
     - run: |        
         $versions = @{}
-        $versions.Zopfli = "$ZOPFLI_VERSION"
-        $versions.Oxipng = "$OXIPNG_VERSION"
-        $versions.FFmpeg = "$FFMPEG_VERSION"
-        $versions.Pngout = "$PNGOUT_VERSION"
-        ConvertTo-Json $obj | Out-File versions.json
+        $versions.Zopfli = "${{ env.ZOPFLI_VERSION }}"
+        $versions.Oxipng = "${{ env.OXIPNG_VERSION }}"
+        $versions.FFmpeg = "${{ env.FFMPEG_VERSION }}"
+        $versions.Pngout = "${{ env.PNGOUT_VERSION }}"
+        ConvertTo-Json $versions | Out-File versions.json
 
     - uses: actions/upload-artifact@v3
       with:
