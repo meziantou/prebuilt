@@ -1,0 +1,190 @@
+name: Build
+on:
+  push:
+    branches:
+      - 'main'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: pwsh
+
+env:
+  VERSION: 1.0.0
+  PNGOUT_VERSION: 1.0.0 # manual version
+  ZOPFLI_VERSION: 1.0.3 # https://github.com/google/zopfli/tags
+  OXIPNG_VERSION: 5.0.1 # https://github.com/shssoichiro/oxipng/releases
+  FFMPEG_VERSION: autobuild-2022-07-24-12-40 # https://github.com/BtbN/FFmpeg-Builds/releases
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    needs: [versions_json, zopflipng-linux, zopflipng-windows, oxipng-linux, oxipng-windows, ffmpeg-linux, ffmpeg-windows, pngout-linux, pngout-windows]
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: binaries
+        path: binaries
+    - name: Create Release
+      uses: ncipollo/release-action@v1.10.0 # https://github.com/marketplace/actions/create-release
+      with:
+        artifacts: binaries/*
+        name: ${{ env.VERSION }}
+        tag: ${{ env.VERSION }}
+        commit: ${{ github.sha }}
+
+  versions_json:
+    runs-on: ubuntu-latest
+    steps:
+    - run: |        
+        $versions = @{}
+        $versions.Zopfli = "$ZOPFLI_VERSION"
+        $versions.Oxipng = "$OXIPNG_VERSION"
+        $versions.FFmpeg = "$FFMPEG_VERSION"
+        $versions.Pngout = "$PNGOUT_VERSION"
+        ConvertTo-Json $obj | Out-File versions.json
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        if-no-files-found: error
+        retention-days: 1
+        path: 'versions.json'
+
+  zopflipng-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        repository: google/zopfli
+        ref: zopfli-${{ env.ZOPFLI_VERSION }}
+    - run: make zopflipng
+    - uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        if-no-files-found: error
+        retention-days: 1
+        path: 'zopflipng'
+
+  zopflipng-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        repository: google/zopfli
+        ref: zopfli-${{ env.ZOPFLI_VERSION }}
+    - name: Enable Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1.10.0
+      with:
+        arch: x64
+    - run: |
+        foreach($item in (Get-ChildItem src\zopfli -Filter *.c -Recurse)) {
+          Write-Host "Compiling $item"
+          & cl -nologo -O2 /GL /GS- /I$env:CRT_INC_PATH /I. -c /MD /DNDEBUG "$item"
+        }
+
+        Write-Host "Linking zopfli.exe"
+        & link -nologo /LTCG /OUT:zopfli.exe *.obj user32.lib advapi32.lib kernel32.lib
+
+        Remove-Item zopfli_bin.obj
+        foreach($item in (Get-ChildItem src\zopflipng -Filter *.c* -Recurse)) {
+          Write-Host "Compiling $item"
+          & cl -nologo -O2 /GL /GS- /I$env:CRT_INC_PATH /I. -c /MD /DNDEBUG /EHsc "$item"
+        }
+
+        Write-Host "Linking zopflipng.exe"
+        & link -nologo /LTCG /OUT:zopflipng.exe *.obj user32.lib advapi32.lib kernel32.lib
+    - uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+          zopfli.exe
+          zopflipng.exe
+
+  oxipng-windows:
+    runs-on: ubuntu-latest
+    steps:
+    - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-pc-windows-msvc.zip' -OutFile oxipng.zip
+    - run: Expand-Archive oxipng.zip -DestinationPath .
+    - uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        if-no-files-found: error
+        retention-days: 1
+        path: 'oxipng.exe'
+ 
+  oxipng-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-unknown-linux-musl.tar.gz' -OutFile oxipng.tar.gz
+    - run: tar -xvf oxipng.tar.gz
+    - run: mv oxipng-*-x86_64-unknown-linux-musl/oxipng oxipng
+    - uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        if-no-files-found: error
+        retention-days: 1
+        path: 'oxipng'
+
+  pngout-windows:
+    runs-on: ubuntu-latest
+    steps:
+    - run: Invoke-WebRequest -Uri 'http://advsys.net/ken/util/pngout.exe' -OutFile pngout.exe
+    - uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        if-no-files-found: error
+        retention-days: 1
+        path: pngout.exe
+
+  pngout-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - run: Invoke-WebRequest -Uri 'http://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz' -OutFile pngout.tar.gz
+    - run: tar -xvf pngout.tar.gz
+    - run: mv pngout-*/amd64/pngout pngout
+    - uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        if-no-files-found: error
+        retention-days: 1
+        path: pngout
+ 
+  ffmpeg-windows:
+    runs-on: ubuntu-latest
+    steps:
+    - run: |
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} 
+       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-win64-gpl.zip$' }       
+       Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile ffmpeg.zip
+       Expand-Archive ffmpeg.zip -DestinationPath . -Verbose
+       Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
+    - uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ffmpeg.exe
+           ffprobe.exe
+
+  ffmpeg-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - run: |
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} 
+       $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-linux64-gpl.tar.xz$' }
+       Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile ffmpeg.tar.xz
+       tar -xvf ffmpeg.tar.xz
+       mv ffmpeg-N-*-linux64-gpl/bin/ffmpeg ffmpeg
+       mv ffmpeg-N-*-linux64-gpl/bin/ffprobe ffprobe 
+    - uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ffmpeg
+           ffprobe
