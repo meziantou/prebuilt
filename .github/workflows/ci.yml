@@ -156,7 +156,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - run: |
-       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} 
+       $headers = @{
+         "User-Agent" = "GitHub Actions"
+         "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+       }
+
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} -Headers $headers
        $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-win64-gpl.zip$' }       
        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile ffmpeg.zip
        Expand-Archive ffmpeg.zip -DestinationPath . -Verbose
@@ -174,7 +179,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - run: |
-       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} 
+       $headers = @{
+         "User-Agent" = "GitHub Actions"
+         "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+       }
+       
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} -Headers $headers
        $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-linux64-gpl.tar.xz$' }
        Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile ffmpeg.tar.xz
        tar -xvf ffmpeg.tar.xz
