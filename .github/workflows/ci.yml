@@ -106,6 +106,7 @@ jobs:
     steps:
     - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-pc-windows-msvc.zip' -OutFile oxipng.zip
     - run: Expand-Archive oxipng.zip -DestinationPath .
+    - run: Get-ChildItem -Path ".\" -Recurse -Filter "oxypng.exe" | Copy-Item -Destination ".\"
     - uses: actions/upload-artifact@v3
       with:
         name: binaries
