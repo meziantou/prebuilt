@@ -10,24 +10,26 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 1.0.8
+  VERSION: 1.0.9
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: 1.0.3 # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: 9.0.0 # https://github.com/shssoichiro/oxipng/releases
-  FFMPEG_VERSION: autobuild-2023-12-16-12-50 # https://github.com/BtbN/FFmpeg-Builds/releases
+  FFMPEG_VERSION: autobuild-2024-02-03-12-48 # https://github.com/BtbN/FFmpeg-Builds/releases
+  RCLONE_VERSION: v1.65.2 # https://github.com/rclone/rclone/releases
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    needs: [versions_json, zopflipng-linux, zopflipng-windows, oxipng-linux, oxipng-windows, ffmpeg-linux, ffmpeg-windows, pngout-linux, pngout-windows]
+    needs: [versions_json, zopflipng-linux, zopflipng-windows, oxipng-linux, oxipng-windows, ffmpeg-linux, ffmpeg-windows, pngout-linux, pngout-windows, rclone-windows, rclone-linux]
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v3    
-    - uses: actions/download-artifact@v3
+    - uses: actions/checkout@v4
+    - uses: actions/download-artifact@v4
       with:
-        name: binaries
+        pattern: '*'
         path: binaries
+        merge-multiple: true
     - run: 'gh release create "${{ env.VERSION }}" --target "${{ github.sha }}" ./binaries/*'
       env:
         GH_TOKEN: ${{ github.token }}
@@ -41,10 +43,11 @@ jobs:
         $versions.Oxipng = "${{ env.OXIPNG_VERSION }}"
         $versions.FFmpeg = "${{ env.FFMPEG_VERSION }}"
         $versions.Pngout = "${{ env.PNGOUT_VERSION }}"
+        $versions.Rclone = "${{ env.RCLONE }}"
         ConvertTo-Json $versions | Out-File versions.json
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: binaries
+        name: binaries-versions
         if-no-files-found: error
         retention-days: 1
         path: 'versions.json'
@@ -52,14 +55,14 @@ jobs:
   zopflipng-linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
     - run: make zopflipng
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: binaries
+        name: binaries-zopflipng-linux
         if-no-files-found: error
         retention-days: 1
         path: 'zopflipng'
@@ -67,7 +70,7 @@ jobs:
   zopflipng-windows:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
@@ -92,9 +95,9 @@ jobs:
 
         Write-Host "Linking zopflipng.exe"
         & link -nologo /LTCG /OUT:zopflipng.exe *.obj user32.lib advapi32.lib kernel32.lib
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: binaries
+        name: binaries-zopflipng-windows
         if-no-files-found: error
         retention-days: 1
         path: |
@@ -107,9 +110,9 @@ jobs:
     - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-pc-windows-msvc.zip' -OutFile oxipng.zip
     - run: Expand-Archive oxipng.zip -DestinationPath .
     - run: Get-ChildItem -Path ".\" -Recurse -Filter "oxipng.exe" | Copy-Item -Destination ".\"
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: binaries
+        name: binaries-oxipng-windows
         if-no-files-found: error
         retention-days: 1
         path: 'oxipng.exe'
@@ -120,9 +123,9 @@ jobs:
     - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-unknown-linux-musl.tar.gz' -OutFile oxipng.tar.gz
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-x86_64-unknown-linux-musl/oxipng oxipng
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: binaries
+        name: binaries-oxipng-linux
         if-no-files-found: error
         retention-days: 1
         path: 'oxipng'
@@ -131,9 +134,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - run: Invoke-WebRequest -Uri 'http://advsys.net/ken/util/pngout.exe' -OutFile pngout.exe
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: binaries
+        name: binaries-pngout-windows
         if-no-files-found: error
         retention-days: 1
         path: pngout.exe
@@ -144,9 +147,9 @@ jobs:
     - run: Invoke-WebRequest -Uri 'http://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz' -OutFile pngout.tar.gz
     - run: tar -xvf pngout.tar.gz
     - run: mv pngout-*/amd64/pngout pngout
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: binaries
+        name: binaries-pngout-linux
         if-no-files-found: error
         retention-days: 1
         path: pngout
@@ -165,9 +168,9 @@ jobs:
        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile ffmpeg.zip
        Expand-Archive ffmpeg.zip -DestinationPath . -Verbose
        Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: binaries
+        name: binaries-ffmpeg-windows
         if-no-files-found: error
         retention-days: 1
         path: |
@@ -189,11 +192,54 @@ jobs:
        tar -xvf ffmpeg.tar.xz
        mv ffmpeg-N-*-linux64-gpl/bin/ffmpeg ffmpeg
        mv ffmpeg-N-*-linux64-gpl/bin/ffprobe ffprobe 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: binaries
+        name: binaries-ffmpeg-linux
         if-no-files-found: error
         retention-days: 1
         path: |
            ffmpeg
            ffprobe
+
+  rclone-windows:
+    runs-on: ubuntu-latest
+    steps:   
+    - run: |
+       $headers = @{
+         "User-Agent" = "GitHub Actions"
+         "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+       }
+
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/rclone/rclone/releases/tags/${{ env.RCLONE_VERSION }} -Headers $headers
+       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^rclone-.*-windows-amd64.zip$' }       
+       Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile rclone.zip
+       Expand-Archive rclone.zip -DestinationPath . -Verbose
+       Get-ChildItem -Recurse -Include rlone.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
+    - uses: actions/upload-artifact@v4
+      with:
+        name: binaries-rclone-windows
+        if-no-files-found: error
+        retention-days: 1
+        path: pngout
+ 
+  rclone-linux:
+    runs-on: ubuntu-latest
+    steps:   
+    - run: |
+       $headers = @{
+         "User-Agent" = "GitHub Actions"
+         "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+       }
+
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/rclone/rclone/releases/tags/${{ env.RCLONE_VERSION }} -Headers $headers
+       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^rclone-.*-linux-amd64.zip$' }       
+       Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile rclone.zip
+       Expand-Archive rclone.zip -DestinationPath . -Verbose
+       Get-ChildItem -Recurse -Include rlone | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
+    - uses: actions/upload-artifact@v4
+      with:
+        name: binaries-rclone-linux
+        if-no-files-found: error
+        retention-days: 1
+        path: pngout
+ 
