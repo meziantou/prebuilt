@@ -214,7 +214,7 @@ jobs:
        $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^rclone-.*-windows-amd64.zip$' }       
        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile rclone.zip
        Expand-Archive rclone.zip -DestinationPath . -Verbose
-       Get-ChildItem -Recurse -Include rlone.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
+       Get-ChildItem -Recurse -Include rclone.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
     - uses: actions/upload-artifact@v4
       with:
         name: binaries-rclone-windows
@@ -235,7 +235,7 @@ jobs:
        $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^rclone-.*-linux-amd64.zip$' }       
        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile rclone.zip
        Expand-Archive rclone.zip -DestinationPath . -Verbose
-       Get-ChildItem -Recurse -Include rlone | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
+       Get-ChildItem -Recurse -Include rclone | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
     - uses: actions/upload-artifact@v4
       with:
         name: binaries-rclone-linux
