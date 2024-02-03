@@ -220,7 +220,7 @@ jobs:
         name: binaries-rclone-windows
         if-no-files-found: error
         retention-days: 1
-        path: pngout
+        path: rclone.exe
  
   rclone-linux:
     runs-on: ubuntu-latest
@@ -241,5 +241,5 @@ jobs:
         name: binaries-rclone-linux
         if-no-files-found: error
         retention-days: 1
-        path: pngout
+        path: rclone
  
