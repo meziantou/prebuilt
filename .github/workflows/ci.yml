@@ -16,11 +16,12 @@ env:
   OXIPNG_VERSION: 9.0.0 # https://github.com/shssoichiro/oxipng/releases
   FFMPEG_VERSION: autobuild-2024-02-03-12-48 # https://github.com/BtbN/FFmpeg-Builds/releases
   RCLONE_VERSION: v1.65.2 # https://github.com/rclone/rclone/releases
+  IMAGEMAGICK_VERSION: 7.1.1-28 # https://github.com/ImageMagick/ImageMagick/releases/latest
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    needs: [versions_json, zopflipng-linux, zopflipng-windows, oxipng-linux, oxipng-windows, ffmpeg-linux, ffmpeg-windows, pngout-linux, pngout-windows, rclone-windows, rclone-linux]
+    needs: [versions_json, zopflipng-linux, zopflipng-windows, oxipng-linux, oxipng-windows, ffmpeg-linux, ffmpeg-windows, pngout-linux, pngout-windows, rclone-windows, rclone-linux, magick-windows]
     permissions:
       contents: write
     steps:
@@ -37,13 +38,14 @@ jobs:
   versions_json:
     runs-on: ubuntu-latest
     steps:
-    - run: |        
+    - run: |
         $versions = @{}
         $versions.Zopfli = "${{ env.ZOPFLI_VERSION }}"
         $versions.Oxipng = "${{ env.OXIPNG_VERSION }}"
         $versions.FFmpeg = "${{ env.FFMPEG_VERSION }}"
         $versions.Pngout = "${{ env.PNGOUT_VERSION }}"
         $versions.Rclone = "${{ env.RCLONE }}"
+        $versions.ImageMagick = "${{ env.IMAGEMAGICK_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@v4
       with:
@@ -116,7 +118,7 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: 'oxipng.exe'
- 
+
   oxipng-linux:
     runs-on: ubuntu-latest
     steps:
@@ -153,7 +155,7 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: pngout
- 
+
   ffmpeg-windows:
     runs-on: ubuntu-latest
     steps:
@@ -164,7 +166,7 @@ jobs:
        }
 
        $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} -Headers $headers
-       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-win64-gpl.zip$' }       
+       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-win64-gpl.zip$' }
        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile ffmpeg.zip
        Expand-Archive ffmpeg.zip -DestinationPath . -Verbose
        Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
@@ -185,13 +187,13 @@ jobs:
          "User-Agent" = "GitHub Actions"
          "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
        }
-       
+
        $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} -Headers $headers
        $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-linux64-gpl.tar.xz$' }
        Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile ffmpeg.tar.xz
        tar -xvf ffmpeg.tar.xz
        mv ffmpeg-N-*-linux64-gpl/bin/ffmpeg ffmpeg
-       mv ffmpeg-N-*-linux64-gpl/bin/ffprobe ffprobe 
+       mv ffmpeg-N-*-linux64-gpl/bin/ffprobe ffprobe
     - uses: actions/upload-artifact@v4
       with:
         name: binaries-ffmpeg-linux
@@ -203,7 +205,7 @@ jobs:
 
   rclone-windows:
     runs-on: ubuntu-latest
-    steps:   
+    steps:
     - run: |
        $headers = @{
          "User-Agent" = "GitHub Actions"
@@ -211,7 +213,7 @@ jobs:
        }
 
        $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/rclone/rclone/releases/tags/${{ env.RCLONE_VERSION }} -Headers $headers
-       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^rclone-.*-windows-amd64.zip$' }       
+       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^rclone-.*-windows-amd64.zip$' }
        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile rclone.zip
        Expand-Archive rclone.zip -DestinationPath . -Verbose
        Get-ChildItem -Recurse -Include rclone.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
@@ -221,10 +223,10 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: rclone.exe
- 
+
   rclone-linux:
     runs-on: ubuntu-latest
-    steps:   
+    steps:
     - run: |
        $headers = @{
          "User-Agent" = "GitHub Actions"
@@ -232,8 +234,8 @@ jobs:
        }
 
        $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/rclone/rclone/releases/tags/${{ env.RCLONE_VERSION }} -Headers $headers
-       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^rclone-.*-linux-amd64.zip$' }       
-       Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile rclone.zip
+       $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^rclone-.*-linux-amd64.zip$' }
+       Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile rclone.zip
        Expand-Archive rclone.zip -DestinationPath . -Verbose
        Get-ChildItem -Recurse -Include rclone | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
     - uses: actions/upload-artifact@v4
@@ -242,4 +244,16 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: rclone
- 
+
+  magick-windows:
+    runs-on: ubuntu-latest
+    steps:
+    - run: Invoke-WebRequest -Uri 'https://imagemagick.org/archive/binaries/ImageMagick-${{ env.IMAGEMAGICK_VERSION }}-portable-Q16-HDRI-x64.zip' -OutFile ImageMagick.zip
+    - run: Expand-Archive ImageMagick.zip -DestinationPath .
+    - run: Get-ChildItem -Path ".\" -Recurse -Filter "magick.exe" | Copy-Item -Destination ".\"
+    - uses: actions/upload-artifact@v4
+      with:
+        name: binaries-imagemagick-windows
+        if-no-files-found: error
+        retention-days: 1
+        path: magick.exe
