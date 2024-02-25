@@ -77,7 +77,7 @@ jobs:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
     - name: Enable Developer Command Prompt
-      uses: ilammy/msvc-dev-cmd@v1.12.1
+      uses: ilammy/msvc-dev-cmd@v1.13.0
       with:
         arch: x64
     - run: |
