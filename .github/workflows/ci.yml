@@ -201,8 +201,8 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: |
-           ffmpeg.exe
-           ffprobe.exe
+           ffmpeg-arm64.exe
+           ffprobe-arm64.exe
 
   ffmpeg-linux:
     runs-on: ubuntu-latest
