@@ -10,18 +10,18 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 1.0.11
+  VERSION: 1.0.12
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: 1.0.3 # https://github.com/google/zopfli/tags
-  OXIPNG_VERSION: 9.1.3 # https://github.com/shssoichiro/oxipng/releases
-  FFMPEG_VERSION: autobuild-2024-12-10-13-00 # https://github.com/BtbN/FFmpeg-Builds/releases
-  RCLONE_VERSION: v1.68.2 # https://github.com/rclone/rclone/releases
-  IMAGEMAGICK_VERSION: 7.1.1-41 # https://github.com/ImageMagick/ImageMagick/releases/latest
+  OXIPNG_VERSION: 9.1.4 # https://github.com/shssoichiro/oxipng/releases
+  FFMPEG_VERSION: autobuild-2025-02-15-13-02 # https://github.com/BtbN/FFmpeg-Builds/releases
+  RCLONE_VERSION: v1.69.1 # https://github.com/rclone/rclone/releases
+  IMAGEMAGICK_VERSION: 7.1.1-43 # https://github.com/ImageMagick/ImageMagick/releases/latest
 
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    needs: [versions_json, zopflipng-linux, zopflipng-windows, oxipng-linux, oxipng-windows, ffmpeg-linux, ffmpeg-windows, pngout-linux, pngout-windows, rclone-windows, rclone-linux, magick-windows]
+    needs: [versions_json, zopflipng-linux, zopflipng-windows, oxipng-linux, oxipng-windows, ffmpeg-linux, ffmpeg-windows, ffmpeg-windows-arm64, pngout-linux, pngout-windows, rclone-windows, rclone-linux, magick-windows]
     permissions:
       contents: write
     steps:
@@ -44,7 +44,7 @@ jobs:
         $versions.Oxipng = "${{ env.OXIPNG_VERSION }}"
         $versions.FFmpeg = "${{ env.FFMPEG_VERSION }}"
         $versions.Pngout = "${{ env.PNGOUT_VERSION }}"
-        $versions.Rclone = "${{ env.RCLONE }}"
+        $versions.Rclone = "${{ env.RCLONE_VERSION }}"
         $versions.ImageMagick = "${{ env.IMAGEMAGICK_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@v4
@@ -173,6 +173,31 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: binaries-ffmpeg-windows
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ffmpeg.exe
+           ffprobe.exe
+
+  ffmpeg-windows-arm64:
+    runs-on: ubuntu-latest
+    steps:
+    - run: |
+       $headers = @{
+         "User-Agent" = "GitHub Actions"
+         "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+       }
+
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} -Headers $headers
+       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-winarm64-gpl.zip$' }
+       Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile ffmpeg.zip
+       Expand-Archive ffmpeg.zip -DestinationPath . -Verbose
+       Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
+       Move-Item ffmpeg.exe ffmpeg-arm64.exe
+       Move-Item ffprobe.exe ffprobe-arm64.exe
+    - uses: actions/upload-artifact@v4
+      with:
+        name: binaries-ffmpeg-windows-arm64
         if-no-files-found: error
         retention-days: 1
         path: |
