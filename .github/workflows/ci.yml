@@ -10,7 +10,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 1.0.15
+  VERSION: 1.0.16
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: 1.0.3 # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: 9.1.5 # https://github.com/shssoichiro/oxipng/releases
@@ -245,7 +245,7 @@ jobs:
        mv ffmpeg-N-*-linuxarm64-gpl/bin/ffprobe ffprobe-arm64
     - uses: actions/upload-artifact@v4
       with:
-        name: binaries-ffmpeg-linux
+        name: binaries-ffmpeg-linux-arm64
         if-no-files-found: error
         retention-days: 1
         path: |
