@@ -21,7 +21,7 @@ env:
 jobs:
   create-release:
     runs-on: ubuntu-latest
-    needs: [versions_json, zopflipng-linux, zopflipng-windows, oxipng-linux, oxipng-windows, ffmpeg-linux, ffmpeg-windows, ffmpeg-windows-arm64, pngout-linux, pngout-windows, rclone-windows, rclone-linux, magick-windows]
+    needs: [versions_json, zopflipng-linux, zopflipng-windows, oxipng-linux, oxipng-windows, ffmpeg-linux, ffmpeg-linux-arm64, ffmpeg-windows, ffmpeg-windows-arm64, pngout-linux, pngout-windows, rclone-windows, rclone-linux, magick-windows]
     permissions:
       contents: write
     steps:
@@ -227,6 +227,30 @@ jobs:
         path: |
            ffmpeg
            ffprobe
+
+  ffmpeg-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+    - run: |
+       $headers = @{
+         "User-Agent" = "GitHub Actions"
+         "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+       }
+
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} -Headers $headers
+       $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-linuxarm64-gpl.tar.xz$' }
+       Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile ffmpeg.tar.xz
+       tar -xvf ffmpeg.tar.xz
+       mv ffmpeg-N-*-linux64-gpl/bin/ffmpeg ffmpeg-arm64
+       mv ffmpeg-N-*-linux64-gpl/bin/ffprobe ffprobe-arm64
+    - uses: actions/upload-artifact@v4
+      with:
+        name: binaries-ffmpeg-linux
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ffmpeg-arm64
+           ffprobe-arm64
 
   rclone-windows:
     runs-on: ubuntu-latest
