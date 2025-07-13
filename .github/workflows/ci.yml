@@ -241,8 +241,8 @@ jobs:
        $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-linuxarm64-gpl.tar.xz$' }
        Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile ffmpeg.tar.xz
        tar -xvf ffmpeg.tar.xz
-       mv ffmpeg-N-*-linux64-gpl/bin/ffmpeg ffmpeg-arm64
-       mv ffmpeg-N-*-linux64-gpl/bin/ffprobe ffprobe-arm64
+       mv ffmpeg-N-*-linuxarm64-gpl/bin/ffmpeg ffmpeg-arm64
+       mv ffmpeg-N-*-linuxarm64-gpl/bin/ffprobe ffprobe-arm64
     - uses: actions/upload-artifact@v4
       with:
         name: binaries-ffmpeg-linux
