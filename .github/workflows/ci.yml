@@ -299,7 +299,6 @@ jobs:
     steps:
     - run: Invoke-WebRequest -Uri 'https://imagemagick.org/archive/binaries/ImageMagick-${{ env.IMAGEMAGICK_VERSION }}-portable-Q16-HDRI-x64.7z' -OutFile ImageMagick.7z
     - run: 7z x ImageMagick.7z
-    - run: Get-ChildItem -Path ".\" -Recurse -Filter "magick.exe" | Copy-Item -Destination ".\"
     - uses: actions/upload-artifact@v4
       with:
         name: binaries-imagemagick-windows
