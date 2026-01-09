@@ -219,8 +219,7 @@ jobs:
        $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-.*-linux64-gpl-${{ env.FFMPEG_VERSION }}.tar.xz$' }
        Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile ffmpeg.tar.xz
        tar -xvf ffmpeg.tar.xz
-       mv ffmpeg-n*-linux64-gpl/bin/ffmpeg ffmpeg
-       mv ffmpeg-n*-linux64-gpl/bin/ffprobe ffprobe
+       Get-ChildItem -Recurse -Include ffmpeg, ffprobe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
     - uses: actions/upload-artifact@v6
       with:
         name: binaries-ffmpeg-linux
@@ -243,8 +242,8 @@ jobs:
        $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-.*-linuxarm64-gpl-${{ env.FFMPEG_VERSION }}.tar.xz$' }
        Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile ffmpeg.tar.xz
        tar -xvf ffmpeg.tar.xz
-       mv ffmpeg-n*-linuxarm64-gpl/bin/ffmpeg ffmpeg-arm64
-       mv ffmpeg-n*-linuxarm64-gpl/bin/ffprobe ffprobe-arm64
+       Get-ChildItem -Recurse -Filter ffmpeg | Foreach-Object { Move-Item -LiteralPath $_ -Destination ffmpeg-arm64 }
+       Get-ChildItem -Recurse -Filter ffprobe | Foreach-Object { Move-Item -LiteralPath $_ -Destination ffprobe-arm64 }
     - uses: actions/upload-artifact@v6
       with:
         name: binaries-ffmpeg-linux-arm64
