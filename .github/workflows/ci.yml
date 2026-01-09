@@ -15,7 +15,7 @@ env:
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.0.0" # https://github.com/shssoichiro/oxipng/releases
-  FFMPEG_VERSION: "autobuild-2026-01-09-12-58" # https://github.com/BtbN/FFmpeg-Builds/releases
+  FFMPEG_VERSION: "8.0" # https://github.com/BtbN/FFmpeg-Builds/releases
   RCLONE_VERSION: "v1.72.1" # https://github.com/rclone/rclone/releases
   IMAGEMAGICK_VERSION: "7.1.2-12" # https://github.com/ImageMagick/ImageMagick/releases/latest
 
@@ -167,8 +167,8 @@ jobs:
          "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
        }
 
-       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} -Headers $headers
-       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-win64-gpl.zip$' }
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest -Headers $headers
+       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-.*-win64-gpl-${{ env.FFMPEG_VERSION }}.zip$' }
        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile ffmpeg.zip
        Expand-Archive ffmpeg.zip -DestinationPath . -Verbose
        Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
@@ -190,8 +190,8 @@ jobs:
          "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
        }
 
-       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} -Headers $headers
-       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-winarm64-gpl.zip$' }
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest -Headers $headers
+       $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-.*-winarm64-gpl-${{ env.FFMPEG_VERSION }}.zip$' }
        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile ffmpeg.zip
        Expand-Archive ffmpeg.zip -DestinationPath . -Verbose
        Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
@@ -215,12 +215,12 @@ jobs:
          "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
        }
 
-       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} -Headers $headers
-       $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-linux64-gpl.tar.xz$' }
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest -Headers $headers
+       $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-.*-linux64-gpl-${{ env.FFMPEG_VERSION }}.tar.xz$' }
        Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile ffmpeg.tar.xz
        tar -xvf ffmpeg.tar.xz
-       mv ffmpeg-N-*-linux64-gpl/bin/ffmpeg ffmpeg
-       mv ffmpeg-N-*-linux64-gpl/bin/ffprobe ffprobe
+       mv ffmpeg-n*-linux64-gpl/bin/ffmpeg ffmpeg
+       mv ffmpeg-n*-linux64-gpl/bin/ffprobe ffprobe
     - uses: actions/upload-artifact@v6
       with:
         name: binaries-ffmpeg-linux
@@ -239,12 +239,12 @@ jobs:
          "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
        }
 
-       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/${{ env.FFMPEG_VERSION }} -Headers $headers
-       $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-N-.*-linuxarm64-gpl.tar.xz$' }
+       $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest -Headers $headers
+       $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-.*-linuxarm64-gpl-${{ env.FFMPEG_VERSION }}.tar.xz$' }
        Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile ffmpeg.tar.xz
        tar -xvf ffmpeg.tar.xz
-       mv ffmpeg-N-*-linuxarm64-gpl/bin/ffmpeg ffmpeg-arm64
-       mv ffmpeg-N-*-linuxarm64-gpl/bin/ffprobe ffprobe-arm64
+       mv ffmpeg-n*-linuxarm64-gpl/bin/ffmpeg ffmpeg-arm64
+       mv ffmpeg-n*-linuxarm64-gpl/bin/ffprobe ffprobe-arm64
     - uses: actions/upload-artifact@v6
       with:
         name: binaries-ffmpeg-linux-arm64
