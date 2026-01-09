@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - 'main'
+  pull_request:
   workflow_dispatch:
 
 defaults:
@@ -22,6 +23,7 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     needs: [versions_json, zopflipng-linux, zopflipng-windows, oxipng-linux, oxipng-windows, ffmpeg-linux, ffmpeg-linux-arm64, ffmpeg-windows, ffmpeg-windows-arm64, pngout-linux, pngout-windows, rclone-windows, rclone-linux, magick-windows]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
