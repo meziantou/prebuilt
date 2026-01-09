@@ -7,7 +7,7 @@
     {
       "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
       "matchStrings": [
-        "ZOPFLI_VERSION: (?<currentValue>.*?) # https://github\\.com/google/zopfli/tags"
+        "ZOPFLI_VERSION: \"(?<currentValue>.*?)\""
       ],
       "datasourceTemplate": "github-tags",
       "depNameTemplate": "google/zopfli",
@@ -17,7 +17,7 @@
     {
       "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
       "matchStrings": [
-        "OXIPNG_VERSION: (?<currentValue>.*?) # https://github\\.com/shssoichiro/oxipng/releases"
+        "OXIPNG_VERSION: \"(?<currentValue>.*?)\""
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "shssoichiro/oxipng"
@@ -25,7 +25,7 @@
     {
       "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
       "matchStrings": [
-        "FFMPEG_VERSION: (?<currentValue>.*?) # https://github\\.com/BtbN/FFmpeg-Builds/releases"
+        "FFMPEG_VERSION: \"(?<currentValue>.*?)\""
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "BtbN/FFmpeg-Builds"
@@ -33,7 +33,7 @@
     {
       "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
       "matchStrings": [
-        "RCLONE_VERSION: (?<currentValue>.*?) # https://github\\.com/rclone/rclone/releases"
+        "RCLONE_VERSION: \"(?<currentValue>.*?)\""
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "rclone/rclone"
@@ -41,7 +41,7 @@
     {
       "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
       "matchStrings": [
-        "IMAGEMAGICK_VERSION: (?<currentValue>.*?) # https://github\\.com/ImageMagick/ImageMagick/releases/latest"
+        "IMAGEMAGICK_VERSION: \"(?<currentValue>.*?)\""
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "ImageMagick/ImageMagick"
