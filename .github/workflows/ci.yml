@@ -27,8 +27,8 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/download-artifact@v4
+    - uses: actions/checkout@v6
+    - uses: actions/download-artifact@v7
       with:
         pattern: '*'
         path: binaries
@@ -49,7 +49,7 @@ jobs:
         $versions.Rclone = "${{ env.RCLONE_VERSION }}"
         $versions.ImageMagick = "${{ env.IMAGEMAGICK_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-versions
         if-no-files-found: error
@@ -59,12 +59,12 @@ jobs:
   zopflipng-linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
     - run: make zopflipng
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-zopflipng-linux
         if-no-files-found: error
@@ -74,7 +74,7 @@ jobs:
   zopflipng-windows:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
@@ -99,7 +99,7 @@ jobs:
 
         Write-Host "Linking zopflipng.exe"
         & link -nologo /LTCG /OUT:zopflipng.exe *.obj user32.lib advapi32.lib kernel32.lib
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-zopflipng-windows
         if-no-files-found: error
@@ -114,7 +114,7 @@ jobs:
     - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-pc-windows-msvc.zip' -OutFile oxipng.zip
     - run: Expand-Archive oxipng.zip -DestinationPath .
     - run: Get-ChildItem -Path ".\" -Recurse -Filter "oxipng.exe" | Copy-Item -Destination ".\"
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-oxipng-windows
         if-no-files-found: error
@@ -127,7 +127,7 @@ jobs:
     - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-unknown-linux-musl.tar.gz' -OutFile oxipng.tar.gz
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-x86_64-unknown-linux-musl/oxipng oxipng
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-oxipng-linux
         if-no-files-found: error
@@ -138,7 +138,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - run: Invoke-WebRequest -Uri 'http://advsys.net/ken/util/pngout.exe' -OutFile pngout.exe
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-pngout-windows
         if-no-files-found: error
@@ -151,7 +151,7 @@ jobs:
     - run: Invoke-WebRequest -Uri 'http://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz' -OutFile pngout.tar.gz
     - run: tar -xvf pngout.tar.gz
     - run: mv pngout-*/amd64/pngout pngout
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-pngout-linux
         if-no-files-found: error
@@ -172,7 +172,7 @@ jobs:
        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile ffmpeg.zip
        Expand-Archive ffmpeg.zip -DestinationPath . -Verbose
        Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-ffmpeg-windows
         if-no-files-found: error
@@ -197,7 +197,7 @@ jobs:
        Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
        Move-Item ffmpeg.exe ffmpeg-arm64.exe
        Move-Item ffprobe.exe ffprobe-arm64.exe
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-ffmpeg-windows-arm64
         if-no-files-found: error
@@ -221,7 +221,7 @@ jobs:
        tar -xvf ffmpeg.tar.xz
        mv ffmpeg-N-*-linux64-gpl/bin/ffmpeg ffmpeg
        mv ffmpeg-N-*-linux64-gpl/bin/ffprobe ffprobe
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-ffmpeg-linux
         if-no-files-found: error
@@ -245,7 +245,7 @@ jobs:
        tar -xvf ffmpeg.tar.xz
        mv ffmpeg-N-*-linuxarm64-gpl/bin/ffmpeg ffmpeg-arm64
        mv ffmpeg-N-*-linuxarm64-gpl/bin/ffprobe ffprobe-arm64
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-ffmpeg-linux-arm64
         if-no-files-found: error
@@ -268,7 +268,7 @@ jobs:
        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile rclone.zip
        Expand-Archive rclone.zip -DestinationPath . -Verbose
        Get-ChildItem -Recurse -Include rclone.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-rclone-windows
         if-no-files-found: error
@@ -289,7 +289,7 @@ jobs:
        Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile rclone.zip
        Expand-Archive rclone.zip -DestinationPath . -Verbose
        Get-ChildItem -Recurse -Include rclone | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-rclone-linux
         if-no-files-found: error
@@ -301,7 +301,7 @@ jobs:
     steps:
     - run: Invoke-WebRequest -Uri 'https://imagemagick.org/archive/binaries/ImageMagick-${{ env.IMAGEMAGICK_VERSION }}-portable-Q16-HDRI-x64.7z' -OutFile ImageMagick.7z
     - run: 7z x ImageMagick.7z
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: binaries-imagemagick-windows
         if-no-files-found: error
