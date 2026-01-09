@@ -16,7 +16,7 @@ env:
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.0.0" # https://github.com/shssoichiro/oxipng/releases
   FFMPEG_VERSION: "autobuild-2025-12-06-12-54" # https://github.com/BtbN/FFmpeg-Builds/releases
-  RCLONE_VERSION: "v1.72.0" # https://github.com/rclone/rclone/releases
+  RCLONE_VERSION: "v1.72.1" # https://github.com/rclone/rclone/releases
   IMAGEMAGICK_VERSION: "7.1.2-9" # https://github.com/ImageMagick/ImageMagick/releases/latest
 
 jobs:
