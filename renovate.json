@@ -2,5 +2,49 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
     "local>meziantou/renovate-config"
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
+      "matchStrings": [
+        "ZOPFLI_VERSION: (?<currentValue>.*?) # https://github\\.com/google/zopfli/tags"
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "google/zopfli",
+      "versioningTemplate": "loose",
+      "extractVersionTemplate": "^zopfli-(?<version>.*)$"
+    },
+    {
+      "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
+      "matchStrings": [
+        "OXIPNG_VERSION: (?<currentValue>.*?) # https://github\\.com/shssoichiro/oxipng/releases"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "shssoichiro/oxipng"
+    },
+    {
+      "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
+      "matchStrings": [
+        "FFMPEG_VERSION: (?<currentValue>.*?) # https://github\\.com/BtbN/FFmpeg-Builds/releases"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "BtbN/FFmpeg-Builds"
+    },
+    {
+      "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
+      "matchStrings": [
+        "RCLONE_VERSION: (?<currentValue>.*?) # https://github\\.com/rclone/rclone/releases"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "rclone/rclone"
+    },
+    {
+      "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
+      "matchStrings": [
+        "IMAGEMAGICK_VERSION: (?<currentValue>.*?) # https://github\\.com/ImageMagick/ImageMagick/releases"
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "ImageMagick/ImageMagick"
+    }
   ]
 }
