@@ -3,9 +3,12 @@
   "extends": [
     "local>meziantou/renovate-config"
   ],
-  "regexManagers": [
+  "customManagers": [
     {
-      "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
       "matchStrings": [
         "ZOPFLI_VERSION: \"(?<currentValue>.*?)\""
       ],
@@ -15,7 +18,10 @@
       "extractVersionTemplate": "^zopfli-(?<version>.*)$"
     },
     {
-      "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
       "matchStrings": [
         "OXIPNG_VERSION: \"(?<currentValue>.*?)\""
       ],
@@ -23,7 +29,10 @@
       "depNameTemplate": "shssoichiro/oxipng"
     },
     {
-      "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
       "matchStrings": [
         "FFMPEG_VERSION: \"(?<currentValue>.*?)\""
       ],
@@ -31,7 +40,10 @@
       "depNameTemplate": "BtbN/FFmpeg-Builds"
     },
     {
-      "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
       "matchStrings": [
         "RCLONE_VERSION: \"(?<currentValue>.*?)\""
       ],
@@ -39,7 +51,10 @@
       "depNameTemplate": "rclone/rclone"
     },
     {
-      "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
       "matchStrings": [
         "IMAGEMAGICK_VERSION: \"(?<currentValue>.*?)\""
       ],
