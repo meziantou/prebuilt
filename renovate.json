@@ -41,7 +41,7 @@
     {
       "fileMatch": ["^\\.github/workflows/ci\\.yml$"],
       "matchStrings": [
-        "IMAGEMAGICK_VERSION: (?<currentValue>.*?) # https://github\\.com/ImageMagick/ImageMagick/releases"
+        "IMAGEMAGICK_VERSION: (?<currentValue>.*?) # https://github\\.com/ImageMagick/ImageMagick/releases/latest"
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "ImageMagick/ImageMagick"
