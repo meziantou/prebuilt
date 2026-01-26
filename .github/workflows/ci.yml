@@ -17,7 +17,7 @@ env:
   OXIPNG_VERSION: "10.1.0" # https://github.com/shssoichiro/oxipng/releases
   FFMPEG_VERSION: "8.0" # https://github.com/BtbN/FFmpeg-Builds/releases
   RCLONE_VERSION: "v1.72.1" # https://github.com/rclone/rclone/releases
-  IMAGEMAGICK_VERSION: "7.1.2-12" # https://github.com/ImageMagick/ImageMagick/releases/latest
+  IMAGEMAGICK_VERSION: "7.1.2-13" # https://github.com/ImageMagick/ImageMagick/releases/latest
 
 jobs:
   create-release:
@@ -306,6 +306,7 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: magick.exe
+
 
 
 
