@@ -37,6 +37,7 @@ jobs:
       ffmpeg-osx-arm64,
       pngout-linux,
       pngout-windows,
+      pngout-osx-arm64,
       rclone-windows,
       rclone-linux,
       rclone-osx-arm64,
@@ -219,6 +220,25 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: pngout-linux-x64
+
+  pngout-osx-arm64:
+    runs-on: ubuntu-latest
+    steps:
+    - run: Invoke-WebRequest -Uri 'https://www.jonof.id.au/files/kenutils/pngout-20230322-mac.zip' -OutFile pngout.zip
+    - run: |
+        Expand-Archive pngout.zip -DestinationPath . -Force
+        $pngout = Get-ChildItem -Path "." -Recurse -File -Filter "pngout" | Select-Object -First 1
+        if (-not $pngout) {
+          throw "pngout binary not found in macOS archive"
+        }
+
+        Move-Item -LiteralPath $pngout.FullName -Destination "./pngout-osx-arm64"
+    - uses: actions/upload-artifact@v7
+      with:
+        name: binaries-pngout-osx-arm64
+        if-no-files-found: error
+        retention-days: 1
+        path: pngout-osx-arm64
 
   ffmpeg-windows:
     runs-on: ubuntu-latest
@@ -419,7 +439,6 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: magick-win-x64.exe
-
 
 
 
