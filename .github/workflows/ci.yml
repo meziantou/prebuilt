@@ -11,7 +11,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 2.0.3
+  VERSION: 2.0.4
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.1.1" # https://github.com/shssoichiro/oxipng/releases
@@ -25,9 +25,11 @@ jobs:
     needs: [
       versions_json,
       zopflipng-linux,
+      zopflipng-linux-arm64,
       zopflipng-windows,
       zopflipng-osx-arm64,
       oxipng-linux,
+      oxipng-linux-arm64,
       oxipng-windows,
       oxipng-osx-arm64,
       ffmpeg-linux,
@@ -36,10 +38,12 @@ jobs:
       ffmpeg-windows-arm64,
       ffmpeg-osx-arm64,
       pngout-linux,
+      pngout-linux-arm64,
       pngout-windows,
       pngout-osx-arm64,
       rclone-windows,
       rclone-linux,
+      rclone-linux-arm64,
       rclone-osx-arm64,
       magick-windows
     ]
@@ -95,6 +99,26 @@ jobs:
         path: |
           zopfli-linux-x64
           zopflipng-linux-x64
+
+  zopflipng-linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        repository: google/zopfli
+        ref: zopfli-${{ env.ZOPFLI_VERSION }}
+    - run: make zopfli && make zopflipng
+    - run: |
+        mv zopfli zopfli-linux-arm64
+        mv zopflipng zopflipng-linux-arm64
+    - uses: actions/upload-artifact@v7
+      with:
+        name: binaries-zopflipng-linux-arm64
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+          zopfli-linux-arm64
+          zopflipng-linux-arm64
 
   zopflipng-windows:
     runs-on: windows-latest
@@ -183,6 +207,19 @@ jobs:
         retention-days: 1
         path: 'oxipng-linux-x64'
 
+  oxipng-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+    - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-aarch64-unknown-linux-musl.tar.gz' -OutFile oxipng.tar.gz
+    - run: tar -xvf oxipng.tar.gz
+    - run: mv oxipng-*-aarch64-unknown-linux-musl/oxipng oxipng-linux-arm64
+    - uses: actions/upload-artifact@v7
+      with:
+        name: binaries-oxipng-linux-arm64
+        if-no-files-found: error
+        retention-days: 1
+        path: 'oxipng-linux-arm64'
+
   oxipng-osx-arm64:
     runs-on: ubuntu-latest
     steps:
@@ -220,6 +257,19 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: pngout-linux-x64
+
+  pngout-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+    - run: Invoke-WebRequest -Uri 'http://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz' -OutFile pngout.tar.gz
+    - run: tar -xvf pngout.tar.gz
+    - run: mv pngout-*/aarch64/pngout pngout-linux-arm64
+    - uses: actions/upload-artifact@v7
+      with:
+        name: binaries-pngout-linux-arm64
+        if-no-files-found: error
+        retention-days: 1
+        path: pngout-linux-arm64
 
   pngout-osx-arm64:
     runs-on: ubuntu-latest
@@ -370,9 +420,9 @@ jobs:
            ffmpeg-osx-arm64
            ffprobe-osx-arm64
 
-  ffmpeg-docker-linux-x64:
+  prebuilt-docker-linux-x64:
     runs-on: ubuntu-latest
-    needs: [ffmpeg-linux]
+    needs: [zopflipng-linux, oxipng-linux, pngout-linux, ffmpeg-linux, rclone-linux]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
@@ -380,14 +430,34 @@ jobs:
     steps:
     - uses: actions/download-artifact@v8
       with:
+        name: binaries-zopflipng-linux
+        path: .
+    - uses: actions/download-artifact@v8
+      with:
+        name: binaries-oxipng-linux
+        path: .
+    - uses: actions/download-artifact@v8
+      with:
+        name: binaries-pngout-linux
+        path: .
+    - uses: actions/download-artifact@v8
+      with:
         name: binaries-ffmpeg-linux
+        path: .
+    - uses: actions/download-artifact@v8
+      with:
+        name: binaries-rclone-linux
         path: .
     - run: |
        @"
-       FROM scratch
+       FROM ubuntu:24.04
+       COPY --chmod=0755 zopfli-linux-x64 /usr/local/bin/zopfli
+       COPY --chmod=0755 zopflipng-linux-x64 /usr/local/bin/zopflipng
+       COPY --chmod=0755 oxipng-linux-x64 /usr/local/bin/oxipng
+       COPY --chmod=0755 pngout-linux-x64 /usr/local/bin/pngout
        COPY --chmod=0755 ffmpeg-linux-x64 /usr/local/bin/ffmpeg
        COPY --chmod=0755 ffprobe-linux-x64 /usr/local/bin/ffprobe
-       ENTRYPOINT ["/usr/local/bin/ffmpeg"]
+       COPY --chmod=0755 rclone-linux-x64 /usr/local/bin/rclone
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
     - uses: docker/setup-buildx-action@v3
     - uses: docker/login-action@v3
@@ -401,11 +471,11 @@ jobs:
         file: ./Dockerfile
         platforms: linux/amd64
         push: true
-        tags: ghcr.io/${{ github.repository_owner }}/prebuilt-ffmpeg:${{ env.FFMPEG_VERSION }}-linux-x64
+        tags: ghcr.io/${{ github.repository_owner }}/prebuilt:${{ env.VERSION }}-linux-x64
 
-  ffmpeg-docker-linux-arm64:
+  prebuilt-docker-linux-arm64:
     runs-on: ubuntu-latest
-    needs: [ffmpeg-linux-arm64]
+    needs: [zopflipng-linux-arm64, oxipng-linux-arm64, pngout-linux-arm64, ffmpeg-linux-arm64, rclone-linux-arm64]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
@@ -413,14 +483,34 @@ jobs:
     steps:
     - uses: actions/download-artifact@v8
       with:
+        name: binaries-zopflipng-linux-arm64
+        path: .
+    - uses: actions/download-artifact@v8
+      with:
+        name: binaries-oxipng-linux-arm64
+        path: .
+    - uses: actions/download-artifact@v8
+      with:
+        name: binaries-pngout-linux-arm64
+        path: .
+    - uses: actions/download-artifact@v8
+      with:
         name: binaries-ffmpeg-linux-arm64
+        path: .
+    - uses: actions/download-artifact@v8
+      with:
+        name: binaries-rclone-linux-arm64
         path: .
     - run: |
        @"
-       FROM scratch
+       FROM ubuntu:24.04
+       COPY --chmod=0755 zopfli-linux-arm64 /usr/local/bin/zopfli
+       COPY --chmod=0755 zopflipng-linux-arm64 /usr/local/bin/zopflipng
+       COPY --chmod=0755 oxipng-linux-arm64 /usr/local/bin/oxipng
+       COPY --chmod=0755 pngout-linux-arm64 /usr/local/bin/pngout
        COPY --chmod=0755 ffmpeg-linux-arm64 /usr/local/bin/ffmpeg
        COPY --chmod=0755 ffprobe-linux-arm64 /usr/local/bin/ffprobe
-       ENTRYPOINT ["/usr/local/bin/ffmpeg"]
+       COPY --chmod=0755 rclone-linux-arm64 /usr/local/bin/rclone
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
     - uses: docker/setup-buildx-action@v3
     - uses: docker/login-action@v3
@@ -434,11 +524,11 @@ jobs:
         file: ./Dockerfile
         platforms: linux/arm64
         push: true
-        tags: ghcr.io/${{ github.repository_owner }}/prebuilt-ffmpeg:${{ env.FFMPEG_VERSION }}-linux-arm64
+        tags: ghcr.io/${{ github.repository_owner }}/prebuilt:${{ env.VERSION }}-linux-arm64
 
-  ffmpeg-docker-manifest:
+  prebuilt-docker-manifest:
     runs-on: ubuntu-latest
-    needs: [ffmpeg-docker-linux-x64, ffmpeg-docker-linux-arm64]
+    needs: [prebuilt-docker-linux-x64, prebuilt-docker-linux-arm64]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
@@ -451,13 +541,13 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
     - run: |
-       $registry = "ghcr.io/${{ github.repository_owner }}/prebuilt-ffmpeg"
+       $registry = "ghcr.io/${{ github.repository_owner }}/prebuilt"
        docker buildx imagetools create `
-         --tag "${registry}:${{ env.FFMPEG_VERSION }}" `
+         --tag "${registry}:${{ env.VERSION }}" `
          --tag "${registry}:latest" `
-         "${registry}:${{ env.FFMPEG_VERSION }}-linux-x64" `
-         "${registry}:${{ env.FFMPEG_VERSION }}-linux-arm64"
-       docker buildx imagetools inspect "${registry}:${{ env.FFMPEG_VERSION }}"
+         "${registry}:${{ env.VERSION }}-linux-x64" `
+         "${registry}:${{ env.VERSION }}-linux-arm64"
+       docker buildx imagetools inspect "${registry}:${{ env.VERSION }}"
 
   rclone-windows:
     runs-on: ubuntu-latest
@@ -503,6 +593,28 @@ jobs:
         retention-days: 1
         path: rclone-linux-x64
 
+  rclone-linux-arm64:
+    runs-on: ubuntu-latest
+    steps:
+    - run: |
+       $headers = @{
+         "User-Agent" = "GitHub Actions"
+         "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+       }
+
+        $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/rclone/rclone/releases/tags/${{ env.RCLONE_VERSION }} -Headers $headers
+        $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^rclone-.*-linux-arm64.zip$' }
+        Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile rclone.zip
+        Expand-Archive rclone.zip -DestinationPath . -Verbose
+        Get-ChildItem -Recurse -Include rclone | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
+        Move-Item rclone rclone-linux-arm64
+    - uses: actions/upload-artifact@v7
+      with:
+        name: binaries-rclone-linux-arm64
+        if-no-files-found: error
+        retention-days: 1
+        path: rclone-linux-arm64
+
   rclone-osx-arm64:
     runs-on: ubuntu-latest
     steps:
@@ -536,5 +648,3 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: magick-win-x64.exe
-
-
