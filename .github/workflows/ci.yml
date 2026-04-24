@@ -453,11 +453,11 @@ jobs:
     - run: |
        $registry = "ghcr.io/${{ github.repository_owner }}/prebuilt-ffmpeg"
        docker buildx imagetools create `
-         --tag "$registry:${{ env.FFMPEG_VERSION }}" `
-         --tag "$registry:latest" `
-         "$registry:${{ env.FFMPEG_VERSION }}-linux-x64" `
-         "$registry:${{ env.FFMPEG_VERSION }}-linux-arm64"
-       docker buildx imagetools inspect "$registry:${{ env.FFMPEG_VERSION }}"
+         --tag "${registry}:${{ env.FFMPEG_VERSION }}" `
+         --tag "${registry}:latest" `
+         "${registry}:${{ env.FFMPEG_VERSION }}-linux-x64" `
+         "${registry}:${{ env.FFMPEG_VERSION }}-linux-arm64"
+       docker buildx imagetools inspect "${registry}:${{ env.FFMPEG_VERSION }}"
 
   rclone-windows:
     runs-on: ubuntu-latest
@@ -536,6 +536,5 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: magick-win-x64.exe
-
 
 
