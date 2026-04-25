@@ -670,10 +670,10 @@ jobs:
          (Join-Path $depsPrefix "lib"),
          (Join-Path $depsPrefix "lib64")
        ) | Where-Object { Test-Path -LiteralPath $_ -PathType Container }
-       if (-not $linkerSearchPaths) {
-         throw "linker search paths were not generated in $depsPrefix"
-       }
-       $env:LDFLAGS = (($linkerSearchPaths | ForEach-Object { "-L$_" }) -join ' ')
+        if (-not $linkerSearchPaths) {
+          throw "linker search paths were not generated in $depsPrefix"
+        }
+        $env:LDFLAGS = (($linkerSearchPaths | ForEach-Object { "-L$_" }) -join ' ') + " -lc++"
 
         $requiredPkgConfigPackages = @(
           "aom",
@@ -681,13 +681,13 @@ jobs:
           "SvtAv1Enc",
           "libjxl >= 0.7.0",
           "libjxl_threads >= 0.7.0"
-        )
-        foreach ($pkgName in $requiredPkgConfigPackages) {
-          & pkg-config --exists --print-errors $pkgName
-          if ($LASTEXITCODE -ne 0) {
-            throw "pkg-config package '$pkgName' was not found in static dependency prefix"
-          }
-        }
+         )
+         foreach ($pkgName in $requiredPkgConfigPackages) {
+           & pkg-config --exists --print-errors --static $pkgName
+           if ($LASTEXITCODE -ne 0) {
+             throw "pkg-config package '$pkgName' was not found in static dependency prefix"
+           }
+         }
 
         Invoke-DownloadWithRetry -uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_MACOS_SOURCE_REF }}.tar.gz" -archivePath ffmpeg.tar.gz
         tar -xzf ffmpeg.tar.gz
