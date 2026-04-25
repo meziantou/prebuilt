@@ -62,48 +62,22 @@ function Get-ZopfliVersion {
 }
 
 function Get-FFmpegVersion {
-    $release = Invoke-GitHubApi -Uri "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest"
-    $assets = @($release.assets)
-    if (-not $assets) {
-        throw "Unable to determine FFmpeg version (release has no assets)."
-    }
-
-    $requiredPatterns = @(
-        "^ffmpeg-.*-win64-gpl-(?<version>\d+(?:\.\d+){1,2})\.zip$",
-        "^ffmpeg-.*-winarm64-gpl-(?<version>\d+(?:\.\d+){1,2})\.zip$",
-        "^ffmpeg-.*-linux64-gpl-(?<version>\d+(?:\.\d+){1,2})\.tar\.xz$",
-        "^ffmpeg-.*-linuxarm64-gpl-(?<version>\d+(?:\.\d+){1,2})\.tar\.xz$"
-    )
-
-    $versionCounts = @{}
-    foreach ($asset in $assets) {
-        foreach ($pattern in $requiredPatterns) {
-            if ($asset.name -cmatch $pattern) {
-                $version = $Matches["version"]
-                if (-not $versionCounts.ContainsKey($version)) {
-                    $versionCounts[$version] = 0
-                }
-
-                $versionCounts[$version]++
-            }
-        }
-    }
-
-    $candidateVersions =
-        foreach ($entry in $versionCounts.GetEnumerator()) {
-            if ($entry.Value -ge $requiredPatterns.Count) {
+    $tags = Invoke-GitHubApi -Uri "https://api.github.com/repos/FFmpeg/FFmpeg/tags?per_page=100"
+    $versions =
+        foreach ($tag in $tags) {
+            if ($tag.name -match "^n(?<version>\d+(?:\.\d+){1,2})$") {
                 [PSCustomObject]@{
-                    Version = [version]$entry.Key
-                    Text = $entry.Key
+                    Version = [version]$Matches["version"]
+                    Text = $Matches["version"]
                 }
             }
         }
 
-    if (-not $candidateVersions) {
-        throw "Unable to determine FFmpeg version from latest FFmpeg-Builds release assets."
+    if (-not $versions) {
+        throw "Unable to determine latest FFmpeg version from FFmpeg tags."
     }
 
-    return ($candidateVersions | Sort-Object Version -Descending | Select-Object -First 1).Text
+    return ($versions | Sort-Object Version -Descending | Select-Object -First 1).Text
 }
 
 function Set-YamlVariableValue {
@@ -149,10 +123,12 @@ if ([string]::IsNullOrEmpty($workflowContent)) {
     throw "Workflow file '$($resolvedWorkflowPath.Path)' is empty."
 }
 
+$latestFFmpegVersion = Get-FFmpegVersion
 $availableLatestVersions = [ordered]@{
     "ZOPFLI_VERSION" = Get-ZopfliVersion
     "OXIPNG_VERSION" = Get-ReleaseTag -Repository "shssoichiro/oxipng" -TrimV
-    "FFMPEG_VERSION" = Get-FFmpegVersion
+    "FFMPEG_VERSION" = $latestFFmpegVersion
+    "FFMPEG_SOURCE_REF" = "n$latestFFmpegVersion"
     "RCLONE_VERSION" = Get-ReleaseTag -Repository "rclone/rclone"
     "IMAGEMAGICK_VERSION" = Get-ReleaseTag -Repository "ImageMagick/ImageMagick" -TrimV
 }

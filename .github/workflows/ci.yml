@@ -15,8 +15,15 @@ env:
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.1.1" # https://github.com/shssoichiro/oxipng/releases
-  FFMPEG_VERSION: "8.1" # https://github.com/BtbN/FFmpeg-Builds/releases
-  FFMPEG_MACOS_SOURCE_REF: "n8.1" # https://github.com/FFmpeg/FFmpeg/tags (keep aligned with FFMPEG_VERSION)
+  FFMPEG_VERSION: "8.1" # https://github.com/FFmpeg/FFmpeg/tags
+  FFMPEG_SOURCE_REF: "n8.1" # https://github.com/FFmpeg/FFmpeg/tags (keep aligned with FFMPEG_VERSION)
+  # GPL profile. Nonfree options (for example libfdk-aac) are intentionally excluded.
+  FFMPEG_LINUX_CONFIGURE_FLAGS: >-
+    --disable-doc --disable-debug --enable-pthreads --enable-runtime-cpudetect
+    --enable-gpl --disable-nonfree --disable-shared --enable-static --disable-autodetect --pkg-config-flags=--static
+    --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1
+    --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
+  FFMPEG_LINUX_MAKE_JOBS: "4"
   # GPL profile. Nonfree options (for example libfdk-aac) are intentionally excluded.
   FFMPEG_MACOS_CONFIGURE_FLAGS: >-
     --arch=arm64 --target-os=darwin --disable-doc --disable-debug --enable-pthreads
@@ -25,6 +32,13 @@ env:
     --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1
     --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
   FFMPEG_MACOS_MAKE_JOBS: "4"
+  # GPL profile. Nonfree options (for example libfdk-aac) are intentionally excluded.
+  FFMPEG_WINDOWS_CONFIGURE_FLAGS: >-
+    --disable-doc --disable-debug --enable-pthreads --enable-runtime-cpudetect
+    --enable-gpl --disable-nonfree --disable-shared --enable-static --disable-autodetect --pkg-config-flags=--static
+    --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1
+    --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
+  FFMPEG_WINDOWS_MAKE_JOBS: "4"
   RCLONE_VERSION: "v1.73.5" # https://github.com/rclone/rclone/releases
   IMAGEMAGICK_VERSION: "7.1.2-21" # https://github.com/ImageMagick/ImageMagick/releases/latest
 
@@ -300,21 +314,60 @@ jobs:
         path: pngout-osx-arm64
 
   ffmpeg-windows:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: UCRT64
+        update: true
+        install: >-
+          base-devel
+          make
+          pkgconf
+          nasm
+          yasm
+          mingw-w64-ucrt-x86_64-gcc
+          mingw-w64-ucrt-x86_64-opus
+          mingw-w64-ucrt-x86_64-aom
+          mingw-w64-ucrt-x86_64-libjxl
+          mingw-w64-ucrt-x86_64-svt-av1
+    - shell: msys2 {0}
+      run: |
+        set -euo pipefail
+
+        curl -fsSL "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_SOURCE_REF }}.tar.gz" -o ffmpeg.tar.gz
+        tar -xzf ffmpeg.tar.gz
+
+        source_directory="FFmpeg-${{ env.FFMPEG_SOURCE_REF }}"
+        if [[ ! -d "$source_directory" ]]; then
+          echo "ffmpeg source directory not found: $source_directory" >&2
+          exit 1
+        fi
+
+        cd "$source_directory"
+        ./configure --arch=x86_64 --target-os=mingw32 ${{ env.FFMPEG_WINDOWS_CONFIGURE_FLAGS }}
+        make -j${{ env.FFMPEG_WINDOWS_MAKE_JOBS }}
+
+        cp ./ffmpeg.exe ../ffmpeg-win-x64.exe
+        cp ./ffprobe.exe ../ffprobe-win-x64.exe
     - run: |
-       $headers = @{
-         "User-Agent" = "GitHub Actions"
-         "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+       function Assert-ConfigureOptionEnabled([string]$option) {
+         $buildConfig = & ./ffmpeg-win-x64.exe -buildconf | Out-String
+         if ($buildConfig -notmatch [Regex]::Escape($option)) {
+           throw "Missing expected FFmpeg configure option: $option"
+         }
        }
 
-        $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest -Headers $headers
-        $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-.*-win64-gpl-${{ env.FFMPEG_VERSION }}.zip$' }
-        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile ffmpeg.zip
-        Expand-Archive ffmpeg.zip -DestinationPath . -Verbose
-        Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
-        Move-Item ffmpeg.exe ffmpeg-win-x64.exe
-        Move-Item ffprobe.exe ffprobe-win-x64.exe
+       Assert-ConfigureOptionEnabled "--enable-gpl"
+       Assert-ConfigureOptionEnabled "--enable-libopus"
+       Assert-ConfigureOptionEnabled "--enable-libaom"
+       Assert-ConfigureOptionEnabled "--enable-libjxl"
+       Assert-ConfigureOptionEnabled "--enable-libsvtav1"
+
+       $ffmpegVersion = & ./ffmpeg-win-x64.exe -version | Select-Object -First 1
+       $ffprobeVersion = & ./ffprobe-win-x64.exe -version | Select-Object -First 1
+       Write-Host "Built $ffmpegVersion"
+       Write-Host "Built $ffprobeVersion"
     - uses: actions/upload-artifact@v7
       with:
         name: binaries-ffmpeg-windows
@@ -325,21 +378,60 @@ jobs:
            ffprobe-win-x64.exe
 
   ffmpeg-windows-arm64:
-    runs-on: ubuntu-latest
+    runs-on: windows-11-arm
     steps:
+    - uses: msys2/setup-msys2@v2
+      with:
+        msystem: CLANGARM64
+        update: true
+        install: >-
+          base-devel
+          make
+          pkgconf
+          nasm
+          yasm
+          mingw-w64-clang-aarch64-clang
+          mingw-w64-clang-aarch64-opus
+          mingw-w64-clang-aarch64-aom
+          mingw-w64-clang-aarch64-libjxl
+          mingw-w64-clang-aarch64-svt-av1
+    - shell: msys2 {0}
+      run: |
+        set -euo pipefail
+
+        curl -fsSL "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_SOURCE_REF }}.tar.gz" -o ffmpeg.tar.gz
+        tar -xzf ffmpeg.tar.gz
+
+        source_directory="FFmpeg-${{ env.FFMPEG_SOURCE_REF }}"
+        if [[ ! -d "$source_directory" ]]; then
+          echo "ffmpeg source directory not found: $source_directory" >&2
+          exit 1
+        fi
+
+        cd "$source_directory"
+        ./configure --arch=aarch64 --target-os=mingw32 --cc=clang --cxx=clang++ --enable-neon ${{ env.FFMPEG_WINDOWS_CONFIGURE_FLAGS }}
+        make -j${{ env.FFMPEG_WINDOWS_MAKE_JOBS }}
+
+        cp ./ffmpeg.exe ../ffmpeg-win-arm64.exe
+        cp ./ffprobe.exe ../ffprobe-win-arm64.exe
     - run: |
-       $headers = @{
-         "User-Agent" = "GitHub Actions"
-         "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+       function Assert-ConfigureOptionEnabled([string]$option) {
+         $buildConfig = & ./ffmpeg-win-arm64.exe -buildconf | Out-String
+         if ($buildConfig -notmatch [Regex]::Escape($option)) {
+           throw "Missing expected FFmpeg configure option: $option"
+         }
        }
 
-        $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest -Headers $headers
-        $WindowsAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-.*-winarm64-gpl-${{ env.FFMPEG_VERSION }}.zip$' }
-        Invoke-WebRequest -Uri $WindowsAsset.browser_download_url -OutFile ffmpeg.zip
-        Expand-Archive ffmpeg.zip -DestinationPath . -Verbose
-        Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
-        Move-Item ffmpeg.exe ffmpeg-win-arm64.exe
-        Move-Item ffprobe.exe ffprobe-win-arm64.exe
+       Assert-ConfigureOptionEnabled "--enable-gpl"
+       Assert-ConfigureOptionEnabled "--enable-libopus"
+       Assert-ConfigureOptionEnabled "--enable-libaom"
+       Assert-ConfigureOptionEnabled "--enable-libjxl"
+       Assert-ConfigureOptionEnabled "--enable-libsvtav1"
+
+       $ffmpegVersion = & ./ffmpeg-win-arm64.exe -version | Select-Object -First 1
+       $ffprobeVersion = & ./ffprobe-win-arm64.exe -version | Select-Object -First 1
+       Write-Host "Built $ffmpegVersion"
+       Write-Host "Built $ffprobeVersion"
     - uses: actions/upload-artifact@v7
       with:
         name: binaries-ffmpeg-windows-arm64
@@ -353,18 +445,91 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - run: |
-       $headers = @{
-         "User-Agent" = "GitHub Actions"
-         "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends build-essential pkg-config nasm yasm libopus-dev libaom-dev libjxl-dev libsvtav1-dev
+    - run: |
+       Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
+       tar -xzf ffmpeg.tar.gz
+
+       $sourceDirectory = "FFmpeg-${{ env.FFMPEG_SOURCE_REF }}"
+       if (-not (Test-Path -LiteralPath $sourceDirectory -PathType Container)) {
+         throw "ffmpeg source directory not found: $sourceDirectory"
        }
 
-        $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest -Headers $headers
-        $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-.*-linux64-gpl-${{ env.FFMPEG_VERSION }}.tar.xz$' }
-        Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile ffmpeg.tar.xz
-        tar -xvf ffmpeg.tar.xz
-        Get-ChildItem -Recurse -Include ffmpeg, ffprobe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
-        Move-Item ffmpeg ffmpeg-linux-x64
-        Move-Item ffprobe ffprobe-linux-x64
+       $configureFlags = @("--arch=x86_64", "--target-os=linux") + ("${{ env.FFMPEG_LINUX_CONFIGURE_FLAGS }}" -split '\s+' | Where-Object { $_ })
+       Push-Location $sourceDirectory
+       & ./configure @configureFlags
+       & make -j${{ env.FFMPEG_LINUX_MAKE_JOBS }}
+
+       Move-Item -LiteralPath ./ffmpeg -Destination ../ffmpeg-linux-x64
+       Move-Item -LiteralPath ./ffprobe -Destination ../ffprobe-linux-x64
+       Pop-Location
+
+       chmod +x ffmpeg-linux-x64
+       chmod +x ffprobe-linux-x64
+
+       function Get-ExternalDependencies([string]$path) {
+         $lddOutput = & ldd $path 2>&1
+         if ($LASTEXITCODE -ne 0 -and ($lddOutput -notmatch 'not a dynamic executable')) {
+           throw "Unable to inspect dependencies for '$path': $($lddOutput -join [Environment]::NewLine)"
+         }
+
+         if ($lddOutput -match 'not a dynamic executable') {
+           return @()
+         }
+
+         return $lddOutput | ForEach-Object {
+           if ($_ -match '=>\s+(?<dependency>/\S+)') {
+             $Matches['dependency']
+           } elseif ($_ -match '^\s*(?<dependency>/\S+)') {
+             $Matches['dependency']
+           }
+         } | Where-Object { $_ } | Sort-Object -Unique
+       }
+
+       $forbiddenDependencyPatterns = @('libxcb', 'libX11')
+       function Get-ForbiddenDependencies([string[]]$dependencies) {
+         return $dependencies | Where-Object {
+           $dependency = $_
+           $forbiddenDependencyPatterns | Where-Object { $dependency -match $_ }
+         }
+       }
+
+       $ffmpegExternalDependencies = Get-ExternalDependencies "./ffmpeg-linux-x64"
+       $ffmpegForbiddenDependencies = Get-ForbiddenDependencies $ffmpegExternalDependencies
+       if ($ffmpegForbiddenDependencies) {
+         throw "ffmpeg-linux-x64 has forbidden dependencies: $($ffmpegForbiddenDependencies -join ', ')"
+       }
+       if ($ffmpegExternalDependencies) {
+         Write-Host "ffmpeg-linux-x64 external dependencies: $($ffmpegExternalDependencies -join ', ')"
+       }
+
+       $ffprobeExternalDependencies = Get-ExternalDependencies "./ffprobe-linux-x64"
+       $ffprobeForbiddenDependencies = Get-ForbiddenDependencies $ffprobeExternalDependencies
+       if ($ffprobeForbiddenDependencies) {
+         throw "ffprobe-linux-x64 has forbidden dependencies: $($ffprobeForbiddenDependencies -join ', ')"
+       }
+       if ($ffprobeExternalDependencies) {
+         Write-Host "ffprobe-linux-x64 external dependencies: $($ffprobeExternalDependencies -join ', ')"
+       }
+
+       function Assert-ConfigureOptionEnabled([string]$option) {
+         $buildConfig = & ./ffmpeg-linux-x64 -buildconf | Out-String
+         if ($buildConfig -notmatch [Regex]::Escape($option)) {
+           throw "Missing expected FFmpeg configure option: $option"
+         }
+       }
+
+       Assert-ConfigureOptionEnabled "--enable-gpl"
+       Assert-ConfigureOptionEnabled "--enable-libopus"
+       Assert-ConfigureOptionEnabled "--enable-libaom"
+       Assert-ConfigureOptionEnabled "--enable-libjxl"
+       Assert-ConfigureOptionEnabled "--enable-libsvtav1"
+
+       $ffmpegVersion = & ./ffmpeg-linux-x64 -version | Select-Object -First 1
+       $ffprobeVersion = & ./ffprobe-linux-x64 -version | Select-Object -First 1
+       Write-Host "Built $ffmpegVersion"
+       Write-Host "Built $ffprobeVersion"
     - uses: actions/upload-artifact@v7
       with:
         name: binaries-ffmpeg-linux
@@ -375,20 +540,94 @@ jobs:
            ffprobe-linux-x64
 
   ffmpeg-linux-arm64:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     steps:
     - run: |
-       $headers = @{
-         "User-Agent" = "GitHub Actions"
-         "Authorization" = "Bearer ${{ secrets.GITHUB_TOKEN }}"
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends build-essential pkg-config nasm yasm libopus-dev libaom-dev libjxl-dev libsvtav1-dev
+    - run: |
+       Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
+       tar -xzf ffmpeg.tar.gz
+
+       $sourceDirectory = "FFmpeg-${{ env.FFMPEG_SOURCE_REF }}"
+       if (-not (Test-Path -LiteralPath $sourceDirectory -PathType Container)) {
+         throw "ffmpeg source directory not found: $sourceDirectory"
        }
 
-        $release = Invoke-RestMethod -Method Get -Uri https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest -Headers $headers
-        $LinuxAsset = $release.assets | Where-Object { $_.name -cmatch '^ffmpeg-.*-linuxarm64-gpl-${{ env.FFMPEG_VERSION }}.tar.xz$' }
-        Invoke-WebRequest -Uri $LinuxAsset.browser_download_url -OutFile ffmpeg.tar.xz
-        tar -xvf ffmpeg.tar.xz
-        Get-ChildItem -Recurse -Filter ffmpeg | Foreach-Object { Move-Item -LiteralPath $_ -Destination ffmpeg-linux-arm64 }
-        Get-ChildItem -Recurse -Filter ffprobe | Foreach-Object { Move-Item -LiteralPath $_ -Destination ffprobe-linux-arm64 }
+       $configureFlags = @("--arch=aarch64", "--target-os=linux", "--enable-neon") + ("${{ env.FFMPEG_LINUX_CONFIGURE_FLAGS }}" -split '\s+' | Where-Object { $_ })
+       Push-Location $sourceDirectory
+       & ./configure @configureFlags
+       & make -j${{ env.FFMPEG_LINUX_MAKE_JOBS }}
+
+       Move-Item -LiteralPath ./ffmpeg -Destination ../ffmpeg-linux-arm64
+       Move-Item -LiteralPath ./ffprobe -Destination ../ffprobe-linux-arm64
+       Pop-Location
+
+       chmod +x ffmpeg-linux-arm64
+       chmod +x ffprobe-linux-arm64
+
+       function Get-ExternalDependencies([string]$path) {
+         $lddOutput = & ldd $path 2>&1
+         if ($LASTEXITCODE -ne 0 -and ($lddOutput -notmatch 'not a dynamic executable')) {
+           throw "Unable to inspect dependencies for '$path': $($lddOutput -join [Environment]::NewLine)"
+         }
+
+         if ($lddOutput -match 'not a dynamic executable') {
+           return @()
+         }
+
+         return $lddOutput | ForEach-Object {
+           if ($_ -match '=>\s+(?<dependency>/\S+)') {
+             $Matches['dependency']
+           } elseif ($_ -match '^\s*(?<dependency>/\S+)') {
+             $Matches['dependency']
+           }
+         } | Where-Object { $_ } | Sort-Object -Unique
+       }
+
+       $forbiddenDependencyPatterns = @('libxcb', 'libX11')
+       function Get-ForbiddenDependencies([string[]]$dependencies) {
+         return $dependencies | Where-Object {
+           $dependency = $_
+           $forbiddenDependencyPatterns | Where-Object { $dependency -match $_ }
+         }
+       }
+
+       $ffmpegExternalDependencies = Get-ExternalDependencies "./ffmpeg-linux-arm64"
+       $ffmpegForbiddenDependencies = Get-ForbiddenDependencies $ffmpegExternalDependencies
+       if ($ffmpegForbiddenDependencies) {
+         throw "ffmpeg-linux-arm64 has forbidden dependencies: $($ffmpegForbiddenDependencies -join ', ')"
+       }
+       if ($ffmpegExternalDependencies) {
+         Write-Host "ffmpeg-linux-arm64 external dependencies: $($ffmpegExternalDependencies -join ', ')"
+       }
+
+       $ffprobeExternalDependencies = Get-ExternalDependencies "./ffprobe-linux-arm64"
+       $ffprobeForbiddenDependencies = Get-ForbiddenDependencies $ffprobeExternalDependencies
+       if ($ffprobeForbiddenDependencies) {
+         throw "ffprobe-linux-arm64 has forbidden dependencies: $($ffprobeForbiddenDependencies -join ', ')"
+       }
+       if ($ffprobeExternalDependencies) {
+         Write-Host "ffprobe-linux-arm64 external dependencies: $($ffprobeExternalDependencies -join ', ')"
+       }
+
+       function Assert-ConfigureOptionEnabled([string]$option) {
+         $buildConfig = & ./ffmpeg-linux-arm64 -buildconf | Out-String
+         if ($buildConfig -notmatch [Regex]::Escape($option)) {
+           throw "Missing expected FFmpeg configure option: $option"
+         }
+       }
+
+       Assert-ConfigureOptionEnabled "--enable-gpl"
+       Assert-ConfigureOptionEnabled "--enable-libopus"
+       Assert-ConfigureOptionEnabled "--enable-libaom"
+       Assert-ConfigureOptionEnabled "--enable-libjxl"
+       Assert-ConfigureOptionEnabled "--enable-libsvtav1"
+
+       $ffmpegVersion = & ./ffmpeg-linux-arm64 -version | Select-Object -First 1
+       $ffprobeVersion = & ./ffprobe-linux-arm64 -version | Select-Object -First 1
+       Write-Host "Built $ffmpegVersion"
+       Write-Host "Built $ffprobeVersion"
     - uses: actions/upload-artifact@v7
       with:
         name: binaries-ffmpeg-linux-arm64
@@ -404,10 +643,10 @@ jobs:
     - run: |
        brew install pkg-config opus aom jpeg-xl svt-av1
 
-       Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_MACOS_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
+       Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
        tar -xzf ffmpeg.tar.gz
 
-       $sourceDirectory = "FFmpeg-${{ env.FFMPEG_MACOS_SOURCE_REF }}"
+       $sourceDirectory = "FFmpeg-${{ env.FFMPEG_SOURCE_REF }}"
        if (-not (Test-Path -LiteralPath $sourceDirectory -PathType Container)) {
          throw "ffmpeg source directory not found: $sourceDirectory"
        }
