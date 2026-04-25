@@ -56,7 +56,6 @@ jobs:
       rclone-osx-arm64,
       magick-windows
     ]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
     steps:
@@ -76,7 +75,8 @@ jobs:
         pattern: '*'
         path: binaries
         merge-multiple: true
-    - run: 'gh release create "${{ env.VERSION }}" --target "${{ github.sha }}" ./binaries/*'
+    - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: 'gh release create "${{ env.VERSION }}" --target "${{ github.sha }}" ./binaries/*'
       env:
         GH_TOKEN: ${{ github.token }}
 
