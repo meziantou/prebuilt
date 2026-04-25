@@ -223,7 +223,21 @@ jobs:
   oxipng-linux:
     runs-on: ubuntu-latest
     steps:
-    - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-unknown-linux-musl.tar.gz' -OutFile oxipng.tar.gz
+    - run: |
+       $uri = 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-unknown-linux-musl.tar.gz'
+       $archivePath = "oxipng.tar.gz"
+       for ($attempt = 1; $attempt -le 5; $attempt++) {
+         Invoke-WebRequest -Uri $uri -OutFile $archivePath
+         & tar -tzf $archivePath *> $null
+         if ($LASTEXITCODE -eq 0) {
+           break
+         }
+         if ($attempt -eq 5) {
+           throw "Failed to download a valid oxipng archive after $attempt attempts"
+         }
+         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+         Start-Sleep -Seconds (2 * $attempt)
+       }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-x86_64-unknown-linux-musl/oxipng oxipng-linux-x64
     - uses: actions/upload-artifact@v7
@@ -498,19 +512,20 @@ jobs:
        if ($LASTEXITCODE -ne 0) {
          throw "Failed to fetch libjxl build dependencies"
        }
-       Invoke-StaticCMakeBuild -sourcePath "libjxl-${{ env.JXL_VERSION }}" -buildPath "libjxl-build" -extraOptions @(
-         "-DBUILD_TESTING=OFF",
-         "-DJPEGXL_ENABLE_TESTS=OFF",
-         "-DJPEGXL_ENABLE_TOOLS=OFF",
-         "-DJPEGXL_ENABLE_EXAMPLES=OFF",
-         "-DJPEGXL_ENABLE_DOXYGEN=OFF",
-         "-DJPEGXL_ENABLE_MANPAGES=OFF",
-         "-DJPEGXL_ENABLE_JPEGLI=OFF",
-         "-DJPEGXL_ENABLE_BENCHMARK=OFF",
-         "-DJPEGXL_ENABLE_SJPEG=OFF",
-         "-DJPEGXL_FORCE_SYSTEM_BROTLI=ON",
-         "-DJPEGXL_FORCE_SYSTEM_HWY=ON"
-       )
+        Invoke-StaticCMakeBuild -sourcePath "libjxl-${{ env.JXL_VERSION }}" -buildPath "libjxl-build" -extraOptions @(
+          "-DBUILD_TESTING=OFF",
+          "-DJPEGXL_ENABLE_TESTS=OFF",
+          "-DJPEGXL_ENABLE_TOOLS=OFF",
+          "-DJPEGXL_ENABLE_EXAMPLES=OFF",
+          "-DJPEGXL_ENABLE_DOXYGEN=OFF",
+          "-DJPEGXL_ENABLE_MANPAGES=OFF",
+          "-DJPEGXL_ENABLE_JPEGLI=OFF",
+          "-DJPEGXL_ENABLE_BENCHMARK=OFF",
+          "-DJPEGXL_ENABLE_SJPEG=OFF",
+          "-DJPEGXL_VERSION=${{ env.JXL_VERSION }}",
+          "-DJPEGXL_FORCE_SYSTEM_BROTLI=ON",
+          "-DJPEGXL_FORCE_SYSTEM_HWY=ON"
+        )
 
        $pkgConfigPaths = @(
          (Join-Path $depsPrefix "lib/pkgconfig"),
@@ -520,11 +535,22 @@ jobs:
          throw "pkg-config directories were not generated in $depsPrefix"
        }
 
-       $pkgConfigPathValue = [string]::Join([IO.Path]::PathSeparator, $pkgConfigPaths)
-       $env:PKG_CONFIG_PATH = $pkgConfigPathValue
-       $env:PKG_CONFIG_LIBDIR = $pkgConfigPathValue
-       $env:CFLAGS = "-I$(Join-Path $depsPrefix 'include')"
-       $env:CXXFLAGS = "-I$(Join-Path $depsPrefix 'include')"
+        $pkgConfigPathValue = [string]::Join([IO.Path]::PathSeparator, $pkgConfigPaths)
+        $env:PKG_CONFIG_PATH = $pkgConfigPathValue
+        $env:PKG_CONFIG_LIBDIR = $pkgConfigPathValue
+        $env:CFLAGS = "-I$(Join-Path $depsPrefix 'include')"
+        $env:CXXFLAGS = "-I$(Join-Path $depsPrefix 'include')"
+
+        foreach ($pkgConfigDirectory in $pkgConfigPaths) {
+          foreach ($pkgConfigFile in @("libjxl.pc", "libjxl_threads.pc")) {
+            $pkgConfigFilePath = Join-Path $pkgConfigDirectory $pkgConfigFile
+            if (Test-Path -LiteralPath $pkgConfigFilePath -PathType Leaf) {
+              $pkgConfigContent = Get-Content -Raw -LiteralPath $pkgConfigFilePath
+              $pkgConfigContent = $pkgConfigContent -replace '(?m)^Version:.*$', "Version: ${{ env.JXL_VERSION }}"
+              Set-Content -LiteralPath $pkgConfigFilePath -Value $pkgConfigContent
+            }
+          }
+        }
 
        $linkerSearchPaths = @(
          (Join-Path $depsPrefix "lib"),
@@ -535,13 +561,19 @@ jobs:
        }
        $env:LDFLAGS = (($linkerSearchPaths | ForEach-Object { "-L$_" }) -join ' ')
 
-       $requiredPkgConfigPackages = @('aom', 'opus', 'SvtAv1Enc', 'libjxl')
-       foreach ($pkgName in $requiredPkgConfigPackages) {
-         & pkg-config --exists $pkgName
-         if ($LASTEXITCODE -ne 0) {
-           throw "pkg-config package '$pkgName' was not found in static dependency prefix"
-         }
-       }
+        $requiredPkgConfigPackages = @(
+          "aom",
+          "opus",
+          "SvtAv1Enc",
+          "libjxl >= 0.7.0",
+          "libjxl_threads >= 0.7.0"
+        )
+        foreach ($pkgName in $requiredPkgConfigPackages) {
+          & pkg-config --exists --print-errors $pkgName
+          if ($LASTEXITCODE -ne 0) {
+            throw "pkg-config package '$pkgName' was not found in static dependency prefix"
+          }
+        }
 
        Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_MACOS_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
        tar -xzf ffmpeg.tar.gz
