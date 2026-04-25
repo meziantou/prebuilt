@@ -350,24 +350,30 @@ jobs:
 
         cp ./ffmpeg.exe ../ffmpeg-win-x64.exe
         cp ./ffprobe.exe ../ffprobe-win-x64.exe
-    - run: |
-       function Assert-ConfigureOptionEnabled([string]$option) {
-         $buildConfig = & ./ffmpeg-win-x64.exe -buildconf | Out-String
-         if ($buildConfig -notmatch [Regex]::Escape($option)) {
-           throw "Missing expected FFmpeg configure option: $option"
-         }
-       }
+    - shell: msys2 {0}
+      run: |
+        set -euo pipefail
 
-       Assert-ConfigureOptionEnabled "--enable-gpl"
-       Assert-ConfigureOptionEnabled "--enable-libopus"
-       Assert-ConfigureOptionEnabled "--enable-libaom"
-       Assert-ConfigureOptionEnabled "--enable-libjxl"
-       Assert-ConfigureOptionEnabled "--enable-libsvtav1"
+        assert_configure_option_enabled() {
+          local option="$1"
+          local build_config
+          build_config="$(./ffmpeg-win-x64.exe -buildconf)"
+          if ! grep -Fq -- "$option" <<<"$build_config"; then
+            echo "Missing expected FFmpeg configure option: $option" >&2
+            exit 1
+          fi
+        }
 
-       $ffmpegVersion = & ./ffmpeg-win-x64.exe -version | Select-Object -First 1
-       $ffprobeVersion = & ./ffprobe-win-x64.exe -version | Select-Object -First 1
-       Write-Host "Built $ffmpegVersion"
-       Write-Host "Built $ffprobeVersion"
+        assert_configure_option_enabled "--enable-gpl"
+        assert_configure_option_enabled "--enable-libopus"
+        assert_configure_option_enabled "--enable-libaom"
+        assert_configure_option_enabled "--enable-libjxl"
+        assert_configure_option_enabled "--enable-libsvtav1"
+
+        ffmpeg_version="$(./ffmpeg-win-x64.exe -version | head -n 1)"
+        ffprobe_version="$(./ffprobe-win-x64.exe -version | head -n 1)"
+        echo "Built $ffmpeg_version"
+        echo "Built $ffprobe_version"
     - uses: actions/upload-artifact@v7
       with:
         name: binaries-ffmpeg-windows
@@ -414,24 +420,30 @@ jobs:
 
         cp ./ffmpeg.exe ../ffmpeg-win-arm64.exe
         cp ./ffprobe.exe ../ffprobe-win-arm64.exe
-    - run: |
-       function Assert-ConfigureOptionEnabled([string]$option) {
-         $buildConfig = & ./ffmpeg-win-arm64.exe -buildconf | Out-String
-         if ($buildConfig -notmatch [Regex]::Escape($option)) {
-           throw "Missing expected FFmpeg configure option: $option"
-         }
-       }
+    - shell: msys2 {0}
+      run: |
+        set -euo pipefail
 
-       Assert-ConfigureOptionEnabled "--enable-gpl"
-       Assert-ConfigureOptionEnabled "--enable-libopus"
-       Assert-ConfigureOptionEnabled "--enable-libaom"
-       Assert-ConfigureOptionEnabled "--enable-libjxl"
-       Assert-ConfigureOptionEnabled "--enable-libsvtav1"
+        assert_configure_option_enabled() {
+          local option="$1"
+          local build_config
+          build_config="$(./ffmpeg-win-arm64.exe -buildconf)"
+          if ! grep -Fq -- "$option" <<<"$build_config"; then
+            echo "Missing expected FFmpeg configure option: $option" >&2
+            exit 1
+          fi
+        }
 
-       $ffmpegVersion = & ./ffmpeg-win-arm64.exe -version | Select-Object -First 1
-       $ffprobeVersion = & ./ffprobe-win-arm64.exe -version | Select-Object -First 1
-       Write-Host "Built $ffmpegVersion"
-       Write-Host "Built $ffprobeVersion"
+        assert_configure_option_enabled "--enable-gpl"
+        assert_configure_option_enabled "--enable-libopus"
+        assert_configure_option_enabled "--enable-libaom"
+        assert_configure_option_enabled "--enable-libjxl"
+        assert_configure_option_enabled "--enable-libsvtav1"
+
+        ffmpeg_version="$(./ffmpeg-win-arm64.exe -version | head -n 1)"
+        ffprobe_version="$(./ffprobe-win-arm64.exe -version | head -n 1)"
+        echo "Built $ffmpeg_version"
+        echo "Built $ffprobe_version"
     - uses: actions/upload-artifact@v7
       with:
         name: binaries-ffmpeg-windows-arm64
