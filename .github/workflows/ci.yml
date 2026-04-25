@@ -494,6 +494,10 @@ jobs:
 
        Invoke-WebRequest -Uri "https://github.com/libjxl/libjxl/archive/refs/tags/v${{ env.JXL_VERSION }}.tar.gz" -OutFile libjxl.tar.gz
        tar -xzf libjxl.tar.gz
+       & bash "libjxl-${{ env.JXL_VERSION }}/deps.sh"
+       if ($LASTEXITCODE -ne 0) {
+         throw "Failed to fetch libjxl build dependencies"
+       }
        Invoke-StaticCMakeBuild -sourcePath "libjxl-${{ env.JXL_VERSION }}" -buildPath "libjxl-build" -extraOptions @(
          "-DBUILD_TESTING=OFF",
          "-DJPEGXL_ENABLE_TESTS=OFF",
