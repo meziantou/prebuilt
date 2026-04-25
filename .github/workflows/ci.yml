@@ -61,7 +61,17 @@ jobs:
       contents: write
     steps:
     - uses: actions/checkout@v6
-    - uses: actions/download-artifact@v8
+    - id: download_release_artifacts
+      continue-on-error: true
+      uses: actions/download-artifact@v8
+      with:
+        pattern: '*'
+        path: binaries
+        merge-multiple: true
+    - if: steps.download_release_artifacts.outcome == 'failure'
+      run: Remove-Item -LiteralPath binaries -Recurse -Force -ErrorAction SilentlyContinue
+    - if: steps.download_release_artifacts.outcome == 'failure'
+      uses: actions/download-artifact@v8
       with:
         pattern: '*'
         path: binaries
