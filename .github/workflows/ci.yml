@@ -34,7 +34,7 @@ env:
   FFMPEG_MACOS_MAKE_JOBS: "4"
   # GPL profile. Nonfree options (for example libfdk-aac) are intentionally excluded.
   FFMPEG_WINDOWS_CONFIGURE_FLAGS: >-
-    --disable-doc --disable-debug --enable-pthreads --enable-runtime-cpudetect
+    --disable-doc --disable-debug --disable-pthreads --enable-w32threads --enable-runtime-cpudetect
     --enable-gpl --disable-nonfree --disable-shared --enable-static --disable-autodetect --pkg-config-flags=--static
     --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1
     --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
