@@ -11,11 +11,20 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 2.0.5
+  VERSION: 2.0.6
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.1.1" # https://github.com/shssoichiro/oxipng/releases
   FFMPEG_VERSION: "8.1" # https://github.com/BtbN/FFmpeg-Builds/releases
+  FFMPEG_MACOS_SOURCE_REF: "n8.1" # https://github.com/FFmpeg/FFmpeg/tags (keep aligned with FFMPEG_VERSION)
+  # GPL profile. Nonfree options (for example libfdk-aac) are intentionally excluded.
+  FFMPEG_MACOS_CONFIGURE_FLAGS: >-
+    --arch=arm64 --target-os=darwin --disable-doc --disable-debug --enable-pthreads
+    --enable-runtime-cpudetect --enable-gpl --disable-nonfree --disable-shared --enable-static
+    --enable-audiotoolbox --enable-videotoolbox --enable-neon --disable-autodetect --pkg-config-flags=--static
+    --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1
+    --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
+  FFMPEG_MACOS_MAKE_JOBS: "4"
   RCLONE_VERSION: "v1.73.5" # https://github.com/rclone/rclone/releases
   IMAGEMAGICK_VERSION: "7.1.2-21" # https://github.com/ImageMagick/ImageMagick/releases/latest
 
@@ -160,7 +169,7 @@ jobs:
           zopflipng-win-x64.exe
 
   zopflipng-osx-arm64:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v6
       with:
@@ -390,35 +399,80 @@ jobs:
            ffprobe-linux-arm64
 
   ffmpeg-osx-arm64:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
     - run: |
-       Invoke-WebRequest -Uri "https://evermeet.cx/ffmpeg/ffmpeg-${{ env.FFMPEG_VERSION }}.zip" -OutFile ffmpeg.zip
-       Invoke-WebRequest -Uri "https://evermeet.cx/ffmpeg/ffprobe-${{ env.FFMPEG_VERSION }}.zip" -OutFile ffprobe.zip
+       brew install pkg-config opus aom jpeg-xl svt-av1
 
-       Expand-Archive ffmpeg.zip -DestinationPath ffmpeg-extract -Force
-       Expand-Archive ffprobe.zip -DestinationPath ffprobe-extract -Force
+       Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_MACOS_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
+       tar -xzf ffmpeg.tar.gz
 
-       $ffmpegBinary = Get-ChildItem -Path ffmpeg-extract -Recurse -File -Filter ffmpeg | Select-Object -First 1
-       if (-not $ffmpegBinary) {
-         throw "ffmpeg binary not found in evermeet archive"
+       $sourceDirectory = "FFmpeg-${{ env.FFMPEG_MACOS_SOURCE_REF }}"
+       if (-not (Test-Path -LiteralPath $sourceDirectory -PathType Container)) {
+         throw "ffmpeg source directory not found: $sourceDirectory"
        }
 
-       $ffprobeBinary = Get-ChildItem -Path ffprobe-extract -Recurse -File -Filter ffprobe | Select-Object -First 1
-       if (-not $ffprobeBinary) {
-         throw "ffprobe binary not found in evermeet archive"
-       }
+       $configureFlags = "${{ env.FFMPEG_MACOS_CONFIGURE_FLAGS }}" -split '\s+' | Where-Object { $_ }
+       Push-Location $sourceDirectory
+       & ./configure @configureFlags
+       & make -j${{ env.FFMPEG_MACOS_MAKE_JOBS }}
 
-       Move-Item -LiteralPath $ffmpegBinary.FullName -Destination ffmpeg-osx-arm64
-       Move-Item -LiteralPath $ffprobeBinary.FullName -Destination ffprobe-osx-arm64
+       Move-Item -LiteralPath ./ffmpeg -Destination ../ffmpeg-osx-arm64
+       Move-Item -LiteralPath ./ffprobe -Destination ../ffprobe-osx-arm64
+       Pop-Location
 
        chmod +x ffmpeg-osx-arm64
        chmod +x ffprobe-osx-arm64
 
+       function Get-ExternalDependencies([string]$path) {
+         return (& otool -L $path | Select-Object -Skip 1 | ForEach-Object {
+           ($_ -replace '^\s+', '') -replace '\s+\(.*$',''
+         } | Where-Object { $_ -and $_ -notmatch '^/usr/lib/' -and $_ -notmatch '^/System/Library/' })
+       }
+
+       $forbiddenDependencyPatterns = @('libxcb', 'libX11', 'X11.framework')
+       function Get-ForbiddenDependencies([string[]]$dependencies) {
+         return $dependencies | Where-Object {
+           $dependency = $_
+           $forbiddenDependencyPatterns | Where-Object { $dependency -match $_ }
+         }
+       }
+
+       $ffmpegExternalDependencies = Get-ExternalDependencies "./ffmpeg-osx-arm64"
+       $ffmpegForbiddenDependencies = Get-ForbiddenDependencies $ffmpegExternalDependencies
+       if ($ffmpegForbiddenDependencies) {
+         throw "ffmpeg-osx-arm64 has forbidden dependencies: $($ffmpegForbiddenDependencies -join ', ')"
+       }
+       if ($ffmpegExternalDependencies) {
+         Write-Host "ffmpeg-osx-arm64 external dependencies: $($ffmpegExternalDependencies -join ', ')"
+       }
+
+       $ffprobeExternalDependencies = Get-ExternalDependencies "./ffprobe-osx-arm64"
+       $ffprobeForbiddenDependencies = Get-ForbiddenDependencies $ffprobeExternalDependencies
+       if ($ffprobeForbiddenDependencies) {
+         throw "ffprobe-osx-arm64 has forbidden dependencies: $($ffprobeForbiddenDependencies -join ', ')"
+       }
+       if ($ffprobeExternalDependencies) {
+         Write-Host "ffprobe-osx-arm64 external dependencies: $($ffprobeExternalDependencies -join ', ')"
+       }
+
+       function Assert-ConfigureOptionEnabled([string]$option) {
+         $buildConfig = & ./ffmpeg-osx-arm64 -buildconf | Out-String
+         if ($buildConfig -notmatch [Regex]::Escape($option)) {
+           throw "Missing expected FFmpeg configure option: $option"
+         }
+       }
+
+       Assert-ConfigureOptionEnabled "--enable-gpl"
+       Assert-ConfigureOptionEnabled "--enable-libopus"
+       Assert-ConfigureOptionEnabled "--enable-libaom"
+       Assert-ConfigureOptionEnabled "--enable-libjxl"
+       Assert-ConfigureOptionEnabled "--enable-libsvtav1"
+
        $ffmpegVersion = & ./ffmpeg-osx-arm64 -version | Select-Object -First 1
        $ffprobeVersion = & ./ffprobe-osx-arm64 -version | Select-Object -First 1
-       Write-Host "Installed $ffmpegVersion"
-       Write-Host "Installed $ffprobeVersion"
+       Write-Host "Built $ffmpegVersion"
+       Write-Host "Built $ffprobeVersion"
     - uses: actions/upload-artifact@v7
       with:
         name: binaries-ffmpeg-osx-arm64
