@@ -11,12 +11,18 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 2.0.6
+  VERSION: 2.0.7
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.1.1" # https://github.com/shssoichiro/oxipng/releases
   FFMPEG_VERSION: "8.1" # https://github.com/BtbN/FFmpeg-Builds/releases
   FFMPEG_MACOS_SOURCE_REF: "n8.1" # https://github.com/FFmpeg/FFmpeg/tags (keep aligned with FFMPEG_VERSION)
+  AOM_VERSION: "3.13.1" # https://aomedia.googlesource.com/aom
+  OPUS_VERSION: "1.5.2" # https://opus-codec.org/downloads/
+  SVT_AV1_VERSION: "3.1.2" # https://gitlab.com/AOMediaCodec/SVT-AV1/-/tags
+  JXL_VERSION: "0.11.2" # https://github.com/libjxl/libjxl/releases
+  BROTLI_VERSION: "1.2.0" # https://github.com/google/brotli/releases
+  HWY_VERSION: "1.3.0" # https://github.com/google/highway/releases
   # GPL profile. Nonfree options (for example libfdk-aac) are intentionally excluded.
   FFMPEG_MACOS_CONFIGURE_FLAGS: >-
     --arch=arm64 --target-os=darwin --disable-doc --disable-debug --enable-pthreads
@@ -46,6 +52,7 @@ jobs:
       ffmpeg-windows,
       ffmpeg-windows-arm64,
       ffmpeg-osx-arm64,
+      ffmpeg-osx-arm64-avif-test,
       pngout-linux,
       pngout-linux-arm64,
       pngout-windows,
@@ -201,7 +208,29 @@ jobs:
   oxipng-windows:
     runs-on: ubuntu-latest
     steps:
-    - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-pc-windows-msvc.zip' -OutFile oxipng.zip
+    - run: |
+       $uri = 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-pc-windows-msvc.zip'
+       $archivePath = "oxipng.zip"
+       for ($attempt = 1; $attempt -le 5; $attempt++) {
+         try {
+           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+         } catch {
+           if ($attempt -eq 5) {
+             throw
+           }
+           Start-Sleep -Seconds (2 * $attempt)
+           continue
+         }
+         & unzip -tqq $archivePath *> $null
+         if ($LASTEXITCODE -eq 0) {
+           break
+         }
+         if ($attempt -eq 5) {
+           throw "Failed to download a valid oxipng archive after $attempt attempts"
+         }
+         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+         Start-Sleep -Seconds (2 * $attempt)
+       }
     - run: Expand-Archive oxipng.zip -DestinationPath .
     - run: |
         Get-ChildItem -Path ".\" -Recurse -Filter "oxipng.exe" | Copy-Item -Destination ".\"
@@ -216,7 +245,29 @@ jobs:
   oxipng-linux:
     runs-on: ubuntu-latest
     steps:
-    - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-unknown-linux-musl.tar.gz' -OutFile oxipng.tar.gz
+    - run: |
+       $uri = 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-unknown-linux-musl.tar.gz'
+       $archivePath = "oxipng.tar.gz"
+       for ($attempt = 1; $attempt -le 5; $attempt++) {
+         try {
+           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+         } catch {
+           if ($attempt -eq 5) {
+             throw
+           }
+           Start-Sleep -Seconds (2 * $attempt)
+           continue
+         }
+         & tar -tzf $archivePath *> $null
+         if ($LASTEXITCODE -eq 0) {
+           break
+         }
+         if ($attempt -eq 5) {
+           throw "Failed to download a valid oxipng archive after $attempt attempts"
+         }
+         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+         Start-Sleep -Seconds (2 * $attempt)
+       }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-x86_64-unknown-linux-musl/oxipng oxipng-linux-x64
     - uses: actions/upload-artifact@v7
@@ -229,7 +280,29 @@ jobs:
   oxipng-linux-arm64:
     runs-on: ubuntu-latest
     steps:
-    - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-aarch64-unknown-linux-musl.tar.gz' -OutFile oxipng.tar.gz
+    - run: |
+       $uri = 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-aarch64-unknown-linux-musl.tar.gz'
+       $archivePath = "oxipng.tar.gz"
+       for ($attempt = 1; $attempt -le 5; $attempt++) {
+         try {
+           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+         } catch {
+           if ($attempt -eq 5) {
+             throw
+           }
+           Start-Sleep -Seconds (2 * $attempt)
+           continue
+         }
+         & tar -tzf $archivePath *> $null
+         if ($LASTEXITCODE -eq 0) {
+           break
+         }
+         if ($attempt -eq 5) {
+           throw "Failed to download a valid oxipng archive after $attempt attempts"
+         }
+         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+         Start-Sleep -Seconds (2 * $attempt)
+       }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-aarch64-unknown-linux-musl/oxipng oxipng-linux-arm64
     - uses: actions/upload-artifact@v7
@@ -242,7 +315,29 @@ jobs:
   oxipng-osx-arm64:
     runs-on: ubuntu-latest
     steps:
-    - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-aarch64-apple-darwin.tar.gz' -OutFile oxipng.tar.gz
+    - run: |
+       $uri = 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-aarch64-apple-darwin.tar.gz'
+       $archivePath = "oxipng.tar.gz"
+       for ($attempt = 1; $attempt -le 5; $attempt++) {
+         try {
+           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+         } catch {
+           if ($attempt -eq 5) {
+             throw
+           }
+           Start-Sleep -Seconds (2 * $attempt)
+           continue
+         }
+         & tar -tzf $archivePath *> $null
+         if ($LASTEXITCODE -eq 0) {
+           break
+         }
+         if ($attempt -eq 5) {
+           throw "Failed to download a valid oxipng archive after $attempt attempts"
+         }
+         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+         Start-Sleep -Seconds (2 * $attempt)
+       }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-aarch64-apple-darwin/oxipng oxipng-osx-arm64
     - uses: actions/upload-artifact@v7
@@ -412,10 +507,190 @@ jobs:
     runs-on: macos-latest
     steps:
     - run: |
-       brew install pkg-config opus aom jpeg-xl svt-av1
+       brew install pkg-config cmake ninja nasm
 
-       Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_MACOS_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
-       tar -xzf ffmpeg.tar.gz
+       $depsPrefix = Join-Path (Get-Location) "ffmpeg-deps"
+       New-Item -ItemType Directory -Path $depsPrefix -Force | Out-Null
+
+        function Invoke-StaticCMakeBuild([string]$sourcePath, [string]$buildPath, [string[]]$extraOptions) {
+         $cmakeConfigureArguments = @(
+           "-S", $sourcePath,
+           "-B", $buildPath,
+           "-G", "Ninja",
+           "-DCMAKE_BUILD_TYPE=Release",
+           "-DCMAKE_INSTALL_PREFIX=$depsPrefix",
+           "-DCMAKE_PREFIX_PATH=$depsPrefix",
+           "-DBUILD_SHARED_LIBS=OFF"
+         ) + $extraOptions
+
+         & cmake @cmakeConfigureArguments
+         if ($LASTEXITCODE -ne 0) {
+           throw "cmake configure failed for $sourcePath"
+         }
+
+         & cmake --build $buildPath --config Release --parallel ${{ env.FFMPEG_MACOS_MAKE_JOBS }}
+         if ($LASTEXITCODE -ne 0) {
+           throw "cmake build failed for $sourcePath"
+         }
+
+         & cmake --install $buildPath --config Release
+          if ($LASTEXITCODE -ne 0) {
+            throw "cmake install failed for $sourcePath"
+          }
+        }
+
+        function Invoke-DownloadWithRetry([string]$uri, [string]$archivePath, [string]$archiveType = "tar.gz") {
+          for ($attempt = 1; $attempt -le 5; $attempt++) {
+            try {
+              Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+            } catch {
+              if ($attempt -eq 5) {
+                throw
+              }
+              Start-Sleep -Seconds (2 * $attempt)
+              continue
+            }
+            if ($archiveType -eq "tar.gz") {
+              & tar -tzf $archivePath *> $null
+            } elseif ($archiveType -eq "zip") {
+              & unzip -tqq $archivePath *> $null
+            } else {
+              throw "Unsupported archive type: $archiveType"
+            }
+            if ($LASTEXITCODE -eq 0) {
+              return
+            }
+            if ($attempt -eq 5) {
+              throw "Failed to download a valid archive from $uri after $attempt attempts"
+            }
+            Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds (2 * $attempt)
+          }
+        }
+
+        Invoke-DownloadWithRetry -uri "https://github.com/google/brotli/archive/refs/tags/v${{ env.BROTLI_VERSION }}.tar.gz" -archivePath brotli.tar.gz
+        tar -xzf brotli.tar.gz
+        Invoke-StaticCMakeBuild -sourcePath "brotli-${{ env.BROTLI_VERSION }}" -buildPath "brotli-build" -extraOptions @(
+          "-DBROTLI_DISABLE_TESTS=ON"
+        )
+
+        Invoke-DownloadWithRetry -uri "https://github.com/google/highway/archive/refs/tags/${{ env.HWY_VERSION }}.tar.gz" -archivePath highway.tar.gz
+        tar -xzf highway.tar.gz
+        Invoke-StaticCMakeBuild -sourcePath "highway-${{ env.HWY_VERSION }}" -buildPath "highway-build" -extraOptions @(
+          "-DHWY_ENABLE_TESTS=OFF",
+          "-DHWY_ENABLE_EXAMPLES=OFF"
+        )
+
+        Invoke-DownloadWithRetry -uri "https://storage.googleapis.com/aom-releases/libaom-${{ env.AOM_VERSION }}.tar.gz" -archivePath libaom.tar.gz
+        tar -xzf libaom.tar.gz
+        Invoke-StaticCMakeBuild -sourcePath "libaom-${{ env.AOM_VERSION }}" -buildPath "libaom-build" -extraOptions @(
+          "-DENABLE_DOCS=OFF",
+          "-DENABLE_EXAMPLES=OFF",
+          "-DENABLE_TESTDATA=OFF",
+          "-DENABLE_TESTS=OFF",
+          "-DENABLE_TOOLS=OFF"
+        )
+
+        Invoke-DownloadWithRetry -uri "https://downloads.xiph.org/releases/opus/opus-${{ env.OPUS_VERSION }}.tar.gz" -archivePath opus.tar.gz
+        tar -xzf opus.tar.gz
+        Invoke-StaticCMakeBuild -sourcePath "opus-${{ env.OPUS_VERSION }}" -buildPath "opus-build" -extraOptions @(
+          "-DOPUS_BUILD_PROGRAMS=OFF",
+          "-DOPUS_BUILD_TESTING=OFF",
+          "-DOPUS_BUILD_SHARED_LIBRARY=OFF",
+          "-DOPUS_BUILD_STATIC_LIBRARY=ON"
+        )
+
+        Invoke-DownloadWithRetry -uri "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v${{ env.SVT_AV1_VERSION }}/SVT-AV1-v${{ env.SVT_AV1_VERSION }}.tar.gz" -archivePath svt-av1.tar.gz
+        tar -xzf svt-av1.tar.gz
+        Invoke-StaticCMakeBuild -sourcePath "SVT-AV1-v${{ env.SVT_AV1_VERSION }}" -buildPath "svt-av1-build" -extraOptions @(
+          "-DBUILD_APPS=OFF",
+          "-DBUILD_DEC=OFF",
+          "-DBUILD_TESTING=OFF",
+          "-DSVT_AV1_LTO=OFF"
+        )
+
+        Invoke-DownloadWithRetry -uri "https://github.com/libjxl/libjxl/archive/refs/tags/v${{ env.JXL_VERSION }}.tar.gz" -archivePath libjxl.tar.gz
+        $libjxlSourceDirectory = "libjxl-${{ env.JXL_VERSION }}"
+        for ($attempt = 1; $attempt -le 5; $attempt++) {
+          Remove-Item -LiteralPath $libjxlSourceDirectory -Recurse -Force -ErrorAction SilentlyContinue
+          tar -xzf libjxl.tar.gz
+          Push-Location $libjxlSourceDirectory
+          & bash "./deps.sh"
+          $depsExitCode = $LASTEXITCODE
+          Pop-Location
+          if ($depsExitCode -eq 0) {
+            break
+          }
+          if ($attempt -eq 5) {
+            throw "Failed to fetch libjxl build dependencies"
+          }
+          Start-Sleep -Seconds (2 * $attempt)
+        }
+         Invoke-StaticCMakeBuild -sourcePath $libjxlSourceDirectory -buildPath "libjxl-build" -extraOptions @(
+           "-DBUILD_TESTING=OFF",
+           "-DJPEGXL_ENABLE_TESTS=OFF",
+           "-DJPEGXL_ENABLE_TOOLS=OFF",
+          "-DJPEGXL_ENABLE_EXAMPLES=OFF",
+          "-DJPEGXL_ENABLE_DOXYGEN=OFF",
+          "-DJPEGXL_ENABLE_MANPAGES=OFF",
+          "-DJPEGXL_ENABLE_JPEGLI=OFF",
+          "-DJPEGXL_ENABLE_BENCHMARK=OFF",
+          "-DJPEGXL_ENABLE_SJPEG=OFF",
+          "-DJPEGXL_VERSION=${{ env.JXL_VERSION }}",
+          "-DJPEGXL_FORCE_SYSTEM_BROTLI=ON",
+          "-DJPEGXL_FORCE_SYSTEM_HWY=ON"
+        )
+
+       $pkgConfigPaths = @(
+         (Join-Path $depsPrefix "lib/pkgconfig"),
+         (Join-Path $depsPrefix "lib64/pkgconfig")
+       ) | Where-Object { Test-Path -LiteralPath $_ -PathType Container }
+       if (-not $pkgConfigPaths) {
+         throw "pkg-config directories were not generated in $depsPrefix"
+       }
+
+        $pkgConfigPathValue = [string]::Join([IO.Path]::PathSeparator, $pkgConfigPaths)
+        $env:PKG_CONFIG_PATH = $pkgConfigPathValue
+        $env:PKG_CONFIG_LIBDIR = $pkgConfigPathValue
+        $env:CFLAGS = "-I$(Join-Path $depsPrefix 'include')"
+        $env:CXXFLAGS = "-I$(Join-Path $depsPrefix 'include')"
+
+        foreach ($pkgConfigDirectory in $pkgConfigPaths) {
+          foreach ($pkgConfigFile in @("libjxl.pc", "libjxl_threads.pc")) {
+            $pkgConfigFilePath = Join-Path $pkgConfigDirectory $pkgConfigFile
+            if (Test-Path -LiteralPath $pkgConfigFilePath -PathType Leaf) {
+              $pkgConfigContent = Get-Content -Raw -LiteralPath $pkgConfigFilePath
+              $pkgConfigContent = $pkgConfigContent -replace '(?m)^Version:.*$', "Version: ${{ env.JXL_VERSION }}"
+              Set-Content -LiteralPath $pkgConfigFilePath -Value $pkgConfigContent
+            }
+          }
+        }
+
+       $linkerSearchPaths = @(
+         (Join-Path $depsPrefix "lib"),
+         (Join-Path $depsPrefix "lib64")
+       ) | Where-Object { Test-Path -LiteralPath $_ -PathType Container }
+        if (-not $linkerSearchPaths) {
+          throw "linker search paths were not generated in $depsPrefix"
+        }
+        $env:LDFLAGS = (($linkerSearchPaths | ForEach-Object { "-L$_" }) -join ' ') + " -lc++"
+
+        $requiredPkgConfigPackages = @(
+          "aom",
+          "opus",
+          "SvtAv1Enc",
+          "libjxl >= 0.7.0",
+          "libjxl_threads >= 0.7.0"
+         )
+         foreach ($pkgName in $requiredPkgConfigPackages) {
+           & pkg-config --exists --print-errors --static $pkgName
+           if ($LASTEXITCODE -ne 0) {
+             throw "pkg-config package '$pkgName' was not found in static dependency prefix"
+           }
+         }
+
+        Invoke-DownloadWithRetry -uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_MACOS_SOURCE_REF }}.tar.gz" -archivePath ffmpeg.tar.gz
+        tar -xzf ffmpeg.tar.gz
 
        $sourceDirectory = "FFmpeg-${{ env.FFMPEG_MACOS_SOURCE_REF }}"
        if (-not (Test-Path -LiteralPath $sourceDirectory -PathType Container)) {
@@ -440,28 +715,20 @@ jobs:
          } | Where-Object { $_ -and $_ -notmatch '^/usr/lib/' -and $_ -notmatch '^/System/Library/' })
        }
 
-       $forbiddenDependencyPatterns = @('libxcb', 'libX11', 'X11.framework')
-       function Get-ForbiddenDependencies([string[]]$dependencies) {
-         return $dependencies | Where-Object {
-           $dependency = $_
-           $forbiddenDependencyPatterns | Where-Object { $dependency -match $_ }
+       function Assert-NoExternalDependencies([string]$binaryName, [string[]]$dependencies) {
+         if ($dependencies) {
+           throw "$binaryName has non-system dynamic dependencies: $($dependencies -join ', ')"
          }
        }
 
        $ffmpegExternalDependencies = Get-ExternalDependencies "./ffmpeg-osx-arm64"
-       $ffmpegForbiddenDependencies = Get-ForbiddenDependencies $ffmpegExternalDependencies
-       if ($ffmpegForbiddenDependencies) {
-         throw "ffmpeg-osx-arm64 has forbidden dependencies: $($ffmpegForbiddenDependencies -join ', ')"
-       }
+       Assert-NoExternalDependencies "ffmpeg-osx-arm64" $ffmpegExternalDependencies
        if ($ffmpegExternalDependencies) {
          Write-Host "ffmpeg-osx-arm64 external dependencies: $($ffmpegExternalDependencies -join ', ')"
        }
 
        $ffprobeExternalDependencies = Get-ExternalDependencies "./ffprobe-osx-arm64"
-       $ffprobeForbiddenDependencies = Get-ForbiddenDependencies $ffprobeExternalDependencies
-       if ($ffprobeForbiddenDependencies) {
-         throw "ffprobe-osx-arm64 has forbidden dependencies: $($ffprobeForbiddenDependencies -join ', ')"
-       }
+       Assert-NoExternalDependencies "ffprobe-osx-arm64" $ffprobeExternalDependencies
        if ($ffprobeExternalDependencies) {
          Write-Host "ffprobe-osx-arm64 external dependencies: $($ffprobeExternalDependencies -join ', ')"
        }
@@ -491,6 +758,48 @@ jobs:
         path: |
            ffmpeg-osx-arm64
            ffprobe-osx-arm64
+
+  ffmpeg-osx-arm64-avif-test:
+    runs-on: macos-latest
+    needs: [ffmpeg-osx-arm64]
+    steps:
+    - uses: actions/download-artifact@v8
+      with:
+        name: binaries-ffmpeg-osx-arm64
+        path: .
+    - run: |
+       chmod +x ffmpeg-osx-arm64
+       chmod +x ffprobe-osx-arm64
+
+       @"
+       P3
+       2 2
+       255
+       255 0 0   0 255 0
+       0 0 255   255 255 255
+       "@ | Set-Content -LiteralPath input.ppm
+
+       & ./ffmpeg-osx-arm64 -y -v error -i ./input.ppm -frames:v 1 -c:v libaom-av1 -still-picture 1 -cpu-used 8 -row-mt 1 -vf "scale=4:4,format=yuv420p" ./output.avif
+       if ($LASTEXITCODE -ne 0) {
+         throw "ffmpeg failed to encode input.ppm to AVIF"
+       }
+
+       if (-not (Test-Path -LiteralPath ./output.avif -PathType Leaf)) {
+         throw "output.avif was not created"
+       }
+
+       $outputSize = (Get-Item -LiteralPath ./output.avif).Length
+       if ($outputSize -le 0) {
+         throw "output.avif is empty"
+       }
+
+       $codecName = (& ./ffprobe-osx-arm64 -v error -select_streams v:0 -show_entries stream=codec_name -of default=nokey=1:noprint_wrappers=1 ./output.avif | Out-String).Trim()
+       if ($LASTEXITCODE -ne 0) {
+         throw "ffprobe failed to inspect output.avif"
+       }
+       if ($codecName -ne "av1") {
+         throw "Unexpected codec for output.avif: '$codecName'"
+       }
 
   prebuilt-docker-linux-x64:
     runs-on: ubuntu-latest
