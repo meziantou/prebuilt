@@ -17,11 +17,12 @@ env:
   OXIPNG_VERSION: "10.1.1" # https://github.com/shssoichiro/oxipng/releases
   FFMPEG_VERSION: "8.1" # https://github.com/BtbN/FFmpeg-Builds/releases
   FFMPEG_MACOS_SOURCE_REF: "n8.1" # https://github.com/FFmpeg/FFmpeg/tags (keep aligned with FFMPEG_VERSION)
-  # GPL + LGPL static profile. Nonfree options (for example libfdk-aac) are intentionally excluded.
+  # GPL profile. Nonfree options (for example libfdk-aac) are intentionally excluded.
   FFMPEG_MACOS_CONFIGURE_FLAGS: >-
     --arch=arm64 --target-os=darwin --disable-doc --disable-debug --enable-pthreads
     --enable-runtime-cpudetect --enable-gpl --disable-nonfree --disable-shared --enable-static
     --enable-audiotoolbox --enable-videotoolbox --enable-neon --disable-autodetect --pkg-config-flags=--static
+    --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1
     --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
   FFMPEG_MACOS_MAKE_JOBS: "4"
   RCLONE_VERSION: "v1.73.5" # https://github.com/rclone/rclone/releases
@@ -401,7 +402,7 @@ jobs:
     runs-on: macos-latest
     steps:
     - run: |
-       brew install pkg-config
+       brew install pkg-config opus aom jpeg-xl svt-av1
 
        Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_MACOS_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
        tar -xzf ffmpeg.tar.gz
@@ -429,15 +430,44 @@ jobs:
          } | Where-Object { $_ -and $_ -notmatch '^/usr/lib/' -and $_ -notmatch '^/System/Library/' })
        }
 
+       $forbiddenDependencyPatterns = @('libxcb', 'libX11', 'X11.framework')
+       function Get-ForbiddenDependencies([string[]]$dependencies) {
+         return $dependencies | Where-Object {
+           $dependency = $_
+           $forbiddenDependencyPatterns | Where-Object { $dependency -match $_ }
+         }
+       }
+
        $ffmpegExternalDependencies = Get-ExternalDependencies "./ffmpeg-osx-arm64"
+       $ffmpegForbiddenDependencies = Get-ForbiddenDependencies $ffmpegExternalDependencies
+       if ($ffmpegForbiddenDependencies) {
+         throw "ffmpeg-osx-arm64 has forbidden dependencies: $($ffmpegForbiddenDependencies -join ', ')"
+       }
        if ($ffmpegExternalDependencies) {
-         throw "ffmpeg-osx-arm64 has non-system dynamic dependencies: $($ffmpegExternalDependencies -join ', ')"
+         Write-Host "ffmpeg-osx-arm64 external dependencies: $($ffmpegExternalDependencies -join ', ')"
        }
 
        $ffprobeExternalDependencies = Get-ExternalDependencies "./ffprobe-osx-arm64"
-       if ($ffprobeExternalDependencies) {
-         throw "ffprobe-osx-arm64 has non-system dynamic dependencies: $($ffprobeExternalDependencies -join ', ')"
+       $ffprobeForbiddenDependencies = Get-ForbiddenDependencies $ffprobeExternalDependencies
+       if ($ffprobeForbiddenDependencies) {
+         throw "ffprobe-osx-arm64 has forbidden dependencies: $($ffprobeForbiddenDependencies -join ', ')"
        }
+       if ($ffprobeExternalDependencies) {
+         Write-Host "ffprobe-osx-arm64 external dependencies: $($ffprobeExternalDependencies -join ', ')"
+       }
+
+       function Assert-ConfigureOptionEnabled([string]$option) {
+         $buildConfig = & ./ffmpeg-osx-arm64 -buildconf | Out-String
+         if ($buildConfig -notmatch [Regex]::Escape($option)) {
+           throw "Missing expected FFmpeg configure option: $option"
+         }
+       }
+
+       Assert-ConfigureOptionEnabled "--enable-gpl"
+       Assert-ConfigureOptionEnabled "--enable-libopus"
+       Assert-ConfigureOptionEnabled "--enable-libaom"
+       Assert-ConfigureOptionEnabled "--enable-libjxl"
+       Assert-ConfigureOptionEnabled "--enable-libsvtav1"
 
        $ffmpegVersion = & ./ffmpeg-osx-arm64 -version | Select-Object -First 1
        $ffprobeVersion = & ./ffprobe-osx-arm64 -version | Select-Object -First 1
