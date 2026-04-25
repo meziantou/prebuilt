@@ -495,7 +495,6 @@ jobs:
   prebuilt-docker-linux-x64:
     runs-on: ubuntu-latest
     needs: [zopflipng-linux, oxipng-linux, pngout-linux, ffmpeg-linux, rclone-linux]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -532,7 +531,8 @@ jobs:
        COPY --chmod=0755 rclone-linux-x64 /usr/local/bin/rclone
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
     - uses: docker/setup-buildx-action@v4
-    - uses: docker/login-action@v4
+    - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: docker/login-action@v4
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -542,13 +542,12 @@ jobs:
         context: .
         file: ./Dockerfile
         platforms: linux/amd64
-        push: true
+        push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         tags: ghcr.io/${{ github.repository_owner }}/prebuilt:${{ env.VERSION }}-linux-x64
 
   prebuilt-docker-linux-arm64:
     runs-on: ubuntu-latest
     needs: [zopflipng-linux-arm64, oxipng-linux-arm64, pngout-linux-arm64, ffmpeg-linux-arm64, rclone-linux-arm64]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -585,7 +584,8 @@ jobs:
        COPY --chmod=0755 rclone-linux-arm64 /usr/local/bin/rclone
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
     - uses: docker/setup-buildx-action@v4
-    - uses: docker/login-action@v4
+    - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: docker/login-action@v4
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -595,7 +595,7 @@ jobs:
         context: .
         file: ./Dockerfile
         platforms: linux/arm64
-        push: true
+        push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         tags: ghcr.io/${{ github.repository_owner }}/prebuilt:${{ env.VERSION }}-linux-arm64
 
   prebuilt-docker-manifest:
