@@ -779,7 +779,7 @@ jobs:
        0 0 255   255 255 255
        "@ | Set-Content -LiteralPath input.ppm
 
-       & ./ffmpeg-osx-arm64 -y -v error -i ./input.ppm -frames:v 1 -c:v libsvtav1 -preset 4 -vf format=yuv420p ./output.avif
+       & ./ffmpeg-osx-arm64 -y -v error -i ./input.ppm -frames:v 1 -c:v libsvtav1 -preset 4 -vf "scale=4:4,format=yuv420p" ./output.avif
        if ($LASTEXITCODE -ne 0) {
          throw "ffmpeg failed to encode input.ppm to AVIF"
        }
