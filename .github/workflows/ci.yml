@@ -208,7 +208,29 @@ jobs:
   oxipng-windows:
     runs-on: ubuntu-latest
     steps:
-    - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-pc-windows-msvc.zip' -OutFile oxipng.zip
+    - run: |
+       $uri = 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-pc-windows-msvc.zip'
+       $archivePath = "oxipng.zip"
+       for ($attempt = 1; $attempt -le 5; $attempt++) {
+         try {
+           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+         } catch {
+           if ($attempt -eq 5) {
+             throw
+           }
+           Start-Sleep -Seconds (2 * $attempt)
+           continue
+         }
+         & unzip -tqq $archivePath *> $null
+         if ($LASTEXITCODE -eq 0) {
+           break
+         }
+         if ($attempt -eq 5) {
+           throw "Failed to download a valid oxipng archive after $attempt attempts"
+         }
+         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+         Start-Sleep -Seconds (2 * $attempt)
+       }
     - run: Expand-Archive oxipng.zip -DestinationPath .
     - run: |
         Get-ChildItem -Path ".\" -Recurse -Filter "oxipng.exe" | Copy-Item -Destination ".\"
@@ -227,7 +249,15 @@ jobs:
        $uri = 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-x86_64-unknown-linux-musl.tar.gz'
        $archivePath = "oxipng.tar.gz"
        for ($attempt = 1; $attempt -le 5; $attempt++) {
-         Invoke-WebRequest -Uri $uri -OutFile $archivePath
+         try {
+           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+         } catch {
+           if ($attempt -eq 5) {
+             throw
+           }
+           Start-Sleep -Seconds (2 * $attempt)
+           continue
+         }
          & tar -tzf $archivePath *> $null
          if ($LASTEXITCODE -eq 0) {
            break
@@ -250,7 +280,29 @@ jobs:
   oxipng-linux-arm64:
     runs-on: ubuntu-latest
     steps:
-    - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-aarch64-unknown-linux-musl.tar.gz' -OutFile oxipng.tar.gz
+    - run: |
+       $uri = 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-aarch64-unknown-linux-musl.tar.gz'
+       $archivePath = "oxipng.tar.gz"
+       for ($attempt = 1; $attempt -le 5; $attempt++) {
+         try {
+           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+         } catch {
+           if ($attempt -eq 5) {
+             throw
+           }
+           Start-Sleep -Seconds (2 * $attempt)
+           continue
+         }
+         & tar -tzf $archivePath *> $null
+         if ($LASTEXITCODE -eq 0) {
+           break
+         }
+         if ($attempt -eq 5) {
+           throw "Failed to download a valid oxipng archive after $attempt attempts"
+         }
+         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+         Start-Sleep -Seconds (2 * $attempt)
+       }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-aarch64-unknown-linux-musl/oxipng oxipng-linux-arm64
     - uses: actions/upload-artifact@v7
@@ -263,7 +315,29 @@ jobs:
   oxipng-osx-arm64:
     runs-on: ubuntu-latest
     steps:
-    - run: Invoke-WebRequest -Uri 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-aarch64-apple-darwin.tar.gz' -OutFile oxipng.tar.gz
+    - run: |
+       $uri = 'https://github.com/shssoichiro/oxipng/releases/download/v${{ env.OXIPNG_VERSION }}/oxipng-${{ env.OXIPNG_VERSION }}-aarch64-apple-darwin.tar.gz'
+       $archivePath = "oxipng.tar.gz"
+       for ($attempt = 1; $attempt -le 5; $attempt++) {
+         try {
+           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+         } catch {
+           if ($attempt -eq 5) {
+             throw
+           }
+           Start-Sleep -Seconds (2 * $attempt)
+           continue
+         }
+         & tar -tzf $archivePath *> $null
+         if ($LASTEXITCODE -eq 0) {
+           break
+         }
+         if ($attempt -eq 5) {
+           throw "Failed to download a valid oxipng archive after $attempt attempts"
+         }
+         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+         Start-Sleep -Seconds (2 * $attempt)
+       }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-aarch64-apple-darwin/oxipng oxipng-osx-arm64
     - uses: actions/upload-artifact@v7
@@ -438,7 +512,7 @@ jobs:
        $depsPrefix = Join-Path (Get-Location) "ffmpeg-deps"
        New-Item -ItemType Directory -Path $depsPrefix -Force | Out-Null
 
-       function Invoke-StaticCMakeBuild([string]$sourcePath, [string]$buildPath, [string[]]$extraOptions) {
+        function Invoke-StaticCMakeBuild([string]$sourcePath, [string]$buildPath, [string[]]$extraOptions) {
          $cmakeConfigureArguments = @(
            "-S", $sourcePath,
            "-B", $buildPath,
@@ -460,62 +534,102 @@ jobs:
          }
 
          & cmake --install $buildPath --config Release
-         if ($LASTEXITCODE -ne 0) {
-           throw "cmake install failed for $sourcePath"
-         }
-       }
+          if ($LASTEXITCODE -ne 0) {
+            throw "cmake install failed for $sourcePath"
+          }
+        }
 
-       Invoke-WebRequest -Uri "https://github.com/google/brotli/archive/refs/tags/v${{ env.BROTLI_VERSION }}.tar.gz" -OutFile brotli.tar.gz
-       tar -xzf brotli.tar.gz
-       Invoke-StaticCMakeBuild -sourcePath "brotli-${{ env.BROTLI_VERSION }}" -buildPath "brotli-build" -extraOptions @(
-         "-DBROTLI_DISABLE_TESTS=ON"
-       )
+        function Invoke-DownloadWithRetry([string]$uri, [string]$archivePath, [string]$archiveType = "tar.gz") {
+          for ($attempt = 1; $attempt -le 5; $attempt++) {
+            try {
+              Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+            } catch {
+              if ($attempt -eq 5) {
+                throw
+              }
+              Start-Sleep -Seconds (2 * $attempt)
+              continue
+            }
+            if ($archiveType -eq "tar.gz") {
+              & tar -tzf $archivePath *> $null
+            } elseif ($archiveType -eq "zip") {
+              & unzip -tqq $archivePath *> $null
+            } else {
+              throw "Unsupported archive type: $archiveType"
+            }
+            if ($LASTEXITCODE -eq 0) {
+              return
+            }
+            if ($attempt -eq 5) {
+              throw "Failed to download a valid archive from $uri after $attempt attempts"
+            }
+            Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds (2 * $attempt)
+          }
+        }
 
-       Invoke-WebRequest -Uri "https://github.com/google/highway/archive/refs/tags/${{ env.HWY_VERSION }}.tar.gz" -OutFile highway.tar.gz
-       tar -xzf highway.tar.gz
-       Invoke-StaticCMakeBuild -sourcePath "highway-${{ env.HWY_VERSION }}" -buildPath "highway-build" -extraOptions @(
-         "-DHWY_ENABLE_TESTS=OFF",
-         "-DHWY_ENABLE_EXAMPLES=OFF"
-       )
+        Invoke-DownloadWithRetry -uri "https://github.com/google/brotli/archive/refs/tags/v${{ env.BROTLI_VERSION }}.tar.gz" -archivePath brotli.tar.gz
+        tar -xzf brotli.tar.gz
+        Invoke-StaticCMakeBuild -sourcePath "brotli-${{ env.BROTLI_VERSION }}" -buildPath "brotli-build" -extraOptions @(
+          "-DBROTLI_DISABLE_TESTS=ON"
+        )
 
-       Invoke-WebRequest -Uri "https://storage.googleapis.com/aom-releases/libaom-${{ env.AOM_VERSION }}.tar.gz" -OutFile libaom.tar.gz
-       tar -xzf libaom.tar.gz
-       Invoke-StaticCMakeBuild -sourcePath "libaom-${{ env.AOM_VERSION }}" -buildPath "libaom-build" -extraOptions @(
-         "-DENABLE_DOCS=OFF",
-         "-DENABLE_EXAMPLES=OFF",
-         "-DENABLE_TESTDATA=OFF",
-         "-DENABLE_TESTS=OFF",
-         "-DENABLE_TOOLS=OFF"
-       )
+        Invoke-DownloadWithRetry -uri "https://github.com/google/highway/archive/refs/tags/${{ env.HWY_VERSION }}.tar.gz" -archivePath highway.tar.gz
+        tar -xzf highway.tar.gz
+        Invoke-StaticCMakeBuild -sourcePath "highway-${{ env.HWY_VERSION }}" -buildPath "highway-build" -extraOptions @(
+          "-DHWY_ENABLE_TESTS=OFF",
+          "-DHWY_ENABLE_EXAMPLES=OFF"
+        )
 
-       Invoke-WebRequest -Uri "https://downloads.xiph.org/releases/opus/opus-${{ env.OPUS_VERSION }}.tar.gz" -OutFile opus.tar.gz
-       tar -xzf opus.tar.gz
-       Invoke-StaticCMakeBuild -sourcePath "opus-${{ env.OPUS_VERSION }}" -buildPath "opus-build" -extraOptions @(
-         "-DOPUS_BUILD_PROGRAMS=OFF",
-         "-DOPUS_BUILD_TESTING=OFF",
-         "-DOPUS_BUILD_SHARED_LIBRARY=OFF",
-         "-DOPUS_BUILD_STATIC_LIBRARY=ON"
-       )
+        Invoke-DownloadWithRetry -uri "https://storage.googleapis.com/aom-releases/libaom-${{ env.AOM_VERSION }}.tar.gz" -archivePath libaom.tar.gz
+        tar -xzf libaom.tar.gz
+        Invoke-StaticCMakeBuild -sourcePath "libaom-${{ env.AOM_VERSION }}" -buildPath "libaom-build" -extraOptions @(
+          "-DENABLE_DOCS=OFF",
+          "-DENABLE_EXAMPLES=OFF",
+          "-DENABLE_TESTDATA=OFF",
+          "-DENABLE_TESTS=OFF",
+          "-DENABLE_TOOLS=OFF"
+        )
 
-       Invoke-WebRequest -Uri "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v${{ env.SVT_AV1_VERSION }}/SVT-AV1-v${{ env.SVT_AV1_VERSION }}.tar.gz" -OutFile svt-av1.tar.gz
-       tar -xzf svt-av1.tar.gz
-       Invoke-StaticCMakeBuild -sourcePath "SVT-AV1-v${{ env.SVT_AV1_VERSION }}" -buildPath "svt-av1-build" -extraOptions @(
-         "-DBUILD_APPS=OFF",
-         "-DBUILD_DEC=OFF",
-         "-DBUILD_TESTING=OFF",
-         "-DSVT_AV1_LTO=OFF"
-       )
+        Invoke-DownloadWithRetry -uri "https://downloads.xiph.org/releases/opus/opus-${{ env.OPUS_VERSION }}.tar.gz" -archivePath opus.tar.gz
+        tar -xzf opus.tar.gz
+        Invoke-StaticCMakeBuild -sourcePath "opus-${{ env.OPUS_VERSION }}" -buildPath "opus-build" -extraOptions @(
+          "-DOPUS_BUILD_PROGRAMS=OFF",
+          "-DOPUS_BUILD_TESTING=OFF",
+          "-DOPUS_BUILD_SHARED_LIBRARY=OFF",
+          "-DOPUS_BUILD_STATIC_LIBRARY=ON"
+        )
 
-       Invoke-WebRequest -Uri "https://github.com/libjxl/libjxl/archive/refs/tags/v${{ env.JXL_VERSION }}.tar.gz" -OutFile libjxl.tar.gz
-       tar -xzf libjxl.tar.gz
-       & bash "libjxl-${{ env.JXL_VERSION }}/deps.sh"
-       if ($LASTEXITCODE -ne 0) {
-         throw "Failed to fetch libjxl build dependencies"
-       }
-        Invoke-StaticCMakeBuild -sourcePath "libjxl-${{ env.JXL_VERSION }}" -buildPath "libjxl-build" -extraOptions @(
+        Invoke-DownloadWithRetry -uri "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v${{ env.SVT_AV1_VERSION }}/SVT-AV1-v${{ env.SVT_AV1_VERSION }}.tar.gz" -archivePath svt-av1.tar.gz
+        tar -xzf svt-av1.tar.gz
+        Invoke-StaticCMakeBuild -sourcePath "SVT-AV1-v${{ env.SVT_AV1_VERSION }}" -buildPath "svt-av1-build" -extraOptions @(
+          "-DBUILD_APPS=OFF",
+          "-DBUILD_DEC=OFF",
           "-DBUILD_TESTING=OFF",
-          "-DJPEGXL_ENABLE_TESTS=OFF",
-          "-DJPEGXL_ENABLE_TOOLS=OFF",
+          "-DSVT_AV1_LTO=OFF"
+        )
+
+        Invoke-DownloadWithRetry -uri "https://github.com/libjxl/libjxl/archive/refs/tags/v${{ env.JXL_VERSION }}.tar.gz" -archivePath libjxl.tar.gz
+        $libjxlSourceDirectory = "libjxl-${{ env.JXL_VERSION }}"
+        for ($attempt = 1; $attempt -le 5; $attempt++) {
+          Remove-Item -LiteralPath $libjxlSourceDirectory -Recurse -Force -ErrorAction SilentlyContinue
+          tar -xzf libjxl.tar.gz
+          Push-Location $libjxlSourceDirectory
+          & bash "./deps.sh"
+          $depsExitCode = $LASTEXITCODE
+          Pop-Location
+          if ($depsExitCode -eq 0) {
+            break
+          }
+          if ($attempt -eq 5) {
+            throw "Failed to fetch libjxl build dependencies"
+          }
+          Start-Sleep -Seconds (2 * $attempt)
+        }
+         Invoke-StaticCMakeBuild -sourcePath $libjxlSourceDirectory -buildPath "libjxl-build" -extraOptions @(
+           "-DBUILD_TESTING=OFF",
+           "-DJPEGXL_ENABLE_TESTS=OFF",
+           "-DJPEGXL_ENABLE_TOOLS=OFF",
           "-DJPEGXL_ENABLE_EXAMPLES=OFF",
           "-DJPEGXL_ENABLE_DOXYGEN=OFF",
           "-DJPEGXL_ENABLE_MANPAGES=OFF",
@@ -575,8 +689,8 @@ jobs:
           }
         }
 
-       Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_MACOS_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
-       tar -xzf ffmpeg.tar.gz
+        Invoke-DownloadWithRetry -uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_MACOS_SOURCE_REF }}.tar.gz" -archivePath ffmpeg.tar.gz
+        tar -xzf ffmpeg.tar.gz
 
        $sourceDirectory = "FFmpeg-${{ env.FFMPEG_MACOS_SOURCE_REF }}"
        if (-not (Test-Path -LiteralPath $sourceDirectory -PathType Container)) {
