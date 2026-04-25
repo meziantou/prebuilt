@@ -23,12 +23,18 @@ env:
   JXL_VERSION: "0.11.2" # https://github.com/libjxl/libjxl/releases
   BROTLI_VERSION: "1.2.0" # https://github.com/google/brotli/releases
   HWY_VERSION: "1.3.0" # https://github.com/google/highway/releases
+  X264_REF: "stable" # https://code.videolan.org/videolan/x264
+  X265_VERSION: "4.1" # https://bitbucket.org/multicoreware/x265_git/downloads/
+  WEBP_VERSION: "1.5.0" # https://github.com/webmproject/libwebp/releases
+  LAME_VERSION: "3.100" # https://lame.sourceforge.io/
   # GPL profile. Nonfree options (for example libfdk-aac) are intentionally excluded.
   FFMPEG_MACOS_CONFIGURE_FLAGS: >-
     --arch=arm64 --target-os=darwin --disable-doc --disable-debug --enable-pthreads
-    --enable-runtime-cpudetect --enable-gpl --disable-nonfree --disable-shared --enable-static
+    --enable-runtime-cpudetect --enable-gpl --enable-version3 --disable-nonfree --disable-shared --enable-static
     --enable-audiotoolbox --enable-videotoolbox --enable-neon --disable-autodetect --pkg-config-flags=--static
-    --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1
+    --enable-zlib --enable-bzlib --enable-lzma --enable-iconv --enable-securetransport
+    --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1 --enable-libx264 --enable-libx265
+    --enable-libwebp --enable-libmp3lame
     --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
   FFMPEG_MACOS_MAKE_JOBS: "4"
   RCLONE_VERSION: "v1.73.5" # https://github.com/rclone/rclone/releases
@@ -534,10 +540,32 @@ jobs:
          }
 
          & cmake --install $buildPath --config Release
-          if ($LASTEXITCODE -ne 0) {
-            throw "cmake install failed for $sourcePath"
+           if ($LASTEXITCODE -ne 0) {
+             throw "cmake install failed for $sourcePath"
+           }
+         }
+
+         function Invoke-StaticConfigureBuild([string]$sourcePath, [string[]]$configureArguments) {
+          Push-Location $sourcePath
+          try {
+            & ./configure @configureArguments
+            if ($LASTEXITCODE -ne 0) {
+              throw "configure failed for $sourcePath"
+            }
+
+            & make -j${{ env.FFMPEG_MACOS_MAKE_JOBS }}
+            if ($LASTEXITCODE -ne 0) {
+              throw "make failed for $sourcePath"
+            }
+
+            & make install
+            if ($LASTEXITCODE -ne 0) {
+              throw "make install failed for $sourcePath"
+            }
+          } finally {
+            Pop-Location
           }
-        }
+         }
 
         function Invoke-DownloadWithRetry([string]$uri, [string]$archivePath, [string]$archiveType = "tar.gz") {
           for ($attempt = 1; $attempt -le 5; $attempt++) {
@@ -591,14 +619,55 @@ jobs:
           "-DENABLE_TOOLS=OFF"
         )
 
-        Invoke-DownloadWithRetry -uri "https://downloads.xiph.org/releases/opus/opus-${{ env.OPUS_VERSION }}.tar.gz" -archivePath opus.tar.gz
-        tar -xzf opus.tar.gz
-        Invoke-StaticCMakeBuild -sourcePath "opus-${{ env.OPUS_VERSION }}" -buildPath "opus-build" -extraOptions @(
-          "-DOPUS_BUILD_PROGRAMS=OFF",
-          "-DOPUS_BUILD_TESTING=OFF",
-          "-DOPUS_BUILD_SHARED_LIBRARY=OFF",
-          "-DOPUS_BUILD_STATIC_LIBRARY=ON"
-        )
+         Invoke-DownloadWithRetry -uri "https://downloads.xiph.org/releases/opus/opus-${{ env.OPUS_VERSION }}.tar.gz" -archivePath opus.tar.gz
+         tar -xzf opus.tar.gz
+         Invoke-StaticCMakeBuild -sourcePath "opus-${{ env.OPUS_VERSION }}" -buildPath "opus-build" -extraOptions @(
+           "-DOPUS_BUILD_PROGRAMS=OFF",
+           "-DOPUS_BUILD_TESTING=OFF",
+           "-DOPUS_BUILD_SHARED_LIBRARY=OFF",
+           "-DOPUS_BUILD_STATIC_LIBRARY=ON"
+         )
+
+         Invoke-DownloadWithRetry -uri "https://code.videolan.org/videolan/x264/-/archive/${{ env.X264_REF }}/x264-${{ env.X264_REF }}.tar.gz" -archivePath x264.tar.gz
+         tar -xzf x264.tar.gz
+         Invoke-StaticConfigureBuild -sourcePath "x264-${{ env.X264_REF }}" -configureArguments @(
+           "--prefix=$depsPrefix",
+           "--enable-static",
+           "--disable-shared",
+           "--disable-cli",
+           "--disable-opencl"
+         )
+
+         Invoke-DownloadWithRetry -uri "https://bitbucket.org/multicoreware/x265_git/downloads/x265_${{ env.X265_VERSION }}.tar.gz" -archivePath x265.tar.gz
+         tar -xzf x265.tar.gz
+         Invoke-StaticCMakeBuild -sourcePath "x265_${{ env.X265_VERSION }}/source" -buildPath "x265-build" -extraOptions @(
+           "-DENABLE_SHARED=OFF",
+           "-DENABLE_CLI=OFF",
+           "-DENABLE_ASSEMBLY=OFF"
+         )
+
+         Invoke-DownloadWithRetry -uri "https://github.com/webmproject/libwebp/archive/refs/tags/v${{ env.WEBP_VERSION }}.tar.gz" -archivePath libwebp.tar.gz
+         tar -xzf libwebp.tar.gz
+         Invoke-StaticCMakeBuild -sourcePath "libwebp-${{ env.WEBP_VERSION }}" -buildPath "libwebp-build" -extraOptions @(
+           "-DWEBP_BUILD_CWEBP=OFF",
+           "-DWEBP_BUILD_DWEBP=OFF",
+           "-DWEBP_BUILD_GIF2WEBP=OFF",
+           "-DWEBP_BUILD_IMG2WEBP=OFF",
+           "-DWEBP_BUILD_VWEBP=OFF",
+           "-DWEBP_BUILD_WEBPINFO=OFF",
+           "-DWEBP_BUILD_EXTRAS=OFF",
+           "-DWEBP_BUILD_WEBPMUX=OFF",
+           "-DWEBP_BUILD_ANIM_UTILS=OFF"
+         )
+
+         Invoke-DownloadWithRetry -uri "https://downloads.sourceforge.net/project/lame/lame/${{ env.LAME_VERSION }}/lame-${{ env.LAME_VERSION }}.tar.gz" -archivePath lame.tar.gz
+         tar -xzf lame.tar.gz
+         Invoke-StaticConfigureBuild -sourcePath "lame-${{ env.LAME_VERSION }}" -configureArguments @(
+           "--prefix=$depsPrefix",
+           "--disable-shared",
+           "--enable-static",
+           "--disable-frontend"
+         )
 
         Invoke-DownloadWithRetry -uri "https://gitlab.com/AOMediaCodec/SVT-AV1/-/archive/v${{ env.SVT_AV1_VERSION }}/SVT-AV1-v${{ env.SVT_AV1_VERSION }}.tar.gz" -archivePath svt-av1.tar.gz
         tar -xzf svt-av1.tar.gz
@@ -679,15 +748,19 @@ jobs:
           "aom",
           "opus",
           "SvtAv1Enc",
+          "x264",
+          "x265",
+          "libwebp >= 0.2.0",
+          "libmp3lame >= 3.98.3",
           "libjxl >= 0.7.0",
           "libjxl_threads >= 0.7.0"
-         )
-         foreach ($pkgName in $requiredPkgConfigPackages) {
-           & pkg-config --exists --print-errors --static $pkgName
-           if ($LASTEXITCODE -ne 0) {
-             throw "pkg-config package '$pkgName' was not found in static dependency prefix"
-           }
-         }
+        )
+        foreach ($pkgName in $requiredPkgConfigPackages) {
+          & pkg-config --exists --print-errors --static $pkgName
+          if ($LASTEXITCODE -ne 0) {
+            throw "pkg-config package '$pkgName' was not found in static dependency prefix"
+          }
+        }
 
         Invoke-DownloadWithRetry -uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_MACOS_SOURCE_REF }}.tar.gz" -archivePath ffmpeg.tar.gz
         tar -xzf ffmpeg.tar.gz
@@ -740,11 +813,21 @@ jobs:
          }
        }
 
-       Assert-ConfigureOptionEnabled "--enable-gpl"
-       Assert-ConfigureOptionEnabled "--enable-libopus"
-       Assert-ConfigureOptionEnabled "--enable-libaom"
-       Assert-ConfigureOptionEnabled "--enable-libjxl"
-       Assert-ConfigureOptionEnabled "--enable-libsvtav1"
+        Assert-ConfigureOptionEnabled "--enable-gpl"
+        Assert-ConfigureOptionEnabled "--enable-version3"
+        Assert-ConfigureOptionEnabled "--enable-libopus"
+        Assert-ConfigureOptionEnabled "--enable-libaom"
+        Assert-ConfigureOptionEnabled "--enable-libjxl"
+        Assert-ConfigureOptionEnabled "--enable-libsvtav1"
+        Assert-ConfigureOptionEnabled "--enable-libx264"
+        Assert-ConfigureOptionEnabled "--enable-libx265"
+        Assert-ConfigureOptionEnabled "--enable-libwebp"
+        Assert-ConfigureOptionEnabled "--enable-libmp3lame"
+        Assert-ConfigureOptionEnabled "--enable-zlib"
+        Assert-ConfigureOptionEnabled "--enable-bzlib"
+        Assert-ConfigureOptionEnabled "--enable-lzma"
+        Assert-ConfigureOptionEnabled "--enable-iconv"
+        Assert-ConfigureOptionEnabled "--enable-securetransport"
 
        $ffmpegVersion = & ./ffmpeg-osx-arm64 -version | Select-Object -First 1
        $ffprobeVersion = & ./ffprobe-osx-arm64 -version | Select-Object -First 1
@@ -771,17 +854,12 @@ jobs:
        chmod +x ffmpeg-osx-arm64
        chmod +x ffprobe-osx-arm64
 
-       @"
-       P3
-       2 2
-       255
-       255 0 0   0 255 0
-       0 0 255   255 255 255
-       "@ | Set-Content -LiteralPath input.ppm
+       $inputPngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAGElEQVQImWP8z8Dwn4GBgYGJAQoAHxcCAr7pL/8AAAAASUVORK5CYII="
+       [IO.File]::WriteAllBytes((Join-Path (Get-Location) "input.png"), [Convert]::FromBase64String($inputPngBase64))
 
-       & ./ffmpeg-osx-arm64 -y -v error -i ./input.ppm -frames:v 1 -c:v libaom-av1 -still-picture 1 -cpu-used 8 -row-mt 1 -vf "scale=4:4,format=yuv420p" ./output.avif
+       & ./ffmpeg-osx-arm64 -y -v error -i ./input.png -frames:v 1 -c:v libaom-av1 -still-picture 1 -cpu-used 8 -row-mt 1 -vf "scale=4:4,format=yuv420p" ./output.avif
        if ($LASTEXITCODE -ne 0) {
-         throw "ffmpeg failed to encode input.ppm to AVIF"
+         throw "ffmpeg failed to encode input.png to AVIF"
        }
 
        if (-not (Test-Path -LiteralPath ./output.avif -PathType Leaf)) {
