@@ -393,24 +393,32 @@ jobs:
     runs-on: macos-14
     steps:
     - run: |
-       if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) {
-         brew install ffmpeg
+       Invoke-WebRequest -Uri "https://evermeet.cx/ffmpeg/ffmpeg-${{ env.FFMPEG_VERSION }}.zip" -OutFile ffmpeg.zip
+       Invoke-WebRequest -Uri "https://evermeet.cx/ffmpeg/ffprobe-${{ env.FFMPEG_VERSION }}.zip" -OutFile ffprobe.zip
+
+       Expand-Archive ffmpeg.zip -DestinationPath ffmpeg-extract -Force
+       Expand-Archive ffprobe.zip -DestinationPath ffprobe-extract -Force
+
+       $ffmpegBinary = Get-ChildItem -Path ffmpeg-extract -Recurse -File -Filter ffmpeg | Select-Object -First 1
+       if (-not $ffmpegBinary) {
+         throw "ffmpeg binary not found in evermeet archive"
        }
 
-       if (-not (Get-Command ffprobe -ErrorAction SilentlyContinue)) {
-         brew install ffmpeg
+       $ffprobeBinary = Get-ChildItem -Path ffprobe-extract -Recurse -File -Filter ffprobe | Select-Object -First 1
+       if (-not $ffprobeBinary) {
+         throw "ffprobe binary not found in evermeet archive"
        }
 
-       $ffmpegCommand = Get-Command ffmpeg -ErrorAction Stop
-       $ffprobeCommand = Get-Command ffprobe -ErrorAction Stop
+       Move-Item -LiteralPath $ffmpegBinary.FullName -Destination ffmpeg-osx-arm64
+       Move-Item -LiteralPath $ffprobeBinary.FullName -Destination ffprobe-osx-arm64
 
-       $ffmpegVersion = & $ffmpegCommand.Source -version | Select-Object -First 1
-       $ffprobeVersion = & $ffprobeCommand.Source -version | Select-Object -First 1
+       chmod +x ffmpeg-osx-arm64
+       chmod +x ffprobe-osx-arm64
+
+       $ffmpegVersion = & ./ffmpeg-osx-arm64 -version | Select-Object -First 1
+       $ffprobeVersion = & ./ffprobe-osx-arm64 -version | Select-Object -First 1
        Write-Host "Installed $ffmpegVersion"
        Write-Host "Installed $ffprobeVersion"
-
-       Copy-Item $ffmpegCommand.Source ffmpeg-osx-arm64
-       Copy-Item $ffprobeCommand.Source ffprobe-osx-arm64
     - uses: actions/upload-artifact@v7
       with:
         name: binaries-ffmpeg-osx-arm64
