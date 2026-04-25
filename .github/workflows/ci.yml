@@ -495,7 +495,6 @@ jobs:
   prebuilt-docker-linux-x64:
     runs-on: ubuntu-latest
     needs: [zopflipng-linux, oxipng-linux, pngout-linux, ffmpeg-linux, rclone-linux]
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     permissions:
       contents: read
       packages: write
@@ -549,7 +548,6 @@ jobs:
   prebuilt-docker-linux-arm64:
     runs-on: ubuntu-latest
     needs: [zopflipng-linux-arm64, oxipng-linux-arm64, pngout-linux-arm64, ffmpeg-linux-arm64, rclone-linux-arm64]
-    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     permissions:
       contents: read
       packages: write
