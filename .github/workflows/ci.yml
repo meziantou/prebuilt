@@ -21,8 +21,7 @@ env:
   FFMPEG_MACOS_CONFIGURE_FLAGS: >-
     --arch=arm64 --target-os=darwin --disable-doc --disable-debug --enable-pthreads
     --enable-runtime-cpudetect --enable-gpl --disable-nonfree --disable-shared --enable-static
-    --enable-audiotoolbox --enable-videotoolbox --enable-neon --pkg-config-flags=--static
-    --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1
+    --enable-audiotoolbox --enable-videotoolbox --enable-neon --disable-autodetect --pkg-config-flags=--static
     --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
   FFMPEG_MACOS_MAKE_JOBS: "4"
   RCLONE_VERSION: "v1.73.5" # https://github.com/rclone/rclone/releases
@@ -402,7 +401,7 @@ jobs:
     runs-on: macos-latest
     steps:
     - run: |
-       brew install pkg-config opus aom jpeg-xl svt-av1
+       brew install pkg-config
 
        Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_MACOS_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
        tar -xzf ffmpeg.tar.gz
