@@ -22,6 +22,7 @@ env:
     --arch=arm64 --target-os=darwin --disable-doc --disable-debug --enable-pthreads
     --enable-runtime-cpudetect --enable-gpl --disable-nonfree --disable-shared --enable-static
     --enable-audiotoolbox --enable-videotoolbox --enable-neon --pkg-config-flags=--static
+    --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
   FFMPEG_MACOS_MAKE_JOBS: "4"
   RCLONE_VERSION: "v1.73.5" # https://github.com/rclone/rclone/releases
   IMAGEMAGICK_VERSION: "7.1.2-21" # https://github.com/ImageMagick/ImageMagick/releases/latest
