@@ -167,7 +167,7 @@ jobs:
           zopflipng-win-x64.exe
 
   zopflipng-osx-arm64:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v6
       with:
@@ -397,7 +397,7 @@ jobs:
            ffprobe-linux-arm64
 
   ffmpeg-osx-arm64:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
     - run: |
        brew install pkg-config
