@@ -21,7 +21,7 @@ env:
   FFMPEG_LINUX_CONFIGURE_FLAGS: >-
     --disable-doc --disable-debug --enable-pthreads --enable-runtime-cpudetect
     --enable-gpl --disable-nonfree --disable-shared --enable-static --disable-autodetect --pkg-config-flags=--static
-    --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1
+    --enable-libopus --enable-libaom --enable-libjxl
     --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
   FFMPEG_LINUX_MAKE_JOBS: "4"
   # GPL profile. Nonfree options (for example libfdk-aac) are intentionally excluded.
@@ -446,7 +446,7 @@ jobs:
     steps:
     - run: |
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends build-essential pkg-config nasm yasm libopus-dev libaom-dev libjxl-dev libsvtav1-dev
+        sudo apt-get install -y --no-install-recommends build-essential pkg-config nasm yasm libopus-dev libaom-dev libjxl-dev
     - run: |
        Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
        tar -xzf ffmpeg.tar.gz
@@ -521,10 +521,9 @@ jobs:
        }
 
        Assert-ConfigureOptionEnabled "--enable-gpl"
-       Assert-ConfigureOptionEnabled "--enable-libopus"
-       Assert-ConfigureOptionEnabled "--enable-libaom"
-       Assert-ConfigureOptionEnabled "--enable-libjxl"
-       Assert-ConfigureOptionEnabled "--enable-libsvtav1"
+        Assert-ConfigureOptionEnabled "--enable-libopus"
+        Assert-ConfigureOptionEnabled "--enable-libaom"
+        Assert-ConfigureOptionEnabled "--enable-libjxl"
 
        $ffmpegVersion = & ./ffmpeg-linux-x64 -version | Select-Object -First 1
        $ffprobeVersion = & ./ffprobe-linux-x64 -version | Select-Object -First 1
@@ -545,7 +544,7 @@ jobs:
     steps:
     - run: |
         sudo apt-get update
-        sudo apt-get install -y --no-install-recommends build-essential pkg-config nasm yasm libopus-dev libaom-dev libjxl-dev libsvtav1-dev
+        sudo apt-get install -y --no-install-recommends build-essential pkg-config nasm yasm libopus-dev libaom-dev libjxl-dev
     - run: |
        Invoke-WebRequest -Uri "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/${{ env.FFMPEG_SOURCE_REF }}.tar.gz" -OutFile ffmpeg.tar.gz
        tar -xzf ffmpeg.tar.gz
@@ -620,10 +619,9 @@ jobs:
        }
 
        Assert-ConfigureOptionEnabled "--enable-gpl"
-       Assert-ConfigureOptionEnabled "--enable-libopus"
-       Assert-ConfigureOptionEnabled "--enable-libaom"
-       Assert-ConfigureOptionEnabled "--enable-libjxl"
-       Assert-ConfigureOptionEnabled "--enable-libsvtav1"
+        Assert-ConfigureOptionEnabled "--enable-libopus"
+        Assert-ConfigureOptionEnabled "--enable-libaom"
+        Assert-ConfigureOptionEnabled "--enable-libjxl"
 
        $ffmpegVersion = & ./ffmpeg-linux-arm64 -version | Select-Object -First 1
        $ffprobeVersion = & ./ffprobe-linux-arm64 -version | Select-Object -First 1
