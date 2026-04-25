@@ -530,6 +530,7 @@ jobs:
        $ffprobeVersion = & ./ffprobe-linux-x64 -version | Select-Object -First 1
        Write-Host "Built $ffmpegVersion"
        Write-Host "Built $ffprobeVersion"
+      shell: pwsh
     - uses: actions/upload-artifact@v7
       with:
         name: binaries-ffmpeg-linux
@@ -628,6 +629,7 @@ jobs:
        $ffprobeVersion = & ./ffprobe-linux-arm64 -version | Select-Object -First 1
        Write-Host "Built $ffmpegVersion"
        Write-Host "Built $ffprobeVersion"
+      shell: pwsh
     - uses: actions/upload-artifact@v7
       with:
         name: binaries-ffmpeg-linux-arm64
@@ -712,6 +714,7 @@ jobs:
        $ffprobeVersion = & ./ffprobe-osx-arm64 -version | Select-Object -First 1
        Write-Host "Built $ffmpegVersion"
        Write-Host "Built $ffprobeVersion"
+      shell: pwsh
     - uses: actions/upload-artifact@v7
       with:
         name: binaries-ffmpeg-osx-arm64
