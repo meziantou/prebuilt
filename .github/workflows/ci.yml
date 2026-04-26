@@ -671,7 +671,12 @@ jobs:
            "-DWEBP_BUILD_ANIM_UTILS=OFF"
          )
 
-         Invoke-DownloadWithRetry -uri "https://downloads.sourceforge.net/project/lame/lame/${{ env.LAME_VERSION }}/lame-${{ env.LAME_VERSION }}.tar.gz" -archivePath lame.tar.gz
+         try {
+           Invoke-DownloadWithRetry -uri "https://downloads.sourceforge.net/project/lame/lame/${{ env.LAME_VERSION }}/lame-${{ env.LAME_VERSION }}.tar.gz" -archivePath lame.tar.gz
+         } catch {
+           Write-Warning "Failed to download lame from downloads.sourceforge.net. Falling back to a direct SourceForge mirror."
+           Invoke-DownloadWithRetry -uri "https://pilotfiber.dl.sourceforge.net/project/lame/lame/${{ env.LAME_VERSION }}/lame-${{ env.LAME_VERSION }}.tar.gz" -archivePath lame.tar.gz
+         }
          tar -xzf lame.tar.gz
          Invoke-StaticConfigureBuild -sourcePath "lame-${{ env.LAME_VERSION }}" -configureArguments @(
            "--prefix=$depsPrefix",
