@@ -628,7 +628,12 @@ jobs:
            "-DOPUS_BUILD_STATIC_LIBRARY=ON"
          )
 
-         Invoke-DownloadWithRetry -uri "https://code.videolan.org/videolan/x264/-/archive/${{ env.X264_REF }}/x264-${{ env.X264_REF }}.tar.gz" -archivePath x264.tar.gz
+         try {
+           Invoke-DownloadWithRetry -uri "https://code.videolan.org/videolan/x264/-/archive/${{ env.X264_REF }}/x264-${{ env.X264_REF }}.tar.gz" -archivePath x264.tar.gz
+         } catch {
+           Write-Warning "Failed to download x264 from code.videolan.org. Falling back to GitHub mirror."
+           Invoke-DownloadWithRetry -uri "https://github.com/mirror/x264/archive/refs/heads/${{ env.X264_REF }}.tar.gz" -archivePath x264.tar.gz
+         }
          tar -xzf x264.tar.gz
          Invoke-StaticConfigureBuild -sourcePath "x264-${{ env.X264_REF }}" -configureArguments @(
            "--prefix=$depsPrefix",
