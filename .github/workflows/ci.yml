@@ -645,6 +645,12 @@ jobs:
 
          Invoke-DownloadWithRetry -uri "https://bitbucket.org/multicoreware/x265_git/downloads/x265_${{ env.X265_VERSION }}.tar.gz" -archivePath x265.tar.gz
          tar -xzf x265.tar.gz
+         $x265CMakeListsPath = "x265_${{ env.X265_VERSION }}/source/CMakeLists.txt"
+         (Get-Content -LiteralPath $x265CMakeListsPath -Raw) `
+           -replace 'cmake_policy\(SET CMP0025 OLD\)', 'cmake_policy(SET CMP0025 NEW)' `
+           -replace 'cmake_policy\(SET CMP0054 OLD\)', 'cmake_policy(SET CMP0054 NEW)' `
+           -replace 'cmake_minimum_required \(VERSION 2\.8\.8\)', 'cmake_minimum_required (VERSION 3.5)' `
+           | Set-Content -LiteralPath $x265CMakeListsPath
          Invoke-StaticCMakeBuild -sourcePath "x265_${{ env.X265_VERSION }}/source" -buildPath "x265-build" -extraOptions @(
            "-DENABLE_SHARED=OFF",
            "-DENABLE_CLI=OFF",
