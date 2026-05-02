@@ -11,7 +11,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 2.0.7
+  VERSION: 2.0.8
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.1.1" # https://github.com/shssoichiro/oxipng/releases
@@ -31,7 +31,7 @@ env:
     --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1
     --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
   FFMPEG_MACOS_MAKE_JOBS: "4"
-  RCLONE_VERSION: "v1.73.5" # https://github.com/rclone/rclone/releases
+  RCLONE_VERSION: "v1.74.0" # https://github.com/rclone/rclone/releases
   IMAGEMAGICK_VERSION: "7.1.2-21" # https://github.com/ImageMagick/ImageMagick/releases/latest
 
 jobs:
