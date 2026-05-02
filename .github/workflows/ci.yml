@@ -362,7 +362,7 @@ jobs:
   pngout-linux:
     runs-on: ubuntu-latest
     steps:
-    - run: Invoke-WebRequest -Uri 'http://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz' -OutFile pngout.tar.gz
+    - run: Invoke-WebRequest -Uri 'https://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz' -OutFile pngout.tar.gz
     - run: tar -xvf pngout.tar.gz
     - run: mv pngout-*/amd64/pngout pngout-linux-x64
     - uses: actions/upload-artifact@v7
@@ -375,7 +375,7 @@ jobs:
   pngout-linux-arm64:
     runs-on: ubuntu-latest
     steps:
-    - run: Invoke-WebRequest -Uri 'http://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz' -OutFile pngout.tar.gz
+    - run: Invoke-WebRequest -Uri 'https://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz' -OutFile pngout.tar.gz
     - run: tar -xvf pngout.tar.gz
     - run: mv pngout-*/aarch64/pngout pngout-linux-arm64
     - uses: actions/upload-artifact@v7
