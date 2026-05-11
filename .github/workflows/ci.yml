@@ -31,7 +31,7 @@ env:
     --enable-libopus --enable-libaom --enable-libjxl --enable-libsvtav1
     --disable-xlib --disable-libxcb --disable-libxcb-shm --disable-libxcb-xfixes --disable-libxcb-shape
   FFMPEG_MACOS_MAKE_JOBS: "4"
-  RCLONE_VERSION: "v1.74.0" # https://github.com/rclone/rclone/releases
+  RCLONE_VERSION: "v1.74.1" # https://github.com/rclone/rclone/releases
   IMAGEMAGICK_VERSION: "7.1.2-21" # https://github.com/ImageMagick/ImageMagick/releases/latest
 
 jobs:
