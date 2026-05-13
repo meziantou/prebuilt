@@ -153,8 +153,6 @@ $availableLatestVersions = [ordered]@{
     "ZOPFLI_VERSION" = Get-ZopfliVersion
     "OXIPNG_VERSION" = Get-ReleaseTag -Repository "shssoichiro/oxipng" -TrimV
     "FFMPEG_VERSION" = Get-FFmpegVersion
-    "RCLONE_VERSION" = Get-ReleaseTag -Repository "rclone/rclone"
-    "IMAGEMAGICK_VERSION" = Get-ReleaseTag -Repository "ImageMagick/ImageMagick" -TrimV
 }
 
 $selectedVariableNames =
