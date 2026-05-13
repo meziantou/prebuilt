@@ -34,6 +34,17 @@
         "/^\\.github/workflows/ci\\.yml$/"
       ],
       "matchStrings": [
+        "PNGQUANT_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "kornelski/pngquant"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
         "FFMPEG_VERSION: \"(?<currentValue>.*?)\""
       ],
       "datasourceTemplate": "github-releases",

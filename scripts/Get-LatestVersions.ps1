@@ -61,6 +61,25 @@ function Get-ZopfliVersion {
     return ($versions | Sort-Object Version -Descending | Select-Object -First 1).Text
 }
 
+function Get-PngquantVersion {
+    $tags = Invoke-GitHubApi -Uri "https://api.github.com/repos/kornelski/pngquant/tags?per_page=100"
+    $versions =
+        foreach ($tag in $tags) {
+            if ($tag.name -match "^[vV]?(?<version>\d+\.\d+\.\d+)$") {
+                [PSCustomObject]@{
+                    Version = [version]$Matches["version"]
+                    Text = $Matches["version"]
+                }
+            }
+        }
+
+    if (-not $versions) {
+        throw "Unable to determine latest pngquant version."
+    }
+
+    return ($versions | Sort-Object Version -Descending | Select-Object -First 1).Text
+}
+
 function Get-FFmpegVersion {
     $release = Invoke-GitHubApi -Uri "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest"
     $assets = @($release.assets)
@@ -152,6 +171,7 @@ if ([string]::IsNullOrEmpty($workflowContent)) {
 $availableLatestVersions = [ordered]@{
     "ZOPFLI_VERSION" = Get-ZopfliVersion
     "OXIPNG_VERSION" = Get-ReleaseTag -Repository "shssoichiro/oxipng" -TrimV
+    "PNGQUANT_VERSION" = Get-PngquantVersion
     "FFMPEG_VERSION" = Get-FFmpegVersion
 }
 
