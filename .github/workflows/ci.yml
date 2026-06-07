@@ -42,10 +42,10 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
     - id: download_release_artifacts
       continue-on-error: true
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         pattern: '*'
         path: binaries
@@ -53,7 +53,7 @@ jobs:
     - if: steps.download_release_artifacts.outcome == 'failure'
       run: Remove-Item -LiteralPath binaries -Recurse -Force -ErrorAction SilentlyContinue
     - if: steps.download_release_artifacts.outcome == 'failure'
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         pattern: '*'
         path: binaries
@@ -73,7 +73,7 @@ jobs:
         $versions.FFmpeg = "${{ env.FFMPEG_VERSION }}"
         $versions.Pngout = "${{ env.PNGOUT_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-versions
         if-no-files-found: error
@@ -83,14 +83,14 @@ jobs:
   zopfli-linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
     - run: make zopfli
     - run: |
         mv zopfli zopfli-linux-x64
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-zopfli-linux
         if-no-files-found: error
@@ -100,14 +100,14 @@ jobs:
   zopfli-linux-arm64:
     runs-on: ubuntu-24.04-arm
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
     - run: make zopfli
     - run: |
         mv zopfli zopfli-linux-arm64
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-zopfli-linux-arm64
         if-no-files-found: error
@@ -117,12 +117,12 @@ jobs:
   zopfli-windows:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
     - name: Enable Developer Command Prompt
-      uses: ilammy/msvc-dev-cmd@v1.13.0
+      uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
       with:
         arch: x64
     - run: |
@@ -135,7 +135,7 @@ jobs:
         & link -nologo /LTCG /OUT:zopfli.exe *.obj user32.lib advapi32.lib kernel32.lib
 
         Move-Item zopfli.exe zopfli-win-x64.exe
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-zopfli-windows
         if-no-files-found: error
@@ -145,14 +145,14 @@ jobs:
   zopfli-osx-arm64:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
     - run: make zopfli
     - run: |
         Move-Item zopfli zopfli-osx-arm64
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-zopfli-osx-arm64
         if-no-files-found: error
@@ -189,7 +189,7 @@ jobs:
     - run: |
         Get-ChildItem -Path ".\" -Recurse -Filter "oxipng.exe" | Copy-Item -Destination ".\"
         Move-Item oxipng.exe oxipng-win-x64.exe
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-oxipng-windows
         if-no-files-found: error
@@ -224,7 +224,7 @@ jobs:
        }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-x86_64-unknown-linux-musl/oxipng oxipng-linux-x64
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-oxipng-linux
         if-no-files-found: error
@@ -259,7 +259,7 @@ jobs:
        }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-aarch64-unknown-linux-musl/oxipng oxipng-linux-arm64
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-oxipng-linux-arm64
         if-no-files-found: error
@@ -294,7 +294,7 @@ jobs:
        }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-aarch64-apple-darwin/oxipng oxipng-osx-arm64
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-oxipng-osx-arm64
         if-no-files-found: error
@@ -306,7 +306,7 @@ jobs:
     steps:
     - run: Invoke-WebRequest -Uri 'http://advsys.net/ken/util/pngout.exe' -OutFile pngout.exe
     - run: Move-Item pngout.exe pngout-win-x64.exe
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-pngout-windows
         if-no-files-found: error
@@ -319,7 +319,7 @@ jobs:
     - run: Invoke-WebRequest -Uri 'https://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz' -OutFile pngout.tar.gz
     - run: tar -xvf pngout.tar.gz
     - run: mv pngout-*/amd64/pngout pngout-linux-x64
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-pngout-linux
         if-no-files-found: error
@@ -332,7 +332,7 @@ jobs:
     - run: Invoke-WebRequest -Uri 'https://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz' -OutFile pngout.tar.gz
     - run: tar -xvf pngout.tar.gz
     - run: mv pngout-*/aarch64/pngout pngout-linux-arm64
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-pngout-linux-arm64
         if-no-files-found: error
@@ -351,7 +351,7 @@ jobs:
         }
 
         Move-Item -LiteralPath $pngout.FullName -Destination "./pngout-osx-arm64"
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-pngout-osx-arm64
         if-no-files-found: error
@@ -374,7 +374,7 @@ jobs:
         Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
         Move-Item ffmpeg.exe ffmpeg-win-x64.exe
         Move-Item ffprobe.exe ffprobe-win-x64.exe
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-ffmpeg-windows
         if-no-files-found: error
@@ -399,7 +399,7 @@ jobs:
         Get-ChildItem -Recurse -Include ffmpeg.exe, ffprobe.exe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
         Move-Item ffmpeg.exe ffmpeg-win-arm64.exe
         Move-Item ffprobe.exe ffprobe-win-arm64.exe
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-ffmpeg-windows-arm64
         if-no-files-found: error
@@ -424,7 +424,7 @@ jobs:
         Get-ChildItem -Recurse -Include ffmpeg, ffprobe | Foreach-Object { Move-Item -LiteralPath $_ -Destination . }
         Move-Item ffmpeg ffmpeg-linux-x64
         Move-Item ffprobe ffprobe-linux-x64
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-ffmpeg-linux
         if-no-files-found: error
@@ -448,7 +448,7 @@ jobs:
         tar -xvf ffmpeg.tar.xz
         Get-ChildItem -Recurse -Filter ffmpeg | Foreach-Object { Move-Item -LiteralPath $_ -Destination ffmpeg-linux-arm64 }
         Get-ChildItem -Recurse -Filter ffprobe | Foreach-Object { Move-Item -LiteralPath $_ -Destination ffprobe-linux-arm64 }
-    - uses: actions/upload-artifact@v7
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-ffmpeg-linux-arm64
         if-no-files-found: error
@@ -464,19 +464,19 @@ jobs:
       contents: read
       packages: write
     steps:
-    - uses: actions/download-artifact@v8
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         name: binaries-zopfli-linux
         path: .
-    - uses: actions/download-artifact@v8
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         name: binaries-oxipng-linux
         path: .
-    - uses: actions/download-artifact@v8
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         name: binaries-pngout-linux
         path: .
-    - uses: actions/download-artifact@v8
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         name: binaries-ffmpeg-linux
         path: .
@@ -489,14 +489,14 @@ jobs:
        COPY --chmod=0755 ffmpeg-linux-x64 /usr/local/bin/ffmpeg
        COPY --chmod=0755 ffprobe-linux-x64 /usr/local/bin/ffprobe
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
-    - uses: docker/setup-buildx-action@v4
+    - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
     - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: docker/login-action@v4
+      uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - uses: docker/build-push-action@v7
+    - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
       with:
         context: .
         file: ./Dockerfile
@@ -511,19 +511,19 @@ jobs:
       contents: read
       packages: write
     steps:
-    - uses: actions/download-artifact@v8
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         name: binaries-zopfli-linux-arm64
         path: .
-    - uses: actions/download-artifact@v8
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         name: binaries-oxipng-linux-arm64
         path: .
-    - uses: actions/download-artifact@v8
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         name: binaries-pngout-linux-arm64
         path: .
-    - uses: actions/download-artifact@v8
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
       with:
         name: binaries-ffmpeg-linux-arm64
         path: .
@@ -536,14 +536,14 @@ jobs:
        COPY --chmod=0755 ffmpeg-linux-arm64 /usr/local/bin/ffmpeg
        COPY --chmod=0755 ffprobe-linux-arm64 /usr/local/bin/ffprobe
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
-    - uses: docker/setup-buildx-action@v4
+    - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
     - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: docker/login-action@v4
+      uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - uses: docker/build-push-action@v7
+    - uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7
       with:
         context: .
         file: ./Dockerfile
@@ -559,8 +559,8 @@ jobs:
       contents: read
       packages: write
     steps:
-    - uses: docker/setup-buildx-action@v4
-    - uses: docker/login-action@v4
+    - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4
+    - uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
