@@ -103,6 +103,7 @@ CROSS_PREFIX=""
 CMAKE_CROSS_ARGS=""
 VPX_TARGET=""
 X265_ASM="ON"
+OPUS_EXTRA=""
 
 case "$TARGET" in
   linux-x64)
@@ -139,6 +140,16 @@ case "$TARGET" in
     FF_LDFLAGS="-static"
     # aarch64 assembly under clang-on-Windows is the least exercised x265 config.
     X265_ASM="OFF"
+    # opus cannot build its ARM assembly for Windows-on-ARM: celt/arm/armcpu.c
+    # has no CPU detection method for this platform and fails with an explicit
+    # #error. Turning off OPUS_MAY_HAVE_NEON does not help either -- the NEON
+    # intrinsics are still compiled while their prototypes stay behind the
+    # OPUS_ARM_MAY_HAVE_NEON_INTR guard in celt/arm/pitch_arm.h, so
+    # celt_inner_prod_neon ends up used but undeclared. And
+    # RUNTIME_CPU_CAPABILITY_DETECTION is not overridable (opus_supports_cpu_detection
+    # overwrites it with PARENT_SCOPE). Fall back to the plain C build; opus is a
+    # rounding error next to the video encoders, and this is win-arm64 only.
+    OPUS_EXTRA="-DOPUS_DISABLE_INTRINSICS=ON"
     ;;
   osx-arm64)
     RID="osx-arm64"; EXE=""
@@ -273,7 +284,7 @@ if ! stamp_done "opus-$OPUS_VERSION"; then
         "opus-$OPUS_VERSION.tar.gz" "opus-$OPUS_VERSION"
   run_cmake opus "$SRCDIR/opus-$OPUS_VERSION" \
     -DOPUS_BUILD_PROGRAMS=OFF -DOPUS_BUILD_TESTING=OFF \
-    -DOPUS_BUILD_SHARED_LIBRARY=OFF -DBUILD_TESTING=OFF
+    -DOPUS_BUILD_SHARED_LIBRARY=OFF -DBUILD_TESTING=OFF $OPUS_EXTRA
   stamp_mark "opus-$OPUS_VERSION"
 fi
 
