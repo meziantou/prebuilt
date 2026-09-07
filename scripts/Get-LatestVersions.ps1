@@ -106,6 +106,80 @@ function Get-FFmpegVersion {
     return ($candidateVersions | Sort-Object Version -Descending | Select-Object -First 1).Text
 }
 
+function Select-LatestVersion {
+    param(
+        [string[]]$Names,
+        [Parameter(Mandatory = $true)]
+        [string]$Pattern,
+        [Parameter(Mandatory = $true)]
+        [string]$Description
+    )
+
+    $versions =
+        foreach ($name in $Names) {
+            if ($name -match $Pattern) {
+                [PSCustomObject]@{
+                    Version = [version]$Matches["version"]
+                    Text = $Matches["version"]
+                }
+            }
+        }
+
+    if (-not $versions) {
+        throw "Unable to determine the latest version for '$Description'."
+    }
+
+    return ($versions | Sort-Object Version -Descending | Select-Object -First 1).Text
+}
+
+function Get-LatestTag {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Repository,
+        [string]$Pattern = "^v?(?<version>\d+(?:\.\d+){1,3})$"
+    )
+
+    $tags = Invoke-GitHubApi -Uri "https://api.github.com/repos/$Repository/tags?per_page=100"
+    return Select-LatestVersion -Names ($tags | ForEach-Object { $_.name }) -Pattern $Pattern -Description $Repository
+}
+
+function Get-LatestGitLabTag {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProjectPath,
+        [string]$Registry = "https://gitlab.com",
+        [string]$Pattern = "^v(?<version>\d+(?:\.\d+){1,3})$"
+    )
+
+    $encoded = [uri]::EscapeDataString($ProjectPath)
+    $tags = Invoke-RestMethod -Method Get -Uri "$Registry/api/v4/projects/$encoded/repository/tags?per_page=100"
+    return Select-LatestVersion -Names ($tags | ForEach-Object { $_.name }) -Pattern $Pattern -Description $ProjectPath
+}
+
+function Get-LatestAomVersion {
+    $refs = & git ls-remote --tags https://aomedia.googlesource.com/aom
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to list tags for libaom."
+    }
+
+    $names = foreach ($ref in $refs) { ($ref -split "/")[-1] }
+    return Select-LatestVersion -Names $names -Pattern "^v(?<version>\d+(?:\.\d+){1,3})$" -Description "libaom"
+}
+
+function Get-LatestX265Version {
+    $response = Invoke-RestMethod -Method Get -Uri "https://api.bitbucket.org/2.0/repositories/multicoreware/x265_git/refs/tags?pagelen=100"
+    return Select-LatestVersion -Names ($response.values | ForEach-Object { $_.name }) -Pattern "^(?<version>\d+(?:\.\d+){1,3})$" -Description "x265"
+}
+
+function Get-LatestX264Commit {
+    $refs = & git ls-remote https://code.videolan.org/videolan/x264.git stable
+    if ($LASTEXITCODE -ne 0 -or -not $refs) {
+        throw "Unable to resolve the x264 stable branch."
+    }
+
+    return ($refs -split "\s+")[0]
+}
+
 function Set-YamlVariableValue {
     param(
         [Parameter(Mandatory = $true)]
@@ -153,6 +227,20 @@ $availableLatestVersions = [ordered]@{
     "ZOPFLI_VERSION" = Get-ZopfliVersion
     "OXIPNG_VERSION" = Get-ReleaseTag -Repository "shssoichiro/oxipng" -TrimV
     "FFMPEG_VERSION" = Get-FFmpegVersion
+    "FFMPEG_CUSTOM_VERSION" = Get-LatestTag -Repository "FFmpeg/FFmpeg" -Pattern "^n(?<version>\d+\.\d+\.\d+)$"
+    "LLVM_MINGW_VERSION" = Get-ReleaseTag -Repository "mstorsjo/llvm-mingw"
+    "ZLIB_VERSION" = Get-LatestTag -Repository "madler/zlib"
+    "BROTLI_VERSION" = Get-LatestTag -Repository "google/brotli"
+    "HWY_VERSION" = Get-LatestTag -Repository "google/highway"
+    "JXL_VERSION" = Get-ReleaseTag -Repository "libjxl/libjxl" -TrimV
+    "WEBP_VERSION" = Get-LatestTag -Repository "webmproject/libwebp"
+    "OPUS_VERSION" = Get-ReleaseTag -Repository "xiph/opus" -TrimV
+    "LIBVPX_VERSION" = Get-LatestTag -Repository "webmproject/libvpx"
+    "AOM_VERSION" = Get-LatestAomVersion
+    "SVT_AV1_VERSION" = Get-LatestGitLabTag -ProjectPath "AOMediaCodec/SVT-AV1"
+    "DAV1D_VERSION" = Get-LatestGitLabTag -ProjectPath "videolan/dav1d" -Registry "https://code.videolan.org" -Pattern "^(?<version>\d+(?:\.\d+){1,3})$"
+    "X265_VERSION" = Get-LatestX265Version
+    "X264_COMMIT" = Get-LatestX264Commit
 }
 
 $selectedVariableNames =

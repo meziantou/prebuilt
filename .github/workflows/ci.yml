@@ -11,11 +11,28 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 2.0.10
+  VERSION: 2.1.0
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.2.0" # https://github.com/shssoichiro/oxipng/releases
   FFMPEG_VERSION: "9.0" # https://github.com/BtbN/FFmpeg-Builds/releases
+  # Custom statically linked FFmpeg build -> ffmpeg-custom-* / ffprobe-custom-*
+  FFMPEG_CUSTOM_VERSION: "9.0.1" # https://github.com/FFmpeg/FFmpeg/tags - built from tag n<version>
+  LLVM_MINGW_VERSION: "20260826" # https://github.com/mstorsjo/llvm-mingw/releases
+  # Alpine 3.23 ships CMake 4, which several of the dependencies below reject.
+  ALPINE_IMAGE: "alpine:3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce"
+  ZLIB_VERSION: "1.3.2" # https://github.com/madler/zlib/tags
+  BROTLI_VERSION: "1.2.0" # https://github.com/google/brotli/tags
+  HWY_VERSION: "1.4.0" # https://github.com/google/highway/tags - tags have no leading v
+  JXL_VERSION: "0.11.2" # https://github.com/libjxl/libjxl/releases - pinned; 0.12 changed skcms/CMS handling
+  WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags
+  OPUS_VERSION: "1.5.2" # https://github.com/xiph/opus/releases - releases only; v1.6.x tags ship no tarball
+  LIBVPX_VERSION: "1.17.0" # https://github.com/webmproject/libvpx/tags
+  AOM_VERSION: "3.15.0" # https://aomedia.googlesource.com/aom
+  SVT_AV1_VERSION: "4.2.0" # https://gitlab.com/AOMediaCodec/SVT-AV1/-/tags
+  DAV1D_VERSION: "1.5.4" # https://code.videolan.org/videolan/dav1d/-/tags
+  X265_VERSION: "4.2" # https://bitbucket.org/multicoreware/x265_git/downloads/?tab=tags
+  X264_COMMIT: "b35605ace3ddf7c1a5d67a2eb553f034aef41d55" # https://code.videolan.org/videolan/x264 - stable branch
 
 jobs:
   create-release:
@@ -34,6 +51,13 @@ jobs:
       ffmpeg-linux-arm64,
       ffmpeg-windows,
       ffmpeg-windows-arm64,
+      ffmpeg-custom-linux,
+      ffmpeg-custom-linux-arm64,
+      ffmpeg-custom-windows,
+      ffmpeg-custom-windows-arm64,
+      ffmpeg-custom-windows-test,
+      ffmpeg-custom-windows-arm64-test,
+      ffmpeg-custom-osx-arm64,
       pngout-linux,
       pngout-linux-arm64,
       pngout-windows,
@@ -71,6 +95,7 @@ jobs:
         $versions.Zopfli = "${{ env.ZOPFLI_VERSION }}"
         $versions.Oxipng = "${{ env.OXIPNG_VERSION }}"
         $versions.FFmpeg = "${{ env.FFMPEG_VERSION }}"
+        $versions.FFmpegCustom = "${{ env.FFMPEG_CUSTOM_VERSION }}"
         $versions.Pngout = "${{ env.PNGOUT_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -457,9 +482,246 @@ jobs:
            ffmpeg-linux-arm64
            ffprobe-linux-arm64
 
+  ffmpeg-custom-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: ffmpeg-deps
+        # No restore-keys on purpose: a partially matching prefix (stale headers
+        # next to fresh .pc files) is worse than a cold build. Hashing ci.yml
+        # means any dependency version bump forces a full rebuild.
+        key: ffmpeg-deps-v1-linux-x64-${{ hashFiles('scripts/build-ffmpeg.sh', '.github/workflows/ci.yml') }}
+    - name: Build (Alpine, fully static against musl)
+      shell: bash
+      run: |
+        # Deliberately `docker run` rather than a job-level `container:` -- the
+        # Actions runner injects a glibc-built node for JS actions, which cannot
+        # run on musl. This way only the build itself happens inside Alpine.
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e FFMPEG_CUSTOM_VERSION -e ZLIB_VERSION -e BROTLI_VERSION -e HWY_VERSION \
+          -e JXL_VERSION -e WEBP_VERSION -e OPUS_VERSION -e LIBVPX_VERSION \
+          -e AOM_VERSION -e SVT_AV1_VERSION -e DAV1D_VERSION -e X265_VERSION -e X264_COMMIT \
+          "$ALPINE_IMAGE" sh -euc '
+            # Alpine has no "ninja" package, and its "meson" hard-depends on
+            # samurai, which conflicts with real ninja -- hence pip for meson.
+            apk add --no-cache build-base libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              py3-pip python3 nasm yasm git curl bash perl pkgconf linux-headers xz \
+              diffutils coreutils tar file
+            pip install --break-system-packages --quiet meson
+            # apk needs root, so everything written to /work is root-owned, which
+            # breaks actions/cache save and the post-job workspace cleanup. Run
+            # the chown from a trap so a failed build still leaves a usable tree.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-ffmpeg.sh linux-x64
+            bash scripts/verify-ffmpeg.sh linux-x64 all
+          '
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-ffmpeg-custom-linux
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ffmpeg-custom-linux-x64
+           ffprobe-custom-linux-x64
+
+  ffmpeg-custom-linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    steps:
+    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: ffmpeg-deps
+        # No restore-keys on purpose: a partially matching prefix (stale headers
+        # next to fresh .pc files) is worse than a cold build. Hashing ci.yml
+        # means any dependency version bump forces a full rebuild.
+        key: ffmpeg-deps-v1-linux-arm64-${{ hashFiles('scripts/build-ffmpeg.sh', '.github/workflows/ci.yml') }}
+    - name: Build (Alpine, fully static against musl)
+      shell: bash
+      run: |
+        # Deliberately `docker run` rather than a job-level `container:` -- the
+        # Actions runner injects a glibc-built node for JS actions, which cannot
+        # run on musl. This way only the build itself happens inside Alpine.
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e FFMPEG_CUSTOM_VERSION -e ZLIB_VERSION -e BROTLI_VERSION -e HWY_VERSION \
+          -e JXL_VERSION -e WEBP_VERSION -e OPUS_VERSION -e LIBVPX_VERSION \
+          -e AOM_VERSION -e SVT_AV1_VERSION -e DAV1D_VERSION -e X265_VERSION -e X264_COMMIT \
+          "$ALPINE_IMAGE" sh -euc '
+            # Alpine has no "ninja" package, and its "meson" hard-depends on
+            # samurai, which conflicts with real ninja -- hence pip for meson.
+            apk add --no-cache build-base libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              py3-pip python3 nasm yasm git curl bash perl pkgconf linux-headers xz \
+              diffutils coreutils tar file
+            pip install --break-system-packages --quiet meson
+            # apk needs root, so everything written to /work is root-owned, which
+            # breaks actions/cache save and the post-job workspace cleanup. Run
+            # the chown from a trap so a failed build still leaves a usable tree.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-ffmpeg.sh linux-arm64
+            bash scripts/verify-ffmpeg.sh linux-arm64 all
+          '
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-ffmpeg-custom-linux-arm64
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ffmpeg-custom-linux-arm64
+           ffprobe-custom-linux-arm64
+
+  ffmpeg-custom-windows:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - name: Install build tools
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build meson nasm yasm pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: ffmpeg-deps
+        key: ffmpeg-deps-v1-win-x64-${{ hashFiles('scripts/build-ffmpeg.sh', '.github/workflows/ci.yml') }}
+    - name: Cross-compile for Windows x64
+      shell: bash
+      run: bash scripts/build-ffmpeg.sh win-x64
+    - name: Verify static linkage
+      shell: bash
+      # Cross-compiled, so it cannot be executed here; the functional smoke
+      # tests run in ffmpeg-custom-windows-test on a real Windows runner.
+      run: bash scripts/verify-ffmpeg.sh win-x64 link
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-ffmpeg-custom-windows
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ffmpeg-custom-win-x64.exe
+           ffprobe-custom-win-x64.exe
+
+  ffmpeg-custom-windows-arm64:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - name: Install build tools
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build meson nasm yasm pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: ffmpeg-deps
+        key: ffmpeg-deps-v1-win-arm64-${{ hashFiles('scripts/build-ffmpeg.sh', '.github/workflows/ci.yml') }}
+    - name: Cross-compile for Windows arm64
+      shell: bash
+      run: bash scripts/build-ffmpeg.sh win-arm64
+    - name: Verify static linkage
+      shell: bash
+      # Cross-compiled, so it cannot be executed here; the functional smoke
+      # tests run in ffmpeg-custom-windows-arm64-test on a real Windows runner.
+      run: bash scripts/verify-ffmpeg.sh win-arm64 link
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-ffmpeg-custom-windows-arm64
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ffmpeg-custom-win-arm64.exe
+           ffprobe-custom-win-arm64.exe
+
+  ffmpeg-custom-windows-test:
+    runs-on: windows-latest
+    needs: [ffmpeg-custom-windows]
+    steps:
+    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-ffmpeg-custom-windows
+        path: .
+    - name: Smoke test
+      shell: bash
+      run: bash scripts/verify-ffmpeg.sh win-x64 run
+
+  ffmpeg-custom-windows-arm64-test:
+    runs-on: windows-11-arm
+    needs: [ffmpeg-custom-windows-arm64]
+    steps:
+    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-ffmpeg-custom-windows-arm64
+        path: .
+    - name: Smoke test
+      shell: bash
+      run: bash scripts/verify-ffmpeg.sh win-arm64 run
+
+  ffmpeg-custom-osx-arm64:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - run: brew install pkgconf cmake ninja meson nasm
+      shell: bash
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: ffmpeg-deps
+        key: ffmpeg-deps-v1-osx-arm64-${{ hashFiles('scripts/build-ffmpeg.sh', '.github/workflows/ci.yml') }}
+    - name: Build
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-ffmpeg.sh asserts with otool -L.
+      run: bash scripts/build-ffmpeg.sh osx-arm64
+    - name: Verify and smoke test
+      shell: bash
+      run: bash scripts/verify-ffmpeg.sh osx-arm64 all
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-ffmpeg-custom-osx-arm64
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ffmpeg-custom-osx-arm64
+           ffprobe-custom-osx-arm64
+
   prebuilt-docker-linux-x64:
     runs-on: ubuntu-latest
-    needs: [zopfli-linux, oxipng-linux, pngout-linux, ffmpeg-linux]
+    needs: [zopfli-linux, oxipng-linux, pngout-linux, ffmpeg-linux, ffmpeg-custom-linux]
     permissions:
       contents: read
       packages: write
@@ -480,6 +742,10 @@ jobs:
       with:
         name: binaries-ffmpeg-linux
         path: .
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-ffmpeg-custom-linux
+        path: .
     - run: |
        @"
        FROM ubuntu:24.04
@@ -488,6 +754,8 @@ jobs:
        COPY --chmod=0755 pngout-linux-x64 /usr/local/bin/pngout
        COPY --chmod=0755 ffmpeg-linux-x64 /usr/local/bin/ffmpeg
        COPY --chmod=0755 ffprobe-linux-x64 /usr/local/bin/ffprobe
+       COPY --chmod=0755 ffmpeg-custom-linux-x64 /usr/local/bin/ffmpeg-custom
+       COPY --chmod=0755 ffprobe-custom-linux-x64 /usr/local/bin/ffprobe-custom
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
     - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
     - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -506,7 +774,7 @@ jobs:
 
   prebuilt-docker-linux-arm64:
     runs-on: ubuntu-latest
-    needs: [zopfli-linux-arm64, oxipng-linux-arm64, pngout-linux-arm64, ffmpeg-linux-arm64]
+    needs: [zopfli-linux-arm64, oxipng-linux-arm64, pngout-linux-arm64, ffmpeg-linux-arm64, ffmpeg-custom-linux-arm64]
     permissions:
       contents: read
       packages: write
@@ -527,6 +795,10 @@ jobs:
       with:
         name: binaries-ffmpeg-linux-arm64
         path: .
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-ffmpeg-custom-linux-arm64
+        path: .
     - run: |
        @"
        FROM ubuntu:24.04
@@ -535,6 +807,8 @@ jobs:
        COPY --chmod=0755 pngout-linux-arm64 /usr/local/bin/pngout
        COPY --chmod=0755 ffmpeg-linux-arm64 /usr/local/bin/ffmpeg
        COPY --chmod=0755 ffprobe-linux-arm64 /usr/local/bin/ffprobe
+       COPY --chmod=0755 ffmpeg-custom-linux-arm64 /usr/local/bin/ffmpeg-custom
+       COPY --chmod=0755 ffprobe-custom-linux-arm64 /usr/local/bin/ffprobe-custom
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
     - uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
     - if: github.event_name == 'push' && github.ref == 'refs/heads/main'

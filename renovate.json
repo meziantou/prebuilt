@@ -45,10 +45,11 @@
         "/^\\.github/workflows/ci\\.yml$/"
       ],
       "matchStrings": [
-        "RCLONE_VERSION: \"(?<currentValue>.*?)\""
+        "FFMPEG_CUSTOM_VERSION: \"(?<currentValue>.*?)\""
       ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "rclone/rclone"
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "FFmpeg/FFmpeg",
+      "extractVersionTemplate": "^n(?<version>\\d+\\.\\d+\\.\\d+)$"
     },
     {
       "customType": "regex",
@@ -56,10 +57,152 @@
         "/^\\.github/workflows/ci\\.yml$/"
       ],
       "matchStrings": [
-        "IMAGEMAGICK_VERSION: \"(?<currentValue>.*?)\""
+        "LLVM_MINGW_VERSION: \"(?<currentValue>.*?)\""
       ],
       "datasourceTemplate": "github-releases",
-      "depNameTemplate": "ImageMagick/ImageMagick"
+      "depNameTemplate": "mstorsjo/llvm-mingw",
+      "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "ZLIB_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "madler/zlib",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "BROTLI_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "google/brotli",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "HWY_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "google/highway"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "JXL_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "libjxl/libjxl"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "WEBP_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "webmproject/libwebp",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "OPUS_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "xiph/opus"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "LIBVPX_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "webmproject/libvpx",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "AOM_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "git-tags",
+      "depNameTemplate": "https://aomedia.googlesource.com/aom",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "SVT_AV1_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "gitlab-tags",
+      "depNameTemplate": "AOMediaCodec/SVT-AV1",
+      "extractVersionTemplate": "^v(?<version>\\d+\\.\\d+\\.\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "DAV1D_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "gitlab-tags",
+      "depNameTemplate": "videolan/dav1d",
+      "registryUrlTemplate": "https://code.videolan.org"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "X265_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "bitbucket-tags",
+      "depNameTemplate": "multicoreware/x265_git",
+      "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "X264_COMMIT: \"(?<currentDigest>.*?)\""
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "https://code.videolan.org/videolan/x264.git",
+      "currentValueTemplate": "stable"
     }
   ]
 }
