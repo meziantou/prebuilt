@@ -66,7 +66,7 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - id: download_release_artifacts
       continue-on-error: true
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -108,7 +108,7 @@ jobs:
   zopfli-linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
@@ -125,7 +125,7 @@ jobs:
   zopfli-linux-arm64:
     runs-on: ubuntu-24.04-arm
     steps:
-    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
@@ -142,7 +142,7 @@ jobs:
   zopfli-windows:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
@@ -170,7 +170,7 @@ jobs:
   zopfli-osx-arm64:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
         repository: google/zopfli
         ref: zopfli-${{ env.ZOPFLI_VERSION }}
