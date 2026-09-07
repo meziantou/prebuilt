@@ -1,0 +1,4 @@
+# build-ffmpeg.sh and verify-ffmpeg.sh are run by bash on every platform, so a
+# CRLF checkout under core.autocrlf=true would break them outright.
+*.sh text eol=lf
+*.cmake text eol=lf

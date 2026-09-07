@@ -1,0 +1,7 @@
+# scripts/build-ffmpeg.sh output
+/ffmpeg-deps/
+/ffmpeg-src/
+/build-*/
+/ffmpeg-custom-*
+/ffprobe-custom-*
+/smoke-*/
