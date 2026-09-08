@@ -24,7 +24,7 @@ env:
   ZLIB_VERSION: "1.3.2" # https://github.com/madler/zlib/tags
   BROTLI_VERSION: "1.2.0" # https://github.com/google/brotli/tags
   HWY_VERSION: "1.4.0" # https://github.com/google/highway/tags - tags have no leading v
-  JXL_VERSION: "0.11.2" # https://github.com/libjxl/libjxl/releases - pinned; 0.12 changed skcms/CMS handling
+  JXL_VERSION: "0.12.0" # https://github.com/libjxl/libjxl/releases - pinned; 0.12 changed skcms/CMS handling
   WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags
   OPUS_VERSION: "1.5.2" # https://github.com/xiph/opus/releases - releases only; v1.6.x tags ship no tarball
   LIBVPX_VERSION: "1.17.0" # https://github.com/webmproject/libvpx/tags
