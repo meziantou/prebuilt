@@ -13,8 +13,6 @@ public sealed class PrebuiltToolCache
 {
     private const int BufferSize = 81920;
 
-    private static readonly HttpClient SharedHttpClient = new();
-
     private readonly HttpClient _httpClient;
 
     /// <summary>Initializes a new instance of the <see cref="PrebuiltToolCache"/> class.</summary>
@@ -23,7 +21,7 @@ public sealed class PrebuiltToolCache
     public PrebuiltToolCache(string? cacheDirectory = null, HttpClient? httpClient = null)
     {
         CacheDirectory = Path.GetFullPath(cacheDirectory ?? DefaultCacheDirectory);
-        _httpClient = httpClient ?? SharedHttpClient;
+        _httpClient = httpClient ?? SharedHttpClient.Instance;
     }
 
     // Declared before Default: static initializers run in textual order
