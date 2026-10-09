@@ -54,11 +54,22 @@ public sealed class PrebuiltToolCache
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>The full path of the executable.</returns>
     /// <exception cref="PlatformNotSupportedException">The tool is not available for the runtime identifier.</exception>
+    /// <remarks>On <c>win-arm64</c>, the <c>win-x64</c> file is downloaded when the tool is not built for <c>win-arm64</c>.</remarks>
     public Task<string> GetOrDownloadAsync(PrebuiltTool tool, string? runtimeIdentifier = null, CancellationToken cancellationToken = default)
+        => GetOrDownloadAsync(tool, runtimeIdentifier, allowEmulation: true, cancellationToken);
+
+    /// <summary>Downloads the tool for a runtime identifier, unless it is already in the cache.</summary>
+    /// <param name="tool">The tool.</param>
+    /// <param name="runtimeIdentifier">The runtime identifier (e.g. <c>linux-x64</c>). Defaults to <see cref="PrebuiltTools.CurrentRuntimeIdentifier"/>.</param>
+    /// <param name="allowEmulation">On <c>win-arm64</c>, whether to download the <c>win-x64</c> file when the tool is not built for <c>win-arm64</c>.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The full path of the executable.</returns>
+    /// <exception cref="PlatformNotSupportedException">The tool is not available for the runtime identifier.</exception>
+    public Task<string> GetOrDownloadAsync(PrebuiltTool tool, string? runtimeIdentifier, bool allowEmulation, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(tool);
 
-        var asset = tool.GetAsset(runtimeIdentifier);
+        var asset = tool.GetAsset(runtimeIdentifier, allowEmulation);
         if (asset is null)
         {
             var rid = runtimeIdentifier ?? PrebuiltTools.CurrentRuntimeIdentifier ?? "the current platform";

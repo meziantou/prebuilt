@@ -35,12 +35,56 @@ public sealed class PrebuiltTool
     /// <summary>Gets the release file for a runtime identifier.</summary>
     /// <param name="runtimeIdentifier">The runtime identifier (e.g. <c>linux-x64</c>). Defaults to <see cref="PrebuiltTools.CurrentRuntimeIdentifier"/>.</param>
     /// <returns>The release file, or <see langword="null"/> when the tool is not available for this runtime identifier.</returns>
-    public PrebuiltToolAsset? GetAsset(string? runtimeIdentifier = null)
+    /// <remarks>When the tool is not built for <c>win-arm64</c>, the <c>win-x64</c> file is returned, as Windows on Arm runs x64 executables through emulation.</remarks>
+    public PrebuiltToolAsset? GetAsset(string? runtimeIdentifier = null) => GetAsset(runtimeIdentifier, allowEmulation: true);
+
+    /// <summary>Gets the release file for a runtime identifier.</summary>
+    /// <param name="runtimeIdentifier">The runtime identifier (e.g. <c>linux-x64</c>). Defaults to <see cref="PrebuiltTools.CurrentRuntimeIdentifier"/>.</param>
+    /// <param name="allowEmulation">When the tool is not built for <c>win-arm64</c>, <see langword="true"/> returns the <c>win-x64</c> file, which Windows on Arm runs through emulation. <see langword="false"/> only returns an exact match.</param>
+    /// <returns>The release file, or <see langword="null"/> when the tool is not available for this runtime identifier.</returns>
+    public PrebuiltToolAsset? GetAsset(string? runtimeIdentifier, bool allowEmulation)
     {
         runtimeIdentifier ??= PrebuiltTools.CurrentRuntimeIdentifier;
         if (runtimeIdentifier is null)
             return null;
 
+        var asset = FindAsset(runtimeIdentifier);
+        if (asset is null && allowEmulation && string.Equals(runtimeIdentifier, "win-arm64", StringComparison.OrdinalIgnoreCase))
+        {
+            asset = FindAsset("win-x64");
+        }
+
+        return asset;
+    }
+
+    /// <summary>Indicates whether the tool is available for a runtime identifier.</summary>
+    /// <param name="runtimeIdentifier">The runtime identifier (e.g. <c>linux-x64</c>). Defaults to <see cref="PrebuiltTools.CurrentRuntimeIdentifier"/>.</param>
+    /// <remarks>A tool built for <c>win-x64</c> is supported on <c>win-arm64</c> through emulation.</remarks>
+    public bool IsSupported(string? runtimeIdentifier = null) => GetAsset(runtimeIdentifier) is not null;
+
+    /// <summary>Indicates whether the tool is available for a runtime identifier.</summary>
+    /// <param name="runtimeIdentifier">The runtime identifier (e.g. <c>linux-x64</c>). Defaults to <see cref="PrebuiltTools.CurrentRuntimeIdentifier"/>.</param>
+    /// <param name="allowEmulation">Whether a tool built for <c>win-x64</c> is supported on <c>win-arm64</c> through emulation.</param>
+    public bool IsSupported(string? runtimeIdentifier, bool allowEmulation) => GetAsset(runtimeIdentifier, allowEmulation) is not null;
+
+    /// <summary>Downloads the tool for the current machine to <see cref="PrebuiltToolCache.Default"/>, unless it is already there.</summary>
+    /// <returns>The full path of the executable.</returns>
+    /// <remarks>On <c>win-arm64</c>, the <c>win-x64</c> file is downloaded when the tool is not built for <c>win-arm64</c>.</remarks>
+    public Task<string> GetOrDownloadAsync(CancellationToken cancellationToken = default)
+        => PrebuiltToolCache.Default.GetOrDownloadAsync(this, runtimeIdentifier: null, cancellationToken);
+
+    /// <summary>Downloads the tool for the current machine to <see cref="PrebuiltToolCache.Default"/>, unless it is already there.</summary>
+    /// <param name="allowEmulation">On <c>win-arm64</c>, whether to download the <c>win-x64</c> file when the tool is not built for <c>win-arm64</c>.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The full path of the executable.</returns>
+    public Task<string> GetOrDownloadAsync(bool allowEmulation, CancellationToken cancellationToken = default)
+        => PrebuiltToolCache.Default.GetOrDownloadAsync(this, runtimeIdentifier: null, allowEmulation, cancellationToken);
+
+    /// <inheritdoc />
+    public override string ToString() => Name;
+
+    private PrebuiltToolAsset? FindAsset(string runtimeIdentifier)
+    {
         foreach (var asset in Assets)
         {
             if (string.Equals(asset.RuntimeIdentifier, runtimeIdentifier, StringComparison.OrdinalIgnoreCase))
@@ -49,18 +93,6 @@ public sealed class PrebuiltTool
 
         return null;
     }
-
-    /// <summary>Indicates whether the tool is available for a runtime identifier.</summary>
-    /// <param name="runtimeIdentifier">The runtime identifier (e.g. <c>linux-x64</c>). Defaults to <see cref="PrebuiltTools.CurrentRuntimeIdentifier"/>.</param>
-    public bool IsSupported(string? runtimeIdentifier = null) => GetAsset(runtimeIdentifier) is not null;
-
-    /// <summary>Downloads the tool for the current machine to <see cref="PrebuiltToolCache.Default"/>, unless it is already there.</summary>
-    /// <returns>The full path of the executable.</returns>
-    public Task<string> GetOrDownloadAsync(CancellationToken cancellationToken = default)
-        => PrebuiltToolCache.Default.GetOrDownloadAsync(this, runtimeIdentifier: null, cancellationToken);
-
-    /// <inheritdoc />
-    public override string ToString() => Name;
 
     private (string Version, IReadOnlyList<PrebuiltToolAsset> Assets) LoadData()
     {
