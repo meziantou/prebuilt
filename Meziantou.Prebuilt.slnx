@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Meziantou.Prebuilt/Meziantou.Prebuilt.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Meziantou.Prebuilt.Tests/Meziantou.Prebuilt.Tests.csproj" />
+  </Folder>
+</Solution>
