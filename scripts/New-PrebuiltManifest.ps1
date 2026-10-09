@@ -46,7 +46,7 @@ foreach ($file in Get-ChildItem -LiteralPath $BinariesPath -File | Sort-Object N
         continue
     }
 
-    # Other release files, such as the *.dockerbuild record of docker/build-push-action, are not tools
+    # Other files in the binaries folder are not tools
     if ($file.Name -cnotmatch '^(?<name>.+)-(?<rid>(linux|win|osx)-(x64|arm64))(\.exe)?$') {
         Write-Host "Skipping $($file.Name)"
         continue
