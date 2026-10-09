@@ -5,7 +5,6 @@ Prebuilt, mostly statically linked, binaries of image and video tools for Window
 The binaries are available from:
 
 - [GitHub releases](https://github.com/meziantou/prebuilt/releases). Each release also contains `versions.json` (tool versions) and `prebuilt-tools.json` (every file with its tool version, size, and SHA-256).
-- The `ghcr.io/meziantou/prebuilt` Docker image (Linux x64 and arm64), with the tools in `/usr/local/bin`.
 - The [Meziantou.Prebuilt](https://www.nuget.org/packages/Meziantou.Prebuilt) NuGet package, which lists the tools and downloads them to a local cache:
 
   ```csharp
