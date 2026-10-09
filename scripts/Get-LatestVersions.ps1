@@ -61,51 +61,6 @@ function Get-ZopfliVersion {
     return ($versions | Sort-Object Version -Descending | Select-Object -First 1).Text
 }
 
-function Get-FFmpegVersion {
-    $release = Invoke-GitHubApi -Uri "https://api.github.com/repos/BtbN/FFmpeg-Builds/releases/tags/latest"
-    $assets = @($release.assets)
-    if (-not $assets) {
-        throw "Unable to determine FFmpeg version (release has no assets)."
-    }
-
-    $requiredPatterns = @(
-        "^ffmpeg-.*-win64-gpl-(?<version>\d+(?:\.\d+){1,2})\.zip$",
-        "^ffmpeg-.*-winarm64-gpl-(?<version>\d+(?:\.\d+){1,2})\.zip$",
-        "^ffmpeg-.*-linux64-gpl-(?<version>\d+(?:\.\d+){1,2})\.tar\.xz$",
-        "^ffmpeg-.*-linuxarm64-gpl-(?<version>\d+(?:\.\d+){1,2})\.tar\.xz$"
-    )
-
-    $versionCounts = @{}
-    foreach ($asset in $assets) {
-        foreach ($pattern in $requiredPatterns) {
-            if ($asset.name -cmatch $pattern) {
-                $version = $Matches["version"]
-                if (-not $versionCounts.ContainsKey($version)) {
-                    $versionCounts[$version] = 0
-                }
-
-                $versionCounts[$version]++
-            }
-        }
-    }
-
-    $candidateVersions =
-        foreach ($entry in $versionCounts.GetEnumerator()) {
-            if ($entry.Value -ge $requiredPatterns.Count) {
-                [PSCustomObject]@{
-                    Version = [version]$entry.Key
-                    Text = $entry.Key
-                }
-            }
-        }
-
-    if (-not $candidateVersions) {
-        throw "Unable to determine FFmpeg version from latest FFmpeg-Builds release assets."
-    }
-
-    return ($candidateVersions | Sort-Object Version -Descending | Select-Object -First 1).Text
-}
-
 function Select-LatestVersion {
     param(
         [string[]]$Names,
@@ -226,8 +181,7 @@ if ([string]::IsNullOrEmpty($workflowContent)) {
 $availableLatestVersions = [ordered]@{
     "ZOPFLI_VERSION" = Get-ZopfliVersion
     "OXIPNG_VERSION" = Get-ReleaseTag -Repository "shssoichiro/oxipng" -TrimV
-    "FFMPEG_VERSION" = Get-FFmpegVersion
-    "FFMPEG_CUSTOM_VERSION" = Get-LatestTag -Repository "FFmpeg/FFmpeg" -Pattern "^n(?<version>\d+\.\d+\.\d+)$"
+    "FFMPEG_VERSION" = Get-LatestTag -Repository "FFmpeg/FFmpeg" -Pattern "^n(?<version>\d+\.\d+\.\d+)$"
     "LLVM_MINGW_VERSION" = Get-ReleaseTag -Repository "mstorsjo/llvm-mingw"
     "ZLIB_VERSION" = Get-LatestTag -Repository "madler/zlib"
     "BROTLI_VERSION" = Get-LatestTag -Repository "google/brotli"

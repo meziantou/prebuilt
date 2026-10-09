@@ -2,7 +2,7 @@
 
 Lists the tools published by [meziantou/prebuilt](https://github.com/meziantou/prebuilt) and downloads them to a local cache.
 
-The package version is the GitHub release version: `Meziantou.Prebuilt` 2.3.0 downloads the files of the [2.3.0 release](https://github.com/meziantou/prebuilt/releases/tag/2.3.0). The size and SHA-256 of every file is embedded in the package and checked after each download.
+The package version is the GitHub release version: `Meziantou.Prebuilt` 3.0.0 downloads the files of the [3.0.0 release](https://github.com/meziantou/prebuilt/releases/tag/3.0.0). The size and SHA-256 of every file is embedded in the package and checked after each download.
 
 ```csharp
 using Meziantou.Prebuilt;
@@ -24,7 +24,7 @@ var cache = new PrebuiltToolCache(cacheDirectory: "/tmp/tools", httpClient: myHt
 string cwebp = await cache.GetOrDownloadAsync(PrebuiltTools.Cwebp, runtimeIdentifier: "linux-arm64");
 ```
 
-Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `FfmpegCustom`, `FfprobeCustom`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
+Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
 
 ## Cache
 

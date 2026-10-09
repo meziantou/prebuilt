@@ -429,9 +429,9 @@ done
 # FFmpeg
 # ---------------------------------------------------------------------------
 
-FFMPEG_REF="n$FFMPEG_CUSTOM_VERSION"
+FFMPEG_REF="n$FFMPEG_VERSION"
 fetch FFmpeg "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/$FFMPEG_REF.tar.gz" \
-      "ffmpeg-$FFMPEG_CUSTOM_VERSION.tar.gz" "FFmpeg-$FFMPEG_REF"
+      "ffmpeg-$FFMPEG_VERSION.tar.gz" "FFmpeg-$FFMPEG_REF"
 
 msg "configuring ffmpeg $FFMPEG_REF for $TARGET"
 
@@ -464,8 +464,8 @@ rm -rf "$FF_BUILD"; mkdir -p "$FF_BUILD"
   make -j"$JOBS"
 )
 
-FFMPEG_OUT="$WORKDIR/ffmpeg-custom-$RID$EXE"
-FFPROBE_OUT="$WORKDIR/ffprobe-custom-$RID$EXE"
+FFMPEG_OUT="$WORKDIR/ffmpeg-$RID$EXE"
+FFPROBE_OUT="$WORKDIR/ffprobe-$RID$EXE"
 cp "$FF_BUILD/ffmpeg$EXE" "$FFMPEG_OUT"
 cp "$FF_BUILD/ffprobe$EXE" "$FFPROBE_OUT"
 

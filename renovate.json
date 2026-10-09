@@ -36,17 +36,6 @@
       "matchStrings": [
         "FFMPEG_VERSION: \"(?<currentValue>.*?)\""
       ],
-      "datasourceTemplate": "github-releases",
-      "depNameTemplate": "BtbN/FFmpeg-Builds"
-    },
-    {
-      "customType": "regex",
-      "managerFilePatterns": [
-        "/^\\.github/workflows/ci\\.yml$/"
-      ],
-      "matchStrings": [
-        "FFMPEG_CUSTOM_VERSION: \"(?<currentValue>.*?)\""
-      ],
       "datasourceTemplate": "github-tags",
       "depNameTemplate": "FFmpeg/FFmpeg",
       "extractVersionTemplate": "^n(?<version>\\d+\\.\\d+\\.\\d+)$"

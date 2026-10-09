@@ -21,17 +21,15 @@ $ErrorActionPreference = "Stop"
 # script, so a new tool cannot ship without a version (and the matching static
 # property in src/Meziantou.Prebuilt/PrebuiltTools.cs).
 $versionKeys = [ordered]@{
-    "zopfli"         = "Zopfli"
-    "oxipng"         = "Oxipng"
-    "pngout"         = "Pngout"
-    "ffmpeg"         = "FFmpeg"
-    "ffprobe"        = "FFmpeg"
-    "ffmpeg-custom"  = "FFmpegCustom"
-    "ffprobe-custom" = "FFmpegCustom"
-    "cwebp"          = "LibWebP"
-    "dwebp"          = "LibWebP"
-    "webpmux"        = "LibWebP"
-    "anim_dump"      = "LibWebP"
+    "zopfli"    = "Zopfli"
+    "oxipng"    = "Oxipng"
+    "pngout"    = "Pngout"
+    "ffmpeg"    = "FFmpeg"
+    "ffprobe"   = "FFmpeg"
+    "cwebp"     = "LibWebP"
+    "dwebp"     = "LibWebP"
+    "webpmux"   = "LibWebP"
+    "anim_dump" = "LibWebP"
 }
 
 $versionsPath = Join-Path $BinariesPath "versions.json"

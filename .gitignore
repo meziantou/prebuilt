@@ -2,8 +2,8 @@
 /ffmpeg-deps/
 /ffmpeg-src/
 /build-*/
-/ffmpeg-custom-*
-/ffprobe-custom-*
+/ffmpeg-*-*
+/ffprobe-*-*
 /smoke-*/
 
 # .NET
