@@ -1,0 +1,7 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Meziantou.Prebuilt\Meziantou.Prebuilt.csproj" />
+  </ItemGroup>
+
+</Project>
