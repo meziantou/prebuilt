@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Verifies a custom ffmpeg/ffprobe pair.
+# Verifies an ffmpeg/ffprobe pair built by scripts/build-ffmpeg.sh.
 #
 #   bash scripts/verify-ffmpeg.sh <target> <mode>
 #
@@ -28,8 +28,8 @@ case "$TARGET" in
   *) echo "unknown target: $TARGET" >&2; exit 2 ;;
 esac
 
-FFMPEG="./ffmpeg-custom-$TARGET$EXE"
-FFPROBE="./ffprobe-custom-$TARGET$EXE"
+FFMPEG="./ffmpeg-$TARGET$EXE"
+FFPROBE="./ffprobe-$TARGET$EXE"
 [ -f "$FFMPEG" ] || { echo "missing $FFMPEG" >&2; exit 1; }
 [ -f "$FFPROBE" ] || { echo "missing $FFPROBE" >&2; exit 1; }
 chmod +x "$FFMPEG" "$FFPROBE" 2>/dev/null || true

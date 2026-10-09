@@ -20,17 +20,11 @@ public static class PrebuiltTools
     /// <summary>pngout, Ken Silverman's PNG optimizer.</summary>
     public static PrebuiltTool Pngout { get; } = new("pngout");
 
-    /// <summary>ffmpeg, from the BtbN/FFmpeg-Builds GPL build.</summary>
+    /// <summary>ffmpeg, statically linked with a pinned codec set.</summary>
     public static PrebuiltTool Ffmpeg { get; } = new("ffmpeg");
 
-    /// <summary>ffprobe, from the BtbN/FFmpeg-Builds GPL build.</summary>
+    /// <summary>ffprobe, statically linked with a pinned codec set.</summary>
     public static PrebuiltTool Ffprobe { get; } = new("ffprobe");
-
-    /// <summary>ffmpeg, from the custom statically linked build.</summary>
-    public static PrebuiltTool FfmpegCustom { get; } = new("ffmpeg-custom");
-
-    /// <summary>ffprobe, from the custom statically linked build.</summary>
-    public static PrebuiltTool FfprobeCustom { get; } = new("ffprobe-custom");
 
     /// <summary>cwebp, the libwebp encoder.</summary>
     public static PrebuiltTool Cwebp { get; } = new("cwebp");
@@ -52,8 +46,6 @@ public static class PrebuiltTools
         Pngout,
         Ffmpeg,
         Ffprobe,
-        FfmpegCustom,
-        FfprobeCustom,
         Cwebp,
         Dwebp,
         Webpmux,
