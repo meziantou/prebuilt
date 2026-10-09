@@ -11,7 +11,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 2.1.0
+  VERSION: 2.2.0
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.2.0" # https://github.com/shssoichiro/oxipng/releases
@@ -25,7 +25,7 @@ env:
   BROTLI_VERSION: "1.2.0" # https://github.com/google/brotli/tags
   HWY_VERSION: "1.4.0" # https://github.com/google/highway/tags - tags have no leading v
   JXL_VERSION: "0.12.0" # https://github.com/libjxl/libjxl/releases - pinned; 0.12 changed skcms/CMS handling
-  WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags
+  WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags - also the released cwebp/dwebp/webpmux/... tools
   OPUS_VERSION: "1.5.2" # https://github.com/xiph/opus/releases - releases only; v1.6.x tags ship no tarball
   LIBVPX_VERSION: "1.17.0" # https://github.com/webmproject/libvpx/tags
   AOM_VERSION: "3.15.0" # https://aomedia.googlesource.com/aom
@@ -61,7 +61,8 @@ jobs:
       pngout-linux,
       pngout-linux-arm64,
       pngout-windows,
-      pngout-osx-arm64
+      pngout-osx-arm64,
+      libwebp
     ]
     permissions:
       contents: write
@@ -97,6 +98,7 @@ jobs:
         $versions.FFmpeg = "${{ env.FFMPEG_VERSION }}"
         $versions.FFmpegCustom = "${{ env.FFMPEG_CUSTOM_VERSION }}"
         $versions.Pngout = "${{ env.PNGOUT_VERSION }}"
+        $versions.LibWebP = "${{ env.WEBP_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
@@ -382,6 +384,87 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: pngout-osx-arm64
+
+  # Repackages Google's official, statically linked libwebp command-line tools.
+  # vwebp is skipped (GUI viewer, needs OpenGL/freeglut), as are the get_disto
+  # and webp_quality extras. Google publishes no Windows arm64 build.
+  libwebp:
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+            archive: linux-x86-64.tar.gz
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+            archive: linux-aarch64.tar.gz
+          - rid: win-x64
+            os: windows-latest
+            archive: windows-x64.zip
+          - rid: osx-arm64
+            os: macos-latest
+            archive: mac-arm64.tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+    - run: |
+       $uri = "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-${{ env.WEBP_VERSION }}-${{ matrix.archive }}"
+       $archivePath = "libwebp-${{ matrix.archive }}"
+       for ($attempt = 1; $attempt -le 5; $attempt++) {
+         try {
+           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+         } catch {
+           if ($attempt -eq 5) {
+             throw
+           }
+           Start-Sleep -Seconds (2 * $attempt)
+           continue
+         }
+         & tar -tf $archivePath *> $null
+         if ($LASTEXITCODE -eq 0) {
+           break
+         }
+         if ($attempt -eq 5) {
+           throw "Failed to download a valid libwebp archive after $attempt attempts"
+         }
+         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+         Start-Sleep -Seconds (2 * $attempt)
+       }
+
+       New-Item -ItemType Directory -Path extracted | Out-Null
+       & tar -xf $archivePath -C extracted
+       if ($LASTEXITCODE -ne 0) {
+         throw "Failed to extract $archivePath"
+       }
+
+       $exe = if ("${{ matrix.rid }}".StartsWith("win-")) { ".exe" } else { "" }
+       $binDir = "extracted/libwebp-${{ env.WEBP_VERSION }}-$("${{ matrix.archive }}" -replace '\.(tar\.gz|zip)$', '')/bin"
+       New-Item -ItemType Directory -Path out | Out-Null
+       foreach ($tool in "cwebp", "dwebp", "webpmux", "webpinfo", "img2webp", "gif2webp", "anim_dump", "anim_diff") {
+         $source = Join-Path $binDir "$tool$exe"
+         if (-not (Test-Path -LiteralPath $source)) {
+           throw "$tool$exe not found in $archivePath"
+         }
+
+         $destination = "out/$tool-${{ matrix.rid }}$exe"
+         Copy-Item -LiteralPath $source -Destination $destination
+         if (-not $IsWindows) {
+           & chmod +x $destination
+         }
+
+         # Smoke test on the native runner: the binary starts and reports the expected version.
+         $output = @(& $destination -version)
+         $version = "$($output | Select-Object -First 1)".Trim()
+         if ($LASTEXITCODE -ne 0 -or $version -notmatch "^(WebP (Encoder|Decoder) version: )?$([regex]::Escape('${{ env.WEBP_VERSION }}'))$") {
+           throw "$tool reported version '$version', expected ${{ env.WEBP_VERSION }}"
+         }
+         Write-Host "$tool $version"
+       }
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-libwebp-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: out/*
 
   ffmpeg-windows:
     runs-on: ubuntu-latest
@@ -721,7 +804,7 @@ jobs:
 
   prebuilt-docker-linux-x64:
     runs-on: ubuntu-latest
-    needs: [zopfli-linux, oxipng-linux, pngout-linux, ffmpeg-linux, ffmpeg-custom-linux]
+    needs: [zopfli-linux, oxipng-linux, pngout-linux, ffmpeg-linux, ffmpeg-custom-linux, libwebp]
     permissions:
       contents: read
       packages: write
@@ -746,6 +829,10 @@ jobs:
       with:
         name: binaries-ffmpeg-custom-linux
         path: .
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-libwebp-linux-x64
+        path: .
     - run: |
        @"
        FROM ubuntu:24.04
@@ -756,6 +843,14 @@ jobs:
        COPY --chmod=0755 ffprobe-linux-x64 /usr/local/bin/ffprobe
        COPY --chmod=0755 ffmpeg-custom-linux-x64 /usr/local/bin/ffmpeg-custom
        COPY --chmod=0755 ffprobe-custom-linux-x64 /usr/local/bin/ffprobe-custom
+       COPY --chmod=0755 cwebp-linux-x64 /usr/local/bin/cwebp
+       COPY --chmod=0755 dwebp-linux-x64 /usr/local/bin/dwebp
+       COPY --chmod=0755 webpmux-linux-x64 /usr/local/bin/webpmux
+       COPY --chmod=0755 webpinfo-linux-x64 /usr/local/bin/webpinfo
+       COPY --chmod=0755 img2webp-linux-x64 /usr/local/bin/img2webp
+       COPY --chmod=0755 gif2webp-linux-x64 /usr/local/bin/gif2webp
+       COPY --chmod=0755 anim_dump-linux-x64 /usr/local/bin/anim_dump
+       COPY --chmod=0755 anim_diff-linux-x64 /usr/local/bin/anim_diff
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
     - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
     - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -774,7 +869,7 @@ jobs:
 
   prebuilt-docker-linux-arm64:
     runs-on: ubuntu-latest
-    needs: [zopfli-linux-arm64, oxipng-linux-arm64, pngout-linux-arm64, ffmpeg-linux-arm64, ffmpeg-custom-linux-arm64]
+    needs: [zopfli-linux-arm64, oxipng-linux-arm64, pngout-linux-arm64, ffmpeg-linux-arm64, ffmpeg-custom-linux-arm64, libwebp]
     permissions:
       contents: read
       packages: write
@@ -799,6 +894,10 @@ jobs:
       with:
         name: binaries-ffmpeg-custom-linux-arm64
         path: .
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-libwebp-linux-arm64
+        path: .
     - run: |
        @"
        FROM ubuntu:24.04
@@ -809,6 +908,14 @@ jobs:
        COPY --chmod=0755 ffprobe-linux-arm64 /usr/local/bin/ffprobe
        COPY --chmod=0755 ffmpeg-custom-linux-arm64 /usr/local/bin/ffmpeg-custom
        COPY --chmod=0755 ffprobe-custom-linux-arm64 /usr/local/bin/ffprobe-custom
+       COPY --chmod=0755 cwebp-linux-arm64 /usr/local/bin/cwebp
+       COPY --chmod=0755 dwebp-linux-arm64 /usr/local/bin/dwebp
+       COPY --chmod=0755 webpmux-linux-arm64 /usr/local/bin/webpmux
+       COPY --chmod=0755 webpinfo-linux-arm64 /usr/local/bin/webpinfo
+       COPY --chmod=0755 img2webp-linux-arm64 /usr/local/bin/img2webp
+       COPY --chmod=0755 gif2webp-linux-arm64 /usr/local/bin/gif2webp
+       COPY --chmod=0755 anim_dump-linux-arm64 /usr/local/bin/anim_dump
+       COPY --chmod=0755 anim_diff-linux-arm64 /usr/local/bin/anim_diff
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
     - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
     - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
