@@ -12,6 +12,9 @@ internal sealed class FakeHttpMessageHandler : HttpMessageHandler
 
     public TimeSpan Delay { get; set; }
 
+    /// <summary>When set, responses are sent only once this task completes.</summary>
+    public Task? ResponseGate { get; set; }
+
     public void Add(Uri url, byte[] content) => _responses[url] = content;
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -20,6 +23,11 @@ internal sealed class FakeHttpMessageHandler : HttpMessageHandler
         if (Delay > TimeSpan.Zero)
         {
             await Task.Delay(Delay, cancellationToken);
+        }
+
+        if (ResponseGate is not null)
+        {
+            await ResponseGate.WaitAsync(cancellationToken);
         }
 
         if (request.RequestUri is not null && _responses.TryGetValue(request.RequestUri, out var content))

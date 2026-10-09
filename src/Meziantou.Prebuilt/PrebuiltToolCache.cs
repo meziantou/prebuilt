@@ -8,12 +8,16 @@ namespace Meziantou.Prebuilt;
 /// Each file is stored at <c>&lt;CacheDirectory&gt;/&lt;tool&gt;/&lt;version&gt;-&lt;rid&gt;-&lt;sha256 prefix&gt;/&lt;executable&gt;</c>,
 /// so different versions or builds never collide. A file is downloaded to a temporary file in the same folder,
 /// checked against the expected size and SHA-256, and only then moved to its final path.
+/// Concurrent calls for the same file in the same process share a single download.
 /// </remarks>
 public sealed class PrebuiltToolCache
 {
     private const int BufferSize = 81920;
 
     private static readonly HttpClient SharedHttpClient = new();
+
+    // In-flight downloads, keyed by final path, shared by all the instances that use the same cache folder
+    private static readonly Dictionary<string, PendingDownload> PendingDownloads = new(OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal);
 
     private readonly HttpClient _httpClient;
 
@@ -71,6 +75,10 @@ public sealed class PrebuiltToolCache
     /// <summary>Downloads the file, unless it is already in the cache.</summary>
     /// <returns>The full path of the executable.</returns>
     /// <exception cref="InvalidDataException">The downloaded file does not match the expected size or SHA-256.</exception>
+    /// <remarks>
+    /// Concurrent calls for the same file share a single download. Cancelling one call does not cancel the download
+    /// for the other callers; the download is cancelled only once every caller waiting for it has been cancelled.
+    /// </remarks>
     public async Task<string> GetOrDownloadAsync(PrebuiltToolAsset asset, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(asset);
@@ -80,36 +88,99 @@ public sealed class PrebuiltToolCache
         if (File.Exists(path))
             return path;
 
-        var directory = Path.GetDirectoryName(path)!;
-        Directory.CreateDirectory(directory);
+        cancellationToken.ThrowIfCancellationRequested();
 
-        var tempPath = Path.Combine(directory, asset.ExecutableName + "." + Guid.NewGuid().ToString("N") + ".tmp");
+        PendingDownload download;
+        lock (PendingDownloads)
+        {
+            if (!PendingDownloads.TryGetValue(path, out download!))
+            {
+                download = new PendingDownload();
+                PendingDownloads.Add(path, download);
+                download.Task = Task.Run(() => DownloadToCacheAsync(asset, path, download), CancellationToken.None);
+            }
+
+            download.WaiterCount++;
+        }
+
         try
         {
-            await DownloadAsync(asset, tempPath, cancellationToken).ConfigureAwait(false);
-
-            if (!OperatingSystem.IsWindows())
+            await download.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return path;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            var cancelDownload = false;
+            lock (PendingDownloads)
             {
-                File.SetUnixFileMode(tempPath,
-                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                    UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                    UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+                download.WaiterCount--;
+                if (download.WaiterCount == 0 && PendingDownloads.TryGetValue(path, out var current) && current == download)
+                {
+                    // Nobody is waiting for this download anymore. The next caller starts a new one.
+                    PendingDownloads.Remove(path);
+                    cancelDownload = true;
+                }
             }
 
+            if (cancelDownload)
+            {
+                download.Cancel();
+            }
+
+            throw;
+        }
+    }
+
+    private async Task DownloadToCacheAsync(PrebuiltToolAsset asset, string path, PendingDownload download)
+    {
+        try
+        {
+            // The previous download may have completed between the caller's check and the registration of this download
+            if (File.Exists(path))
+                return;
+
+            var cancellationToken = download.CancellationToken;
+            var directory = Path.GetDirectoryName(path)!;
+            Directory.CreateDirectory(directory);
+
+            var tempPath = Path.Combine(directory, asset.ExecutableName + "." + Guid.NewGuid().ToString("N") + ".tmp");
             try
             {
-                File.Move(tempPath, path, overwrite: false);
-            }
-            catch (IOException) when (File.Exists(path))
-            {
-                // Another process downloaded the same file concurrently. Both files have the same checksum.
-            }
+                await DownloadAsync(asset, tempPath, cancellationToken).ConfigureAwait(false);
 
-            return path;
+                if (!OperatingSystem.IsWindows())
+                {
+                    File.SetUnixFileMode(tempPath,
+                        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                        UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                        UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+                }
+
+                try
+                {
+                    File.Move(tempPath, path, overwrite: false);
+                }
+                catch (IOException) when (File.Exists(path))
+                {
+                    // Another process downloaded the same file concurrently. Both files have the same checksum.
+                }
+            }
+            finally
+            {
+                TryDeleteFile(tempPath);
+            }
         }
         finally
         {
-            TryDeleteFile(tempPath);
+            lock (PendingDownloads)
+            {
+                if (PendingDownloads.TryGetValue(path, out var current) && current == download)
+                {
+                    PendingDownloads.Remove(path);
+                }
+            }
+
+            download.Dispose();
         }
     }
 
@@ -167,5 +238,31 @@ public sealed class PrebuiltToolCache
         catch (UnauthorizedAccessException)
         {
         }
+    }
+
+    private sealed class PendingDownload : IDisposable
+    {
+        private readonly CancellationTokenSource _cancellationTokenSource = new();
+
+        public Task Task { get; set; } = Task.CompletedTask;
+
+        // Guarded by PendingDownloads
+        public int WaiterCount { get; set; }
+
+        public CancellationToken CancellationToken => _cancellationTokenSource.Token;
+
+        public void Cancel()
+        {
+            try
+            {
+                _cancellationTokenSource.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // The download completed in the meantime
+            }
+        }
+
+        public void Dispose() => _cancellationTokenSource.Dispose();
     }
 }
