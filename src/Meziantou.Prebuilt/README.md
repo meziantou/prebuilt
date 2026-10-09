@@ -26,6 +26,12 @@ string cwebp = await cache.GetOrDownloadAsync(PrebuiltTools.Cwebp, runtimeIdenti
 
 Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
 
+On `win-arm64`, a tool that is not built for Arm64 (e.g. `pngout`) falls back to its `win-x64` build, which Windows on Arm runs through emulation. Pass `allowEmulation: false` to `GetAsset`, `IsSupported` or `GetOrDownloadAsync` to only get native builds:
+
+```csharp
+string pngout = await PrebuiltTools.Pngout.GetOrDownloadAsync(allowEmulation: false); // throws PlatformNotSupportedException on win-arm64
+```
+
 ## Cache
 
 The default cache folder is `Meziantou.Prebuilt` in the local application data folder (`%LOCALAPPDATA%` on Windows, `~/.local/share` on Linux, `~/Library/Application Support` on macOS). Files are stored at:

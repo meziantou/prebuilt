@@ -168,4 +168,21 @@ public sealed class PrebuiltToolCacheTests
 
         Assert.Contains("linux-x64", exception.Message);
     }
+
+    [Fact]
+    public async Task GetOrDownloadAsync_WinArm64_DownloadsWinX64()
+    {
+        using var directory = new TemporaryDirectory();
+        var manifest = TestManifest.Create(("pngout", "win-x64", "1.0", FfmpegContent));
+        var tool = new PrebuiltTool("pngout", manifest);
+        using var handler = new FakeHttpMessageHandler();
+        handler.Add(tool.Assets[0].DownloadUrl, FfmpegContent);
+        using var httpClient = new HttpClient(handler);
+        var cache = new PrebuiltToolCache(directory.FullPath, httpClient);
+
+        var path = await cache.GetOrDownloadAsync(tool, "win-arm64", TestContext.Current.CancellationToken);
+        Assert.Equal(cache.GetPath(tool.Assets[0]), path);
+
+        await Assert.ThrowsAsync<PlatformNotSupportedException>(() => cache.GetOrDownloadAsync(tool, "win-arm64", allowEmulation: false, TestContext.Current.CancellationToken));
+    }
 }

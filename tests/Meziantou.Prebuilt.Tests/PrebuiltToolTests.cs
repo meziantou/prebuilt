@@ -34,6 +34,37 @@ public sealed class PrebuiltToolTests
     }
 
     [Fact]
+    public void GetAsset_WinArm64_FallsBackToWinX64()
+    {
+        var manifest = TestManifest.Create(
+            ("pngout", "linux-x64", "1.0", TestManifest.Content("linux")),
+            ("pngout", "win-x64", "1.0", TestManifest.Content("windows")));
+        var tool = new PrebuiltTool("pngout", manifest);
+
+        Assert.Equal("win-x64", tool.GetAsset("win-arm64")?.RuntimeIdentifier);
+        Assert.Equal("win-x64", tool.GetAsset("WIN-ARM64", allowEmulation: true)?.RuntimeIdentifier);
+        Assert.True(tool.IsSupported("win-arm64"));
+
+        Assert.Null(tool.GetAsset("win-arm64", allowEmulation: false));
+        Assert.False(tool.IsSupported("win-arm64", allowEmulation: false));
+
+        // Only Windows on Arm falls back
+        Assert.Null(tool.GetAsset("linux-arm64"));
+    }
+
+    [Fact]
+    public void GetAsset_WinArm64_PrefersNativeBuild()
+    {
+        var manifest = TestManifest.Create(
+            ("ffmpeg", "win-x64", "9.0", TestManifest.Content("x64")),
+            ("ffmpeg", "win-arm64", "9.0", TestManifest.Content("arm64")));
+        var tool = new PrebuiltTool("ffmpeg", manifest);
+
+        Assert.Equal("win-arm64", tool.GetAsset("win-arm64")?.RuntimeIdentifier);
+        Assert.Equal("win-arm64", tool.GetAsset("win-arm64", allowEmulation: false)?.RuntimeIdentifier);
+    }
+
+    [Fact]
     public void Tool_NotInRelease_Throws()
     {
         var manifest = TestManifest.Create(("ffmpeg", "linux-x64", "9.0", TestManifest.Content("linux")));
