@@ -11,7 +11,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 2.2.0
+  VERSION: 2.3.0
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.2.0" # https://github.com/shssoichiro/oxipng/releases
@@ -83,10 +83,61 @@ jobs:
         pattern: '*'
         path: binaries
         merge-multiple: true
+    - name: Generate tool manifest
+      run: >-
+        ./scripts/New-PrebuiltManifest.ps1
+        -BinariesPath binaries
+        -ReleaseVersion "${{ env.VERSION }}"
+        -DownloadBaseUrl "https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION }}/"
+        -OutputPath binaries/prebuilt-tools.json
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: nuget-manifest
+        if-no-files-found: error
+        retention-days: 1
+        path: binaries/prebuilt-tools.json
     - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: 'gh release create "${{ env.VERSION }}" --target "${{ github.sha }}" ./binaries/*'
       env:
         GH_TOKEN: ${{ github.token }}
+
+  # Meziantou.Prebuilt: the release version, plus a manifest of the release
+  # files (with their checksums) embedded in the assembly. Pushed after
+  # create-release so the download URLs exist when the package goes live.
+  nuget:
+    runs-on: ubuntu-latest
+    needs: [create-release]
+    permissions:
+      id-token: write # Required for OIDC token issuance for trusted publishing
+      contents: read
+    env:
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+      DOTNET_NOLOGO: true
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
+      with:
+        global-json-file: global.json
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: nuget-manifest
+        path: manifest
+    - run: dotnet test --configuration Release -p:PrebuiltManifestPath=${{ github.workspace }}/manifest/prebuilt-tools.json
+    - run: dotnet pack src/Meziantou.Prebuilt --configuration Release --output ./artifacts -p:Version=${{ env.VERSION }} -p:PrebuiltManifestPath=${{ github.workspace }}/manifest/prebuilt-tools.json
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: nuget-packages
+        if-no-files-found: error
+        path: ./artifacts/*.nupkg
+    - name: NuGet login (OIDC → temp API key)
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: nuget/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+      id: nuget-login
+      with:
+        user: meziantou
+    - name: Push to NuGet.org
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
   versions_json:
     runs-on: ubuntu-latest
@@ -386,8 +437,8 @@ jobs:
         path: pngout-osx-arm64
 
   # Repackages Google's official, statically linked libwebp command-line tools.
-  # vwebp is skipped (GUI viewer, needs OpenGL/freeglut), as are the get_disto
-  # and webp_quality extras. Google publishes no Windows arm64 build.
+  # Only cwebp, dwebp, webpmux and anim_dump are shipped; the other tools of the
+  # archive are skipped. Google publishes no Windows arm64 build.
   libwebp:
     strategy:
       matrix:
@@ -439,7 +490,7 @@ jobs:
        $exe = if ("${{ matrix.rid }}".StartsWith("win-")) { ".exe" } else { "" }
        $binDir = "extracted/libwebp-${{ env.WEBP_VERSION }}-$("${{ matrix.archive }}" -replace '\.(tar\.gz|zip)$', '')/bin"
        New-Item -ItemType Directory -Path out | Out-Null
-       foreach ($tool in "cwebp", "dwebp", "webpmux", "webpinfo", "img2webp", "gif2webp", "anim_dump", "anim_diff") {
+       foreach ($tool in "cwebp", "dwebp", "webpmux", "anim_dump") {
          $source = Join-Path $binDir "$tool$exe"
          if (-not (Test-Path -LiteralPath $source)) {
            throw "$tool$exe not found in $archivePath"
@@ -846,11 +897,7 @@ jobs:
        COPY --chmod=0755 cwebp-linux-x64 /usr/local/bin/cwebp
        COPY --chmod=0755 dwebp-linux-x64 /usr/local/bin/dwebp
        COPY --chmod=0755 webpmux-linux-x64 /usr/local/bin/webpmux
-       COPY --chmod=0755 webpinfo-linux-x64 /usr/local/bin/webpinfo
-       COPY --chmod=0755 img2webp-linux-x64 /usr/local/bin/img2webp
-       COPY --chmod=0755 gif2webp-linux-x64 /usr/local/bin/gif2webp
        COPY --chmod=0755 anim_dump-linux-x64 /usr/local/bin/anim_dump
-       COPY --chmod=0755 anim_diff-linux-x64 /usr/local/bin/anim_diff
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
     - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
     - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -911,11 +958,7 @@ jobs:
        COPY --chmod=0755 cwebp-linux-arm64 /usr/local/bin/cwebp
        COPY --chmod=0755 dwebp-linux-arm64 /usr/local/bin/dwebp
        COPY --chmod=0755 webpmux-linux-arm64 /usr/local/bin/webpmux
-       COPY --chmod=0755 webpinfo-linux-arm64 /usr/local/bin/webpinfo
-       COPY --chmod=0755 img2webp-linux-arm64 /usr/local/bin/img2webp
-       COPY --chmod=0755 gif2webp-linux-arm64 /usr/local/bin/gif2webp
        COPY --chmod=0755 anim_dump-linux-arm64 /usr/local/bin/anim_dump
-       COPY --chmod=0755 anim_diff-linux-arm64 /usr/local/bin/anim_diff
        "@ | Set-Content -LiteralPath Dockerfile -NoNewline
     - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
     - if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -5,3 +5,9 @@
 /ffmpeg-custom-*
 /ffprobe-custom-*
 /smoke-*/
+
+# .NET
+[Bb]in/
+[Oo]bj/
+/artifacts/
+TestResults/
