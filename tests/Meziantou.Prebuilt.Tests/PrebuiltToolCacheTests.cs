@@ -135,25 +135,105 @@ public sealed class PrebuiltToolCacheTests
     }
 
     [Fact]
-    public async Task GetOrDownloadAsync_Concurrent_ReturnsSamePath()
+    public async Task GetOrDownloadAsync_Concurrent_DownloadsOnce()
     {
         using var directory = new TemporaryDirectory();
         var asset = CreateAsset(FfmpegContent);
-        using var handler = new FakeHttpMessageHandler { Delay = TimeSpan.FromMilliseconds(100) };
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new FakeHttpMessageHandler { ResponseGate = gate.Task };
         handler.Add(asset.DownloadUrl, FfmpegContent);
         using var httpClient = new HttpClient(handler);
         var cache1 = new PrebuiltToolCache(directory.FullPath, httpClient);
         var cache2 = new PrebuiltToolCache(directory.FullPath, httpClient);
 
-        var paths = await Task.WhenAll(
-            cache1.GetOrDownloadAsync(asset, TestContext.Current.CancellationToken),
-            cache2.GetOrDownloadAsync(asset, TestContext.Current.CancellationToken));
+        var tasks = Enumerable.Range(0, 10)
+            .Select(i => (i % 2 == 0 ? cache1 : cache2).GetOrDownloadAsync(asset, TestContext.Current.CancellationToken))
+            .ToArray();
+        gate.SetResult();
+        var paths = await Task.WhenAll(tasks);
 
-        Assert.Equal(paths[0], paths[1]);
-        Assert.Equal(2, handler.RequestCount);
+        Assert.All(paths, path => Assert.Equal(cache1.GetPath(asset), path));
+        Assert.Equal(1, handler.RequestCount);
         Assert.Equal(new[] { paths[0] }, directory.GetFiles());
         var content = await File.ReadAllBytesAsync(paths[0], TestContext.Current.CancellationToken);
         Assert.Equal(FfmpegContent, content);
+    }
+
+    [Fact]
+    public async Task GetOrDownloadAsync_Concurrent_CancellingOneCallerDoesNotCancelOthers()
+    {
+        using var directory = new TemporaryDirectory();
+        var asset = CreateAsset(FfmpegContent);
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new FakeHttpMessageHandler { ResponseGate = gate.Task };
+        handler.Add(asset.DownloadUrl, FfmpegContent);
+        using var httpClient = new HttpClient(handler);
+        var cache = new PrebuiltToolCache(directory.FullPath, httpClient);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        var cancelledTask = cache.GetOrDownloadAsync(asset, cts.Token);
+        var task = cache.GetOrDownloadAsync(asset, TestContext.Current.CancellationToken);
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => cancelledTask);
+        gate.SetResult();
+        var path = await task;
+
+        Assert.Equal(cache.GetPath(asset), path);
+        Assert.Equal(1, handler.RequestCount);
+        Assert.Equal(new[] { path }, directory.GetFiles());
+    }
+
+    [Fact]
+    public async Task GetOrDownloadAsync_Concurrent_AllCallersCancelled_NextCallDownloadsAgain()
+    {
+        using var directory = new TemporaryDirectory();
+        var asset = CreateAsset(FfmpegContent);
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new FakeHttpMessageHandler { ResponseGate = gate.Task };
+        handler.Add(asset.DownloadUrl, FfmpegContent);
+        using var httpClient = new HttpClient(handler);
+        var cache = new PrebuiltToolCache(directory.FullPath, httpClient);
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+
+        var task1 = cache.GetOrDownloadAsync(asset, cts.Token);
+        var task2 = cache.GetOrDownloadAsync(asset, cts.Token);
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task1);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task2);
+        Assert.False(cache.IsCached(asset));
+
+        gate.SetResult();
+        var path = await cache.GetOrDownloadAsync(asset, TestContext.Current.CancellationToken);
+
+        Assert.Equal(cache.GetPath(asset), path);
+        Assert.Equal(2, handler.RequestCount);
+        var content = await File.ReadAllBytesAsync(path, TestContext.Current.CancellationToken);
+        Assert.Equal(FfmpegContent, content);
+    }
+
+    [Fact]
+    public async Task GetOrDownloadAsync_Concurrent_FailureIsSharedAndNextCallRetries()
+    {
+        using var directory = new TemporaryDirectory();
+        var asset = CreateAsset(FfmpegContent);
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var handler = new FakeHttpMessageHandler { ResponseGate = gate.Task };
+        using var httpClient = new HttpClient(handler);
+        var cache = new PrebuiltToolCache(directory.FullPath, httpClient);
+
+        var task1 = cache.GetOrDownloadAsync(asset, TestContext.Current.CancellationToken);
+        var task2 = cache.GetOrDownloadAsync(asset, TestContext.Current.CancellationToken);
+        gate.SetResult();
+        await Assert.ThrowsAsync<HttpRequestException>(() => task1);
+        await Assert.ThrowsAsync<HttpRequestException>(() => task2);
+        Assert.Equal(1, handler.RequestCount);
+
+        handler.Add(asset.DownloadUrl, FfmpegContent);
+        var path = await cache.GetOrDownloadAsync(asset, TestContext.Current.CancellationToken);
+
+        Assert.True(cache.IsCached(asset));
+        Assert.Equal(2, handler.RequestCount);
+        Assert.Equal(new[] { path }, directory.GetFiles());
     }
 
     [Fact]

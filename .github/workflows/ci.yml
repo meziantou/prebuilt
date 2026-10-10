@@ -615,13 +615,14 @@ jobs:
         # Deliberately `docker run` rather than a job-level `container:` -- the
         # Actions runner injects a glibc-built node for JS actions, which cannot
         # run on musl. This way only the build itself happens inside Alpine.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
         docker run --rm \
           -v "$PWD:/work" -w /work \
           -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
           -e FFMPEG_VERSION -e ZLIB_VERSION -e BROTLI_VERSION -e HWY_VERSION \
           -e JXL_VERSION -e WEBP_VERSION -e OPUS_VERSION -e LIBVPX_VERSION \
           -e AOM_VERSION -e SVT_AV1_VERSION -e DAV1D_VERSION -e X265_VERSION -e X264_COMMIT \
-          "$ALPINE_IMAGE" sh -euc '
+          "$image" sh -euc '
             # Alpine has no "ninja" package, and its "meson" hard-depends on
             # samurai, which conflicts with real ninja -- hence pip for meson.
             apk add --no-cache build-base libstdc++-dev cmake ninja-build ninja-is-really-ninja \
@@ -661,13 +662,14 @@ jobs:
         # Deliberately `docker run` rather than a job-level `container:` -- the
         # Actions runner injects a glibc-built node for JS actions, which cannot
         # run on musl. This way only the build itself happens inside Alpine.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
         docker run --rm \
           -v "$PWD:/work" -w /work \
           -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
           -e FFMPEG_VERSION -e ZLIB_VERSION -e BROTLI_VERSION -e HWY_VERSION \
           -e JXL_VERSION -e WEBP_VERSION -e OPUS_VERSION -e LIBVPX_VERSION \
           -e AOM_VERSION -e SVT_AV1_VERSION -e DAV1D_VERSION -e X265_VERSION -e X264_COMMIT \
-          "$ALPINE_IMAGE" sh -euc '
+          "$image" sh -euc '
             # Alpine has no "ninja" package, and its "meson" hard-depends on
             # samurai, which conflicts with real ninja -- hence pip for meson.
             apk add --no-cache build-base libstdc++-dev cmake ninja-build ninja-is-really-ninja \

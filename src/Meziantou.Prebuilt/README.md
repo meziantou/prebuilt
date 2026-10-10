@@ -40,4 +40,4 @@ The default cache folder is `Meziantou.Prebuilt` in the local application data f
 <cache>/<tool>/<version>-<rid>-<first 16 chars of the SHA-256>/<tool>[.exe]
 ```
 
-Versions and builds never collide, and identical files are shared between package versions. A file is downloaded to a temporary file next to its final path, verified, made executable, and then moved into place. Concurrent downloads, including from several processes, are safe.
+Versions and builds never collide, and identical files are shared between package versions. A file is downloaded to a temporary file next to its final path, verified, made executable, and then moved into place. Concurrent calls for the same file within a process share a single download; concurrent downloads from several processes are also safe.
