@@ -630,7 +630,7 @@ jobs:
           "$image" sh -euc '
             # Alpine has no "ninja" package, and its "meson" hard-depends on
             # samurai, which conflicts with real ninja -- hence pip for meson.
-            apk add --no-cache build-base libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
               py3-pip python3 nasm yasm git curl bash perl pkgconf linux-headers xz \
               diffutils coreutils tar file
             pip install --break-system-packages --quiet meson
@@ -682,7 +682,7 @@ jobs:
           "$image" sh -euc '
             # Alpine has no "ninja" package, and its "meson" hard-depends on
             # samurai, which conflicts with real ninja -- hence pip for meson.
-            apk add --no-cache build-base libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
               py3-pip python3 nasm yasm git curl bash perl pkgconf linux-headers xz \
               diffutils coreutils tar file
             pip install --break-system-packages --quiet meson

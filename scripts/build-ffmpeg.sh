@@ -174,6 +174,13 @@ if [ -n "$CROSS_PREFIX" ]; then
   CMAKE_CROSS_ARGS="-DCMAKE_TOOLCHAIN_FILE=$SCRIPT_DIR/mingw-toolchain.cmake -DMINGW_TRIPLE=$MINGW_TRIPLE"
 fi
 
+# Alpine's default compiler is gcc, which takes roughly 1.7x as long as clang
+# to compile these libraries. clang still links against gcc's libstdc++ and
+# libgcc, and it is what the Windows and macOS targets are built with anyway.
+case "$TARGET" in
+  linux-*) export CC=clang CXX=clang++ ;;
+esac
+
 # pkg-config must see the cross prefix and nothing else. PKG_CONFIG_LIBDIR (not
 # just PKG_CONFIG_PATH) is what stops Homebrew leaking a .dylib into the link.
 export PKG_CONFIG_LIBDIR="$PREFIX/lib/pkgconfig"
@@ -443,6 +450,10 @@ FF_ARGS="--arch=$FF_ARCH --target-os=$FF_TARGET_OS
   $FF_THREADS"
 
 case "$TARGET" in
+  linux-*)
+    # ffmpeg's configure ignores CC/CXX from the environment.
+    FF_ARGS="$FF_ARGS --cc=$CC --cxx=$CXX"
+    ;;
   win-*)
     FF_ARGS="$FF_ARGS --enable-cross-compile --cross-prefix=$CROSS_PREFIX --pkg-config=pkg-config"
     ;;
