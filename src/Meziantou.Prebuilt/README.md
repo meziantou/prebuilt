@@ -24,7 +24,7 @@ var cache = new PrebuiltToolCache(cacheDirectory: "/tmp/tools", httpClient: myHt
 string cwebp = await cache.GetOrDownloadAsync(PrebuiltTools.Cwebp, runtimeIdentifier: "linux-arm64");
 ```
 
-Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
+Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
 
 On `win-arm64`, a tool that is not built for Arm64 (e.g. `pngout`) falls back to its `win-x64` build, which Windows on Arm runs through emulation. Pass `allowEmulation: false` to `GetAsset`, `IsSupported` or `GetOrDownloadAsync` to only get native builds:
 
