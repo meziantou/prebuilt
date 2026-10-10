@@ -602,13 +602,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - id: ffmpeg-deps-key
+      shell: bash
+      run: echo "key=$(bash scripts/ffmpeg-deps-key.sh linux-x64)" >> "$GITHUB_OUTPUT"
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: ffmpeg-deps
         # No restore-keys on purpose: a partially matching prefix (stale headers
-        # next to fresh .pc files) is worse than a cold build. Hashing ci.yml
-        # means any dependency version bump forces a full rebuild.
-        key: ffmpeg-deps-v1-linux-x64-${{ hashFiles('scripts/build-ffmpeg.sh', '.github/workflows/ci.yml') }}
+        # next to fresh .pc files) is worse than a cold build. The key hashes
+        # the build script, the toolchain and the dependency versions, so any
+        # dependency bump forces a full rebuild while unrelated workflow edits
+        # keep the cache.
+        key: ${{ steps.ffmpeg-deps-key.outputs.key }}
     - name: Build (Alpine, fully static against musl)
       shell: bash
       run: |
@@ -649,13 +654,18 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - id: ffmpeg-deps-key
+      shell: bash
+      run: echo "key=$(bash scripts/ffmpeg-deps-key.sh linux-arm64)" >> "$GITHUB_OUTPUT"
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: ffmpeg-deps
         # No restore-keys on purpose: a partially matching prefix (stale headers
-        # next to fresh .pc files) is worse than a cold build. Hashing ci.yml
-        # means any dependency version bump forces a full rebuild.
-        key: ffmpeg-deps-v1-linux-arm64-${{ hashFiles('scripts/build-ffmpeg.sh', '.github/workflows/ci.yml') }}
+        # next to fresh .pc files) is worse than a cold build. The key hashes
+        # the build script, the toolchain and the dependency versions, so any
+        # dependency bump forces a full rebuild while unrelated workflow edits
+        # keep the cache.
+        key: ${{ steps.ffmpeg-deps-key.outputs.key }}
     - name: Build (Alpine, fully static against musl)
       shell: bash
       run: |
@@ -717,10 +727,13 @@ jobs:
         tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
         echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
         echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - id: ffmpeg-deps-key
+      shell: bash
+      run: echo "key=$(bash scripts/ffmpeg-deps-key.sh win-x64)" >> "$GITHUB_OUTPUT"
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: ffmpeg-deps
-        key: ffmpeg-deps-v1-win-x64-${{ hashFiles('scripts/build-ffmpeg.sh', '.github/workflows/ci.yml') }}
+        key: ${{ steps.ffmpeg-deps-key.outputs.key }}
     - name: Cross-compile for Windows x64
       shell: bash
       run: bash scripts/build-ffmpeg.sh win-x64
@@ -763,10 +776,13 @@ jobs:
         tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
         echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
         echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - id: ffmpeg-deps-key
+      shell: bash
+      run: echo "key=$(bash scripts/ffmpeg-deps-key.sh win-arm64)" >> "$GITHUB_OUTPUT"
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: ffmpeg-deps
-        key: ffmpeg-deps-v1-win-arm64-${{ hashFiles('scripts/build-ffmpeg.sh', '.github/workflows/ci.yml') }}
+        key: ${{ steps.ffmpeg-deps-key.outputs.key }}
     - name: Cross-compile for Windows arm64
       shell: bash
       run: bash scripts/build-ffmpeg.sh win-arm64
@@ -816,10 +832,13 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - run: brew install pkgconf cmake ninja meson nasm
       shell: bash
+    - id: ffmpeg-deps-key
+      shell: bash
+      run: echo "key=$(bash scripts/ffmpeg-deps-key.sh osx-arm64)" >> "$GITHUB_OUTPUT"
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
       with:
         path: ffmpeg-deps
-        key: ffmpeg-deps-v1-osx-arm64-${{ hashFiles('scripts/build-ffmpeg.sh', '.github/workflows/ci.yml') }}
+        key: ${{ steps.ffmpeg-deps-key.outputs.key }}
     - name: Build
       shell: bash
       # macOS has no static libSystem, so this cannot be fully static; the bar
