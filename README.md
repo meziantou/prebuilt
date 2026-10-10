@@ -1,6 +1,6 @@
 # prebuilt
 
-Prebuilt, mostly statically linked, binaries of image and video tools for Windows, Linux, and macOS: `zopfli`, `oxipng`, `pngout`, `ffmpeg`/`ffprobe` (built from source), and the libwebp tools `cwebp`, `dwebp`, `webpmux`, and `anim_dump`.
+Prebuilt, mostly statically linked, binaries of image and video tools for Windows, Linux, and macOS: `zopfli`, `oxipng`, `pngout`, `ffmpeg`/`ffprobe` (built from source), the libwebp tools `cwebp`, `dwebp`, `webpmux`, and `anim_dump`, and the libavif tools `avifenc` and `avifdec`.
 
 The binaries are available from:
 

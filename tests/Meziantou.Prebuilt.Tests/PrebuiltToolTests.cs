@@ -85,6 +85,8 @@ public sealed class PrebuiltToolTests
         Assert.All(properties, tool => Assert.Contains(tool, PrebuiltTools.All));
         Assert.HasCount(PrebuiltTools.All.Count, PrebuiltTools.All.Select(tool => tool.Name).Distinct(StringComparer.Ordinal));
         Assert.Equal("anim_dump", PrebuiltTools.WebpAnimDump.Name);
+        Assert.Equal("avifenc", PrebuiltTools.Avifenc.Name);
+        Assert.Equal("avifdec", PrebuiltTools.Avifdec.Name);
     }
 
     public static bool IsManifestEmbedded => PrebuiltManifest.IsEmbedded;
