@@ -83,7 +83,7 @@ public sealed class PrebuiltToolTests
 
         Assert.Equal(properties.Count, PrebuiltTools.All.Count);
         Assert.All(properties, tool => Assert.Contains(tool, PrebuiltTools.All));
-        Assert.Equal(PrebuiltTools.All.Count, PrebuiltTools.All.Select(tool => tool.Name).Distinct(StringComparer.Ordinal).Count());
+        Assert.HasCount(PrebuiltTools.All.Count, PrebuiltTools.All.Select(tool => tool.Name).Distinct(StringComparer.Ordinal));
         Assert.Equal("anim_dump", PrebuiltTools.WebpAnimDump.Name);
     }
 

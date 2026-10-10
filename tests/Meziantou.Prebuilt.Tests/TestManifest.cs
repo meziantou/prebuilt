@@ -32,5 +32,5 @@ internal static class TestManifest
         return PrebuiltManifest.Parse(json);
     }
 
-    public static string Sha256(byte[] content) => Convert.ToHexString(SHA256.HashData(content)).ToLowerInvariant();
+    public static string Sha256(byte[] content) => Convert.ToHexStringLower(SHA256.HashData(content));
 }
