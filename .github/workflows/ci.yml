@@ -11,7 +11,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.2.0
+  VERSION: 3.3.0
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.2.1" # https://github.com/shssoichiro/oxipng/releases
@@ -22,7 +22,10 @@ env:
   ZLIB_VERSION: "1.3.2" # https://github.com/madler/zlib/tags
   BROTLI_VERSION: "1.2.0" # https://github.com/google/brotli/tags
   HWY_VERSION: "1.4.0" # https://github.com/google/highway/tags - tags have no leading v
-  JXL_VERSION: "0.12.0" # https://github.com/libjxl/libjxl/releases - pinned; 0.12 changed skcms/CMS handling
+  JXL_VERSION: "0.12.0" # https://github.com/libjxl/libjxl/releases - pinned; 0.12 changed skcms/CMS handling - also the released cjxl/djxl/jxlinfo/jxl_from_tree tools
+  LIBPNG_VERSION: "1.6.59" # https://github.com/pnggroup/libpng/tags - PNG and APNG support of cjxl/djxl; 1.6.x, the 1.7 tags are betas
+  JXL_OXIDE_VERSION: "0.12.6" # https://crates.io/crates/jxl-oxide-cli
+  RUST_TOOLCHAIN: "1.99.0" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
   WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags - also the released cwebp/dwebp/webpmux/... tools
   LIBAVIF_VERSION: "1.4.2" # https://github.com/AOMediaCodec/libavif/releases - avifenc/avifdec; releases only: the Windows and macOS binaries are release assets
   OPUS_VERSION: "1.5.2" # https://github.com/xiph/opus/releases - releases only; v1.6.x tags ship no tarball
@@ -58,7 +61,10 @@ jobs:
       pngout-windows,
       pngout-osx-arm64,
       libwebp,
-      libavif
+      libavif,
+      libjxl,
+      libjxl-windows-test,
+      jxl-oxide
     ]
     permissions:
       contents: write
@@ -146,6 +152,8 @@ jobs:
         $versions.Pngout = "${{ env.PNGOUT_VERSION }}"
         $versions.LibWebP = "${{ env.WEBP_VERSION }}"
         $versions.LibAvif = "${{ env.LIBAVIF_VERSION }}"
+        $versions.LibJxl = "${{ env.JXL_VERSION }}"
+        $versions.JxlOxide = "${{ env.JXL_OXIDE_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
@@ -673,6 +681,153 @@ jobs:
         path: |
            avifenc-${{ matrix.rid }}*
            avifdec-${{ matrix.rid }}*
+
+  # cjxl, djxl, jxlinfo and jxl_from_tree. Every target is built from the
+  # libjxl sources (scripts/build-libjxl.sh): the libjxl release has no macOS
+  # and no Linux arm64 binaries, and none of its archives has jxl_from_tree.
+  # libjxl, highway, brotli and zlib are the versions ffmpeg is built with.
+  # No Windows arm64 build, as for the other image tools.
+  libjxl:
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Build (Alpine, fully static against musl)
+      if: startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e LIBPNG_VERSION -e BROTLI_VERSION -e HWY_VERSION -e JXL_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              git curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-libjxl.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-libjxl.sh win-x64
+    - name: Build (macOS)
+      if: matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-libjxl.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-libjxl.sh osx-arm64
+    - name: Verify and smoke test
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; libjxl-windows-test runs their smoke tests.
+      run: bash scripts/verify-libjxl.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-libjxl-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           cjxl-${{ matrix.rid }}*
+           djxl-${{ matrix.rid }}*
+           jxlinfo-${{ matrix.rid }}*
+           jxl_from_tree-${{ matrix.rid }}*
+
+  libjxl-windows-test:
+    runs-on: windows-latest
+    needs: [libjxl]
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-libjxl-win-x64
+        path: .
+    - name: Smoke test
+      shell: bash
+      run: bash scripts/verify-libjxl.sh win-x64 run
+
+  # jxl-oxide, a JPEG XL decoder written in Rust that shares no code with
+  # libjxl. Its releases have no binaries any more, so it is built from the
+  # jxl-oxide-cli package of crates.io (scripts/build-jxl-oxide.sh).
+  # It needs libjxl for its smoke tests only: they decode files written by cjxl
+  # and compare the result with what djxl decodes.
+  jxl-oxide:
+    needs: [libjxl]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: windows-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Install musl-gcc
+      if: startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends musl-tools
+    - name: Build
+      shell: bash
+      run: bash scripts/build-jxl-oxide.sh ${{ matrix.rid }}
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-libjxl-${{ matrix.rid }}
+        path: .
+    - name: Verify and smoke test
+      shell: bash
+      run: bash scripts/verify-jxl-oxide.sh ${{ matrix.rid }} all
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-jxl-oxide-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: jxl-oxide-${{ matrix.rid }}*
 
   ffmpeg-linux:
     runs-on: ubuntu-latest

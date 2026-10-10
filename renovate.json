@@ -104,6 +104,40 @@
         "/^\\.github/workflows/ci\\.yml$/"
       ],
       "matchStrings": [
+        "LIBPNG_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "pnggroup/libpng",
+      "extractVersionTemplate": "^v(?<version>\\d+\\.\\d+\\.\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "JXL_OXIDE_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "crate",
+      "depNameTemplate": "jxl-oxide-cli"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "RUST_TOOLCHAIN: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "rust-lang/rust"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
         "WEBP_VERSION: \"(?<currentValue>.*?)\""
       ],
       "datasourceTemplate": "github-tags",

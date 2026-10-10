@@ -87,6 +87,11 @@ public sealed class PrebuiltToolTests
         Assert.Equal("anim_dump", PrebuiltTools.WebpAnimDump.Name);
         Assert.Equal("avifenc", PrebuiltTools.Avifenc.Name);
         Assert.Equal("avifdec", PrebuiltTools.Avifdec.Name);
+        Assert.Equal("cjxl", PrebuiltTools.Cjxl.Name);
+        Assert.Equal("djxl", PrebuiltTools.Djxl.Name);
+        Assert.Equal("jxlinfo", PrebuiltTools.Jxlinfo.Name);
+        Assert.Equal("jxl_from_tree", PrebuiltTools.JxlFromTree.Name);
+        Assert.Equal("jxl-oxide", PrebuiltTools.JxlOxide.Name);
     }
 
     public static bool IsManifestEmbedded => PrebuiltManifest.IsEmbedded;

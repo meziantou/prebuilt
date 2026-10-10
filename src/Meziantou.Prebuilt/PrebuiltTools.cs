@@ -44,6 +44,21 @@ public static class PrebuiltTools
     /// <summary>avifdec, the libavif decoder, statically linked with dav1d.</summary>
     public static PrebuiltTool Avifdec { get; } = new("avifdec");
 
+    /// <summary>cjxl, the libjxl encoder.</summary>
+    public static PrebuiltTool Cjxl { get; } = new("cjxl");
+
+    /// <summary>djxl, the libjxl decoder.</summary>
+    public static PrebuiltTool Djxl { get; } = new("djxl");
+
+    /// <summary>jxlinfo, the libjxl tool that describes a JPEG XL file.</summary>
+    public static PrebuiltTool Jxlinfo { get; } = new("jxlinfo");
+
+    /// <summary>jxl_from_tree, the libjxl developer tool that writes a JPEG XL file from the textual description of a modular tree.</summary>
+    public static PrebuiltTool JxlFromTree { get; } = new("jxl_from_tree");
+
+    /// <summary>jxl-oxide, a JPEG XL decoder that does not share any code with libjxl.</summary>
+    public static PrebuiltTool JxlOxide { get; } = new("jxl-oxide");
+
     /// <summary>Gets all the tools.</summary>
     public static IReadOnlyList<PrebuiltTool> All { get; } =
     [
@@ -58,6 +73,11 @@ public static class PrebuiltTools
         WebpAnimDump,
         Avifenc,
         Avifdec,
+        Cjxl,
+        Djxl,
+        Jxlinfo,
+        JxlFromTree,
+        JxlOxide,
     ];
 
     private static string? GetCurrentRuntimeIdentifier()

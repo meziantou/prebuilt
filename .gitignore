@@ -11,6 +11,18 @@
 /avifenc-*-*
 /avifdec-*-*
 
+# scripts/build-libjxl.sh output
+/libjxl-deps/
+/libjxl-src/
+/cjxl-*-*
+/djxl-*-*
+/jxlinfo-*-*
+/jxl_from_tree-*-*
+
+# jxl-oxide job output
+/jxl-oxide-build/
+/jxl-oxide-*-*
+
 # .NET
 [Bb]in/
 [Oo]bj/
