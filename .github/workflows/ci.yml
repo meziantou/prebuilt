@@ -11,7 +11,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.1.3
+  VERSION: 3.2.0
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.2.1" # https://github.com/shssoichiro/oxipng/releases
@@ -24,6 +24,7 @@ env:
   HWY_VERSION: "1.4.0" # https://github.com/google/highway/tags - tags have no leading v
   JXL_VERSION: "0.12.0" # https://github.com/libjxl/libjxl/releases - pinned; 0.12 changed skcms/CMS handling
   WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags - also the released cwebp/dwebp/webpmux/... tools
+  LIBAVIF_VERSION: "1.4.2" # https://github.com/AOMediaCodec/libavif/releases - avifenc/avifdec; releases only: the Windows and macOS binaries are release assets
   OPUS_VERSION: "1.5.2" # https://github.com/xiph/opus/releases - releases only; v1.6.x tags ship no tarball
   LIBVPX_VERSION: "1.17.0" # https://github.com/webmproject/libvpx/tags
   AOM_VERSION: "3.15.1" # https://aomedia.googlesource.com/aom
@@ -56,7 +57,8 @@ jobs:
       pngout-linux-arm64,
       pngout-windows,
       pngout-osx-arm64,
-      libwebp
+      libwebp,
+      libavif
     ]
     permissions:
       contents: write
@@ -143,6 +145,7 @@ jobs:
         $versions.FFmpeg = "${{ env.FFMPEG_VERSION }}"
         $versions.Pngout = "${{ env.PNGOUT_VERSION }}"
         $versions.LibWebP = "${{ env.WEBP_VERSION }}"
+        $versions.LibAvif = "${{ env.LIBAVIF_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
@@ -568,6 +571,108 @@ jobs:
         if-no-files-found: error
         retention-days: 1
         path: out/*
+
+  # avifenc and avifdec, with libaom to encode and dav1d to decode.
+  # The Windows x64 and macOS arm64 binaries are the ones of the libavif
+  # release. That release has no Linux arm64 build, and its Linux x64 build
+  # links glibc and libstdc++ dynamically, so both Linux targets are built from
+  # the same sources with the same configuration (scripts/build-libavif.sh).
+  # libavif publishes no Windows arm64 build.
+  libavif:
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: windows-latest
+            archive: windows-artifacts.zip
+          - rid: osx-arm64
+            os: macos-latest
+            archive: macOS-artifacts.zip
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Repackage the libavif release
+      if: matrix.archive
+      run: |
+       $uri = "https://github.com/AOMediaCodec/libavif/releases/download/v${{ env.LIBAVIF_VERSION }}/${{ matrix.archive }}"
+       $archivePath = "libavif-${{ matrix.archive }}"
+       for ($attempt = 1; $attempt -le 5; $attempt++) {
+         try {
+           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
+         } catch {
+           if ($attempt -eq 5) {
+             throw
+           }
+           Start-Sleep -Seconds (2 * $attempt)
+           continue
+         }
+         & tar -tf $archivePath *> $null
+         if ($LASTEXITCODE -eq 0) {
+           break
+         }
+         if ($attempt -eq 5) {
+           throw "Failed to download a valid libavif archive after $attempt attempts"
+         }
+         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
+         Start-Sleep -Seconds (2 * $attempt)
+       }
+
+       New-Item -ItemType Directory -Path libavif-extracted | Out-Null
+       & tar -xf $archivePath -C libavif-extracted
+       if ($LASTEXITCODE -ne 0) {
+         throw "Failed to extract $archivePath"
+       }
+
+       $exe = if ("${{ matrix.rid }}".StartsWith("win-")) { ".exe" } else { "" }
+       foreach ($tool in "avifenc", "avifdec") {
+         $source = "libavif-extracted/$tool$exe"
+         if (-not (Test-Path -LiteralPath $source)) {
+           throw "$tool$exe not found in $archivePath"
+         }
+
+         $destination = "$tool-${{ matrix.rid }}$exe"
+         Copy-Item -LiteralPath $source -Destination $destination
+         if (-not $IsWindows) {
+           & chmod +x $destination
+         }
+       }
+    - name: Build (Alpine, fully static against musl)
+      if: ${{ !matrix.archive }}
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e LIBAVIF_VERSION \
+          "$image" sh -euc '
+            # meson (for dav1d) comes from pip for the same reason as in ffmpeg-linux.
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              py3-pip python3 nasm git curl bash perl pkgconf linux-headers tar
+            pip install --break-system-packages --quiet meson
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-libavif.sh ${{ matrix.rid }}
+          '
+    - name: Verify and smoke test
+      shell: bash
+      # On the runner itself, on every platform: for Linux this also checks that
+      # the musl binaries run outside of Alpine.
+      run: bash scripts/verify-libavif.sh ${{ matrix.rid }} all
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-libavif-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           avifenc-${{ matrix.rid }}*
+           avifdec-${{ matrix.rid }}*
 
   ffmpeg-linux:
     runs-on: ubuntu-latest

@@ -6,6 +6,11 @@
 /ffprobe-*-*
 /smoke-*/
 
+# scripts/build-libavif.sh output
+/libavif-src/
+/avifenc-*-*
+/avifdec-*-*
+
 # .NET
 [Bb]in/
 [Oo]bj/

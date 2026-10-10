@@ -188,6 +188,7 @@ $availableLatestVersions = [ordered]@{
     "HWY_VERSION" = Get-LatestTag -Repository "google/highway"
     "JXL_VERSION" = Get-ReleaseTag -Repository "libjxl/libjxl" -TrimV
     "WEBP_VERSION" = Get-LatestTag -Repository "webmproject/libwebp"
+    "LIBAVIF_VERSION" = Get-ReleaseTag -Repository "AOMediaCodec/libavif" -TrimV
     "OPUS_VERSION" = Get-ReleaseTag -Repository "xiph/opus" -TrimV
     "LIBVPX_VERSION" = Get-LatestTag -Repository "webmproject/libvpx"
     "AOM_VERSION" = Get-LatestAomVersion

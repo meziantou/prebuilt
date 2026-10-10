@@ -30,6 +30,8 @@ $versionKeys = [ordered]@{
     "dwebp"     = "LibWebP"
     "webpmux"   = "LibWebP"
     "anim_dump" = "LibWebP"
+    "avifenc"   = "LibAvif"
+    "avifdec"   = "LibAvif"
 }
 
 $versionsPath = Join-Path $BinariesPath "versions.json"

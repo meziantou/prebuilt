@@ -38,6 +38,12 @@ public static class PrebuiltTools
     /// <summary>anim_dump, the libwebp tool that dumps the frames of an animated image.</summary>
     public static PrebuiltTool WebpAnimDump { get; } = new("anim_dump");
 
+    /// <summary>avifenc, the libavif encoder, statically linked with libaom.</summary>
+    public static PrebuiltTool Avifenc { get; } = new("avifenc");
+
+    /// <summary>avifdec, the libavif decoder, statically linked with dav1d.</summary>
+    public static PrebuiltTool Avifdec { get; } = new("avifdec");
+
     /// <summary>Gets all the tools.</summary>
     public static IReadOnlyList<PrebuiltTool> All { get; } =
     [
@@ -50,6 +56,8 @@ public static class PrebuiltTools
         Dwebp,
         Webpmux,
         WebpAnimDump,
+        Avifenc,
+        Avifdec,
     ];
 
     private static string? GetCurrentRuntimeIdentifier()
