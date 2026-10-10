@@ -197,6 +197,9 @@ public sealed class PrebuiltToolCacheTests
 
         var task1 = cache.GetOrDownloadAsync(asset, cts.Token);
         var task2 = cache.GetOrDownloadAsync(asset, cts.Token);
+
+        // The download starts in the background: wait for its request before cancelling, so it is counted
+        await handler.RequestReceived.WaitAsync(TestContext.Current.CancellationToken);
         await cts.CancelAsync();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task1);
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task2);
