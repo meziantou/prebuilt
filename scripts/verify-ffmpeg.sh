@@ -87,6 +87,20 @@ assert_linkage() {
 # Feature assertions
 # ---------------------------------------------------------------------------
 
+# Without a VERSION file in the source tree, ffmpeg stamps itself with
+# `git describe` of whatever repository the sources were extracted in.
+assert_version() {
+  tool="$1"; banner="$2"
+  if [ -z "$FFMPEG_VERSION" ]; then
+    echo "  FFMPEG_VERSION is not set; skipping the $tool version check"
+    return 0
+  fi
+  case "$banner" in
+    "$tool version $FFMPEG_VERSION "*) ok "$tool reports version $FFMPEG_VERSION" ;;
+    *) fail "$tool does not report version $FFMPEG_VERSION: $banner" ;;
+  esac
+}
+
 assert_buildconf() {
   conf="$("$FFMPEG" -hide_banner -buildconf 2>&1)"
   for opt in --enable-gpl --enable-zlib --enable-libx264 --enable-libx265 \
@@ -217,6 +231,8 @@ case "$MODE" in
     ffprobe_version="$("$FFPROBE" -hide_banner -version)"
     echo "${ffmpeg_version%%$'\n'*}"
     echo "${ffprobe_version%%$'\n'*}"
+    assert_version ffmpeg "${ffmpeg_version%%$'\n'*}"
+    assert_version ffprobe "${ffprobe_version%%$'\n'*}"
     msg "configuration"
     assert_buildconf
     assert_codecs
