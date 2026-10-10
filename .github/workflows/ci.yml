@@ -372,33 +372,31 @@ jobs:
         retention-days: 1
         path: 'oxipng-osx-arm64'
 
+  # The pngout hosts sit behind bot protection that intermittently answers a
+  # runner with something that is not the file, for longer than it is worth
+  # retrying. The files are pinned by SHA-256 and never change, so they are kept
+  # in actions/cache (keyed on the hash) and the hosts are only contacted on a
+  # cache miss, with a Wayback Machine snapshot of the same bytes as a fallback.
+  # Get-VerifiedFile.ps1 checks the hash whichever of the three the file comes from.
   pngout-windows:
     runs-on: ubuntu-latest
+    env:
+      PNGOUT_SHA256: 843f0be42e86680c1663c4ef58eb0677ace15fc29ab23897c83f4b7e5af3ef36
     steps:
-    - run: |
-       # The host sometimes answers 200 with a non-archive body (bot protection),
-       # so retry until the content matches the pinned hash. The file never changes.
-       $uri = 'https://advsys.net/ken/util/pngout.exe'
-       $archivePath = 'pngout.exe'
-       $expectedHash = '843f0be42e86680c1663c4ef58eb0677ace15fc29ab23897c83f4b7e5af3ef36'
-       for ($attempt = 1; $attempt -le 5; $attempt++) {
-         try {
-           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
-           $actualHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
-           if ($actualHash -eq $expectedHash) {
-             break
-           }
-           Write-Warning "Attempt ${attempt}: unexpected SHA-256 $actualHash"
-         } catch {
-           Write-Warning "Attempt ${attempt}: $_"
-         }
-         if ($attempt -eq 5) {
-           throw "Failed to download a valid $archivePath after $attempt attempts"
-         }
-         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
-         Start-Sleep -Seconds (5 * $attempt)
-       }
-    - run: Move-Item pngout.exe pngout-win-x64.exe
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: pngout-download
+        key: pngout-download-${{ env.PNGOUT_SHA256 }}
+    - run: >-
+        ./scripts/Get-VerifiedFile.ps1
+        -OutFile pngout-download/pngout.exe
+        -Sha256 "${{ env.PNGOUT_SHA256 }}"
+        -Uri
+        "https://advsys.net/ken/util/pngout.exe",
+        "https://web.archive.org/web/20260930221300id_/http://advsys.net/ken/util/pngout.exe"
+    # Copy, not move: the cache is saved from pngout-download after the job.
+    - run: Copy-Item pngout-download/pngout.exe pngout-win-x64.exe
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-pngout-windows
@@ -408,32 +406,23 @@ jobs:
 
   pngout-linux:
     runs-on: ubuntu-latest
+    env:
+      PNGOUT_SHA256: ac38bba6f0de29033de866538c3afa64341319b695bbe388efbc5fd9e830e928
     steps:
-    - run: |
-       # The host sometimes answers 200 with a non-archive body (bot protection),
-       # so retry until the content matches the pinned hash. The file never changes.
-       $uri = 'https://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz'
-       $archivePath = 'pngout.tar.gz'
-       $expectedHash = 'ac38bba6f0de29033de866538c3afa64341319b695bbe388efbc5fd9e830e928'
-       for ($attempt = 1; $attempt -le 5; $attempt++) {
-         try {
-           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
-           $actualHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
-           if ($actualHash -eq $expectedHash) {
-             break
-           }
-           Write-Warning "Attempt ${attempt}: unexpected SHA-256 $actualHash"
-         } catch {
-           Write-Warning "Attempt ${attempt}: $_"
-         }
-         if ($attempt -eq 5) {
-           throw "Failed to download a valid $archivePath after $attempt attempts"
-         }
-         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
-         Start-Sleep -Seconds (5 * $attempt)
-       }
-    - run: tar -xvf pngout.tar.gz
-    - run: mv pngout-*/amd64/pngout pngout-linux-x64
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: pngout-download
+        key: pngout-download-${{ env.PNGOUT_SHA256 }}
+    - run: >-
+        ./scripts/Get-VerifiedFile.ps1
+        -OutFile pngout-download/pngout.tar.gz
+        -Sha256 "${{ env.PNGOUT_SHA256 }}"
+        -Uri
+        "https://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz",
+        "https://web.archive.org/web/20260222142256id_/https://jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz"
+    - run: tar -xvf pngout-download/pngout.tar.gz
+    - run: mv pngout-*-linux/amd64/pngout pngout-linux-x64
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-pngout-linux
@@ -443,32 +432,23 @@ jobs:
 
   pngout-linux-arm64:
     runs-on: ubuntu-latest
+    env:
+      PNGOUT_SHA256: ac38bba6f0de29033de866538c3afa64341319b695bbe388efbc5fd9e830e928
     steps:
-    - run: |
-       # The host sometimes answers 200 with a non-archive body (bot protection),
-       # so retry until the content matches the pinned hash. The file never changes.
-       $uri = 'https://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz'
-       $archivePath = 'pngout.tar.gz'
-       $expectedHash = 'ac38bba6f0de29033de866538c3afa64341319b695bbe388efbc5fd9e830e928'
-       for ($attempt = 1; $attempt -le 5; $attempt++) {
-         try {
-           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
-           $actualHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
-           if ($actualHash -eq $expectedHash) {
-             break
-           }
-           Write-Warning "Attempt ${attempt}: unexpected SHA-256 $actualHash"
-         } catch {
-           Write-Warning "Attempt ${attempt}: $_"
-         }
-         if ($attempt -eq 5) {
-           throw "Failed to download a valid $archivePath after $attempt attempts"
-         }
-         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
-         Start-Sleep -Seconds (5 * $attempt)
-       }
-    - run: tar -xvf pngout.tar.gz
-    - run: mv pngout-*/aarch64/pngout pngout-linux-arm64
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: pngout-download
+        key: pngout-download-${{ env.PNGOUT_SHA256 }}
+    - run: >-
+        ./scripts/Get-VerifiedFile.ps1
+        -OutFile pngout-download/pngout.tar.gz
+        -Sha256 "${{ env.PNGOUT_SHA256 }}"
+        -Uri
+        "https://www.jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz",
+        "https://web.archive.org/web/20260222142256id_/https://jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz"
+    - run: tar -xvf pngout-download/pngout.tar.gz
+    - run: mv pngout-*-linux/aarch64/pngout pngout-linux-arm64
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
         name: binaries-pngout-linux-arm64
@@ -478,33 +458,24 @@ jobs:
 
   pngout-osx-arm64:
     runs-on: ubuntu-latest
+    env:
+      PNGOUT_SHA256: 2e3eb79345206040ae3a0d0d0ecfe9ad01d92fe5002b8a1676a65632a56840e1
     steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+      with:
+        path: pngout-download
+        key: pngout-download-${{ env.PNGOUT_SHA256 }}
+    - run: >-
+        ./scripts/Get-VerifiedFile.ps1
+        -OutFile pngout-download/pngout.zip
+        -Sha256 "${{ env.PNGOUT_SHA256 }}"
+        -Uri
+        "https://www.jonof.id.au/files/kenutils/pngout-20230322-mac.zip",
+        "https://web.archive.org/web/20260723183131id_/https://www.jonof.id.au/files/kenutils/pngout-20230322-mac.zip"
     - run: |
-       # The host sometimes answers 200 with a non-archive body (bot protection),
-       # so retry until the content matches the pinned hash. The file never changes.
-       $uri = 'https://www.jonof.id.au/files/kenutils/pngout-20230322-mac.zip'
-       $archivePath = 'pngout.zip'
-       $expectedHash = '2e3eb79345206040ae3a0d0d0ecfe9ad01d92fe5002b8a1676a65632a56840e1'
-       for ($attempt = 1; $attempt -le 5; $attempt++) {
-         try {
-           Invoke-WebRequest -Uri $uri -OutFile $archivePath -ErrorAction Stop
-           $actualHash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
-           if ($actualHash -eq $expectedHash) {
-             break
-           }
-           Write-Warning "Attempt ${attempt}: unexpected SHA-256 $actualHash"
-         } catch {
-           Write-Warning "Attempt ${attempt}: $_"
-         }
-         if ($attempt -eq 5) {
-           throw "Failed to download a valid $archivePath after $attempt attempts"
-         }
-         Remove-Item -LiteralPath $archivePath -Force -ErrorAction SilentlyContinue
-         Start-Sleep -Seconds (5 * $attempt)
-       }
-    - run: |
-        Expand-Archive pngout.zip -DestinationPath . -Force
-        $pngout = Get-ChildItem -Path "." -Recurse -File -Filter "pngout" | Select-Object -First 1
+        Expand-Archive pngout-download/pngout.zip -DestinationPath pngout-extracted -Force
+        $pngout = Get-ChildItem -Path pngout-extracted -Recurse -File -Filter "pngout" | Select-Object -First 1
         if (-not $pngout) {
           throw "pngout binary not found in macOS archive"
         }
