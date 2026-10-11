@@ -135,6 +135,15 @@ function Get-LatestX264Commit {
     return ($refs -split "\s+")[0]
 }
 
+function Get-LatestWoff2Commit {
+    $refs = & git ls-remote https://github.com/google/woff2.git master
+    if ($LASTEXITCODE -ne 0 -or -not $refs) {
+        throw "Unable to resolve the woff2 master branch."
+    }
+
+    return ($refs -split "\s+")[0]
+}
+
 function Set-YamlVariableValue {
     param(
         [Parameter(Mandatory = $true)]
@@ -192,6 +201,8 @@ $availableLatestVersions = [ordered]@{
     "RUST_TOOLCHAIN" = Get-ReleaseTag -Repository "rust-lang/rust"
     "WEBP_VERSION" = Get-LatestTag -Repository "webmproject/libwebp"
     "LIBAVIF_VERSION" = Get-ReleaseTag -Repository "AOMediaCodec/libavif" -TrimV
+    "HARFBUZZ_VERSION" = Get-ReleaseTag -Repository "harfbuzz/harfbuzz"
+    "WOFF2_COMMIT" = Get-LatestWoff2Commit
     "OPUS_VERSION" = Get-ReleaseTag -Repository "xiph/opus" -TrimV
     "LIBVPX_VERSION" = Get-LatestTag -Repository "webmproject/libvpx"
     "AOM_VERSION" = Get-LatestAomVersion

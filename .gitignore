@@ -23,6 +23,23 @@
 /jxl-oxide-build/
 /jxl-oxide-*-*
 
+# scripts/build-woff2.sh output
+/woff2-deps/
+/woff2-src/
+/woff2_compress-*-*
+/woff2_decompress-*-*
+/woff2_info-*-*
+
+# scripts/build-harfbuzz.sh output
+/harfbuzz-deps/
+/harfbuzz-src/
+/harfbuzz-cross.txt
+/hb-shape-*-*
+/hb-info-*-*
+/hb-subset-*-*
+/hb-vector-*-*
+/hb-raster-*-*
+
 # .NET
 [Bb]in/
 [Oo]bj/
