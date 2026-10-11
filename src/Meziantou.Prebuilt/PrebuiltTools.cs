@@ -59,6 +59,30 @@ public static class PrebuiltTools
     /// <summary>jxl-oxide, a JPEG XL decoder that does not share any code with libjxl.</summary>
     public static PrebuiltTool JxlOxide { get; } = new("jxl-oxide");
 
+    /// <summary>hb-shape, the HarfBuzz text shaper, statically linked with FreeType.</summary>
+    public static PrebuiltTool HbShape { get; } = new("hb-shape");
+
+    /// <summary>hb-info, the HarfBuzz tool that describes a font file.</summary>
+    public static PrebuiltTool HbInfo { get; } = new("hb-info");
+
+    /// <summary>hb-subset, the HarfBuzz font subsetter.</summary>
+    public static PrebuiltTool HbSubset { get; } = new("hb-subset");
+
+    /// <summary>hb-vector, the HarfBuzz tool that draws shaped text as SVG or PDF outlines, statically linked with FreeType.</summary>
+    public static PrebuiltTool HbVector { get; } = new("hb-vector");
+
+    /// <summary>hb-raster, the HarfBuzz tool that renders shaped text to a PNG or PPM image, statically linked with FreeType.</summary>
+    public static PrebuiltTool HbRaster { get; } = new("hb-raster");
+
+    /// <summary>woff2_compress, the Google woff2 tool that converts a TrueType or OpenType font to WOFF2.</summary>
+    public static PrebuiltTool Woff2Compress { get; } = new("woff2_compress");
+
+    /// <summary>woff2_decompress, the Google woff2 tool that converts a WOFF2 font to TrueType or OpenType.</summary>
+    public static PrebuiltTool Woff2Decompress { get; } = new("woff2_decompress");
+
+    /// <summary>woff2_info, the Google woff2 tool that prints the header and the table directory of a WOFF2 font.</summary>
+    public static PrebuiltTool Woff2Info { get; } = new("woff2_info");
+
     /// <summary>Gets all the tools.</summary>
     public static IReadOnlyList<PrebuiltTool> All { get; } =
     [
@@ -78,6 +102,14 @@ public static class PrebuiltTools
         Jxlinfo,
         JxlFromTree,
         JxlOxide,
+        HbShape,
+        HbInfo,
+        HbSubset,
+        HbVector,
+        HbRaster,
+        Woff2Compress,
+        Woff2Decompress,
+        Woff2Info,
     ];
 
     private static string? GetCurrentRuntimeIdentifier()

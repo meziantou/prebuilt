@@ -92,6 +92,14 @@ public sealed class PrebuiltToolTests
         Assert.Equal("jxlinfo", PrebuiltTools.Jxlinfo.Name);
         Assert.Equal("jxl_from_tree", PrebuiltTools.JxlFromTree.Name);
         Assert.Equal("jxl-oxide", PrebuiltTools.JxlOxide.Name);
+        Assert.Equal("hb-shape", PrebuiltTools.HbShape.Name);
+        Assert.Equal("hb-info", PrebuiltTools.HbInfo.Name);
+        Assert.Equal("hb-subset", PrebuiltTools.HbSubset.Name);
+        Assert.Equal("hb-vector", PrebuiltTools.HbVector.Name);
+        Assert.Equal("hb-raster", PrebuiltTools.HbRaster.Name);
+        Assert.Equal("woff2_compress", PrebuiltTools.Woff2Compress.Name);
+        Assert.Equal("woff2_decompress", PrebuiltTools.Woff2Decompress.Name);
+        Assert.Equal("woff2_info", PrebuiltTools.Woff2Info.Name);
     }
 
     public static bool IsManifestEmbedded => PrebuiltManifest.IsEmbedded;

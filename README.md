@@ -1,6 +1,6 @@
 # prebuilt
 
-Prebuilt, mostly statically linked, binaries of image and video tools for Windows, Linux, and macOS: `zopfli`, `oxipng`, `pngout`, `ffmpeg`/`ffprobe` (built from source), the libwebp tools `cwebp`, `dwebp`, `webpmux`, and `anim_dump`, the libavif tools `avifenc` and `avifdec`, the libjxl tools `cjxl`, `djxl`, `jxlinfo`, and `jxl_from_tree`, and `jxl-oxide`.
+Prebuilt, mostly statically linked, binaries of image, video, and font tools for Windows, Linux, and macOS: `zopfli`, `oxipng`, `pngout`, `ffmpeg`/`ffprobe` (built from source), the libwebp tools `cwebp`, `dwebp`, `webpmux`, and `anim_dump`, the libavif tools `avifenc` and `avifdec`, the libjxl tools `cjxl`, `djxl`, `jxlinfo`, and `jxl_from_tree`, `jxl-oxide`, the HarfBuzz tools `hb-shape`, `hb-info`, `hb-subset`, `hb-vector`, and `hb-raster` (built with FreeType), and the Google woff2 tools `woff2_compress`, `woff2_decompress`, and `woff2_info`.
 
 The binaries are available from:
 
