@@ -173,6 +173,29 @@
         "/^\\.github/workflows/ci\\.yml$/"
       ],
       "matchStrings": [
+        "OPENJPEG_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "uclouvain/openjpeg",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "OPENJPH_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "aous72/OpenJPH"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
         "OPUS_VERSION: \"(?<currentValue>.*?)\""
       ],
       "datasourceTemplate": "github-releases",

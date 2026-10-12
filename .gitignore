@@ -42,6 +42,17 @@
 /hb-vector-*-*
 /hb-raster-*-*
 
+# scripts/build-openjpeg.sh output
+/openjpeg-src/
+/opj_compress-*-*
+/opj_decompress-*-*
+/opj_dump-*-*
+
+# scripts/build-openjph.sh output
+/openjph-src/
+/ojph_compress-*-*
+/ojph_expand-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/
