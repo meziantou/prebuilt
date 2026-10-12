@@ -89,6 +89,21 @@ public static class PrebuiltTools
     /// <summary>woff2_info, the Google woff2 tool that prints the header and the table directory of a WOFF2 font.</summary>
     public static PrebuiltTool Woff2Info { get; } = new("woff2_info");
 
+    /// <summary>opj_compress, the OpenJPEG JPEG 2000 encoder, built without libpng, libtiff and LittleCMS: it reads PNM, PAM, PGX, raw, BMP and TGA files.</summary>
+    public static PrebuiltTool OpjCompress { get; } = new("opj_compress");
+
+    /// <summary>opj_decompress, the OpenJPEG JPEG 2000 decoder, which also decodes HTJ2K, built without libpng, libtiff and LittleCMS: it writes PNM, PAM, PGX, raw, BMP and TGA files, and applies no ICC profile.</summary>
+    public static PrebuiltTool OpjDecompress { get; } = new("opj_decompress");
+
+    /// <summary>opj_dump, the OpenJPEG tool that describes a JPEG 2000 codestream or file.</summary>
+    public static PrebuiltTool OpjDump { get; } = new("opj_dump");
+
+    /// <summary>ojph_compress, the OpenJPH HTJ2K (JPEG 2000 Part 15) encoder, built without libtiff: it reads PGM, PPM, PFM, yuv and raw files.</summary>
+    public static PrebuiltTool OjphCompress { get; } = new("ojph_compress");
+
+    /// <summary>ojph_expand, the OpenJPH HTJ2K (JPEG 2000 Part 15) decoder, built without libtiff: it writes PGM, PPM, PFM, yuv and raw files.</summary>
+    public static PrebuiltTool OjphExpand { get; } = new("ojph_expand");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -136,6 +151,11 @@ public static class PrebuiltTools
         Woff2Compress,
         Woff2Decompress,
         Woff2Info,
+        OpjCompress,
+        OpjDecompress,
+        OpjDump,
+        OjphCompress,
+        OjphExpand,
         Dec265,
         HeifEnc,
         HeifDec,

@@ -11,7 +11,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.5.0
+  VERSION: 3.6.0
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.2.1" # https://github.com/shssoichiro/oxipng/releases
@@ -30,6 +30,8 @@ env:
   LIBAVIF_VERSION: "1.4.2" # https://github.com/AOMediaCodec/libavif/releases - avifenc/avifdec; releases only: the Windows and macOS binaries are release assets
   HARFBUZZ_VERSION: "14.6.0" # https://github.com/harfbuzz/harfbuzz/releases - hb-shape/hb-info/hb-subset/hb-vector/hb-raster; glib, libffi, pcre2 and freetype are the versions its meson wraps pin
   WOFF2_COMMIT: "fb9c3379f2605b10f3e8f1d9636664ab5576775c" # https://github.com/google/woff2 - master branch; woff2_compress/woff2_decompress/woff2_info; no tag since v1.0.2 (2017)
+  OPENJPEG_VERSION: "2.5.4" # https://github.com/uclouvain/openjpeg/releases - opj_compress/opj_decompress/opj_dump, built from tag v<version>
+  OPENJPH_VERSION: "0.32.0" # https://github.com/aous72/OpenJPH/releases - ojph_compress/ojph_expand; tags have no leading v
   OPUS_VERSION: "1.5.2" # https://github.com/xiph/opus/releases - releases only; v1.6.x tags ship no tarball
   LIBVPX_VERSION: "1.17.0" # https://github.com/webmproject/libvpx/tags
   AOM_VERSION: "3.15.1" # https://aomedia.googlesource.com/aom
@@ -75,6 +77,10 @@ jobs:
       woff2-windows-test,
       harfbuzz,
       harfbuzz-windows-test,
+      openjpeg,
+      openjpeg-windows-test,
+      openjph,
+      openjph-windows-test,
       libheif,
       libheif-windows-test,
       hm,
@@ -172,6 +178,8 @@ jobs:
         $versions.HarfBuzz = "${{ env.HARFBUZZ_VERSION }}"
         # woff2 has no tag since v1.0.2, the version its build files still declare.
         $versions.Woff2 = "1.0.2+" + "${{ env.WOFF2_COMMIT }}".Substring(0, 7)
+        $versions.OpenJpeg = "${{ env.OPENJPEG_VERSION }}"
+        $versions.OpenJph = "${{ env.OPENJPH_VERSION }}"
         $versions.X265 = "${{ env.X265_VERSION }}"
         $versions.Kvazaar = "${{ env.KVAZAAR_VERSION }}"
         $versions.LibDe265 = "${{ env.LIBDE265_VERSION }}"
@@ -1076,6 +1084,222 @@ jobs:
     - name: Smoke test
       shell: bash
       run: bash scripts/verify-harfbuzz.sh win-x64 run
+
+  # opj_compress, opj_decompress and opj_dump, the JPEG 2000 tools of OpenJPEG.
+  # Every target is built from the OpenJPEG sources (scripts/build-openjpeg.sh):
+  # the OpenJPEG release has no Linux arm64 binaries, and these are built
+  # without libpng, libtiff and LittleCMS, on purpose: they read and write PNM,
+  # PAM, PGX, raw, BMP and TGA files, and opj_decompress cannot apply an ICC
+  # profile.
+  # No Windows arm64 build, as for the other image tools.
+  openjpeg:
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Build (Alpine, fully static against musl)
+      if: startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e OPENJPEG_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              git curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-openjpeg.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-openjpeg.sh win-x64
+    - name: Build (macOS)
+      if: matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-openjpeg.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-openjpeg.sh osx-arm64
+    - name: Verify and smoke test
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; openjpeg-windows-test runs their smoke tests.
+      run: bash scripts/verify-openjpeg.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-openjpeg-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           opj_compress-${{ matrix.rid }}*
+           opj_decompress-${{ matrix.rid }}*
+           opj_dump-${{ matrix.rid }}*
+
+  openjpeg-windows-test:
+    runs-on: windows-latest
+    needs: [openjpeg]
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-openjpeg-win-x64
+        path: .
+    - name: Smoke test
+      shell: bash
+      run: bash scripts/verify-openjpeg.sh win-x64 run
+
+  # ojph_compress and ojph_expand, the HTJ2K (JPEG 2000 Part 15) tools of
+  # OpenJPH, which publishes no binaries: every target is built from its sources
+  # (scripts/build-openjph.sh), without TIFF support.
+  # It needs openjpeg for its smoke tests only: opj_decompress is the second
+  # decoder the codestreams of ojph_compress are decoded with.
+  # No Windows arm64 build, as for the other image tools.
+  openjph:
+    needs: [openjpeg]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Build (Alpine, fully static against musl)
+      if: startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e OPENJPH_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              git curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-openjph.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-openjph.sh win-x64
+    - name: Build (macOS)
+      if: matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-openjph.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-openjph.sh osx-arm64
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      if: matrix.rid != 'win-x64'
+      with:
+        name: binaries-openjpeg-${{ matrix.rid }}
+        path: .
+    - name: Verify and smoke test
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; openjph-windows-test runs their smoke tests.
+      run: bash scripts/verify-openjph.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-openjph-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ojph_compress-${{ matrix.rid }}*
+           ojph_expand-${{ matrix.rid }}*
+
+  openjph-windows-test:
+    runs-on: windows-latest
+    needs: [openjpeg, openjph]
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-openjpeg-win-x64
+        path: .
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-openjph-win-x64
+        path: .
+    - name: Smoke test
+      shell: bash
+      run: bash scripts/verify-openjph.sh win-x64 run
 
   # dec265 (libde265) and heif-enc, heif-dec and heif-info (libheif), for HEVC
   # only: x265 encodes, for 8, 10 and 12 bits, and libde265 decodes. Every

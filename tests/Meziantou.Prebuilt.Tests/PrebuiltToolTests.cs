@@ -100,6 +100,11 @@ public sealed class PrebuiltToolTests
         Assert.Equal("woff2_compress", PrebuiltTools.Woff2Compress.Name);
         Assert.Equal("woff2_decompress", PrebuiltTools.Woff2Decompress.Name);
         Assert.Equal("woff2_info", PrebuiltTools.Woff2Info.Name);
+        Assert.Equal("opj_compress", PrebuiltTools.OpjCompress.Name);
+        Assert.Equal("opj_decompress", PrebuiltTools.OpjDecompress.Name);
+        Assert.Equal("opj_dump", PrebuiltTools.OpjDump.Name);
+        Assert.Equal("ojph_compress", PrebuiltTools.OjphCompress.Name);
+        Assert.Equal("ojph_expand", PrebuiltTools.OjphExpand.Name);
         Assert.Equal("x265", PrebuiltTools.X265.Name);
         Assert.Equal("kvazaar", PrebuiltTools.Kvazaar.Name);
         Assert.Equal("dec265", PrebuiltTools.Dec265.Name);
