@@ -62,6 +62,13 @@ build_x265_multilib() {
   cmake --install "$WORKDIR/$x265_build"
   purge_shared_libs
 
+  # x265 writes the libraries the compiler links by itself to Libs.private of
+  # x265.pc, with -l in front of each. With -static, llvm-mingw links
+  # -l:libunwind.a, which becomes -l-l:libunwind.a, a library no linker finds.
+  x265_pc="$PREFIX/lib/pkgconfig/x265.pc"
+  [ -f "$x265_pc" ] || { echo "x265.pc was not installed" >&2; exit 1; }
+  sed -e 's/-l-l:lib\([A-Za-z0-9_+]*\)\.a/-l\1/g' "$x265_pc" > "$x265_pc.tmp" && mv "$x265_pc.tmp" "$x265_pc"
+
   msg "merging the 8, 10 and 12-bit x265 libraries"
   # The three archives have members of the same name, so they are merged as
   # archives (libtool -static, ADDLIB) rather than extracted and repacked.
