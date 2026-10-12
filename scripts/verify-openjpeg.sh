@@ -644,11 +644,12 @@ smoke_test() {
   decompress "JP2 with alpha" rgba8.jp2 rgba8.jp2.pnm
   same_samples rgba8.pam rgba8.jp2.pnm 3072 || fail "JP2 with alpha: the lossless round-trip changed the samples"
   ok "rgba8.jp2: 4 components, and no cdef box for the alpha channel of a PAM file"
-  # -OutFor: the output format of the files of a directory.
+  # -OutFor: the output format of the files of a directory, and their
+  # extension as it is given.
   mkdir directory
   cp gray8.pgm directory/gray8.pgm
-  run "directory" directory/gray8.jp2 "$OPJ_COMPRESS" -ImgDir directory -OutFor JP2 -n 3
-  contains " $(boxes directory/gray8.jp2) " " $BOX_JP2C " || fail "directory/gray8.jp2 has no jp2c box"
+  run "directory" directory/gray8.JP2 "$OPJ_COMPRESS" -ImgDir directory -OutFor JP2 -n 3
+  contains " $(boxes directory/gray8.JP2) " " $BOX_JP2C " || fail "directory/gray8.JP2 has no jp2c box"
   ok "-ImgDir directory -OutFor JP2"
 
   # The tools are built without libpng, libtiff and LittleCMS: PNG and TIFF
