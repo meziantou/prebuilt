@@ -303,8 +303,9 @@ lossless_hevc() {
     -c:v libx265 -x265-params lossless=1:keyint=1 -f hevc "$name.hevc" > "$name.log" 2>&1 \
     || { cat "$name.log" >&2; fail "$name: libx265 encode failed"; }
   [ -s "$name.hevc" ] || fail "$name: libx265 produced an empty file"
-  # x265 names the library it encodes with: 8bit, 10bit or 12bit.
-  logged "$name" "$name.log" "[64 bit] ${bits}bit"
+  # x265 names the library it encodes with at the end of its build info:
+  # "[64 bit] 10bit", or "[64 bit][noasm] 10bit" where it has no assembly.
+  logged "$name" "$name.log" "] ${bits}bit"
   "$FFMPEG" -hide_banner -v error -y -c:v hevc -i "$name.hevc" -f rawvideo -pix_fmt "$format" "$name.decoded.yuv" \
     || fail "$name: hevc decode failed"
   cmp -s "$name.yuv" "$name.decoded.yuv" || fail "$name: the decoded samples differ from the source"
