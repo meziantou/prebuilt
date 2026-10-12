@@ -26,6 +26,12 @@ public static class PrebuiltTools
     /// <summary>ffprobe, statically linked with a pinned codec set.</summary>
     public static PrebuiltTool Ffprobe { get; } = new("ffprobe");
 
+    /// <summary>x265, the HEVC encoder, built for 8, 10 and 12 bits. It is the libx265 ffmpeg and heif-enc are linked with.</summary>
+    public static PrebuiltTool X265 { get; } = new("x265");
+
+    /// <summary>kvazaar, the HEVC encoder that writes tiles and dependent slice segments, built for 8 bits. It is the libkvazaar ffmpeg is linked with.</summary>
+    public static PrebuiltTool Kvazaar { get; } = new("kvazaar");
+
     /// <summary>cwebp, the libwebp encoder.</summary>
     public static PrebuiltTool Cwebp { get; } = new("cwebp");
 
@@ -83,6 +89,24 @@ public static class PrebuiltTools
     /// <summary>woff2_info, the Google woff2 tool that prints the header and the table directory of a WOFF2 font.</summary>
     public static PrebuiltTool Woff2Info { get; } = new("woff2_info");
 
+    /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
+    public static PrebuiltTool Dec265 { get; } = new("dec265");
+
+    /// <summary>heif-enc, the libheif encoder, statically linked with x265 (8, 10 and 12 bits) as its only encoder.</summary>
+    public static PrebuiltTool HeifEnc { get; } = new("heif-enc");
+
+    /// <summary>heif-dec, the libheif decoder, statically linked with libde265 as its only decoder.</summary>
+    public static PrebuiltTool HeifDec { get; } = new("heif-dec");
+
+    /// <summary>heif-info, the libheif tool that describes a HEIF file.</summary>
+    public static PrebuiltTool HeifInfo { get; } = new("heif-info");
+
+    /// <summary>TAppEncoder, the encoder of HM, the HEVC reference software, built with its high bit depth support.</summary>
+    public static PrebuiltTool HmEncoder { get; } = new("TAppEncoder");
+
+    /// <summary>TAppDecoder, the decoder of HM, the HEVC reference software, built with its high bit depth support.</summary>
+    public static PrebuiltTool HmDecoder { get; } = new("TAppDecoder");
+
     /// <summary>Gets all the tools.</summary>
     public static IReadOnlyList<PrebuiltTool> All { get; } =
     [
@@ -91,6 +115,8 @@ public static class PrebuiltTools
         Pngout,
         Ffmpeg,
         Ffprobe,
+        X265,
+        Kvazaar,
         Cwebp,
         Dwebp,
         Webpmux,
@@ -110,6 +136,12 @@ public static class PrebuiltTools
         Woff2Compress,
         Woff2Decompress,
         Woff2Info,
+        Dec265,
+        HeifEnc,
+        HeifDec,
+        HeifInfo,
+        HmEncoder,
+        HmDecoder,
     ];
 
     private static string? GetCurrentRuntimeIdentifier()

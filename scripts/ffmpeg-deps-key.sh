@@ -24,7 +24,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # picked up here without further changes. FFMPEG_VERSION is left out: ffmpeg
 # itself is compiled on every run and never lands in the cached prefix.
 VARS="$(grep -oE '\$\{?[A-Z0-9_]+_(VERSION|COMMIT)' "$SCRIPT_DIR/build-ffmpeg.sh" | tr -d '${' | sort -u | grep -v '^FFMPEG_VERSION$')"
-FILES="$SCRIPT_DIR/build-ffmpeg.sh"
+# x265-multilib.sh is the part of the build script that builds x265.
+FILES="$SCRIPT_DIR/build-ffmpeg.sh $SCRIPT_DIR/x265-multilib.sh"
 
 case "$TARGET" in
   linux-*) VARS="$VARS ALPINE_IMAGE" ;;

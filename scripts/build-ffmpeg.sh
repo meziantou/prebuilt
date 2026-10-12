@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Builds statically linked ffmpeg/ffprobe with a pinned codec set.
+# Builds statically linked ffmpeg/ffprobe with a pinned codec set, and the x265
+# and kvazaar tools of the libx265 and libkvazaar they are linked with.
 #
 #   bash scripts/build-ffmpeg.sh <target>
 #
@@ -94,6 +95,9 @@ purge_shared_libs() {
   rm -f "$PREFIX"/lib/*.so "$PREFIX"/lib/*.so.* "$PREFIX"/lib/*.dylib \
         "$PREFIX"/lib/*.dll.a "$PREFIX"/bin/*.dll 2>/dev/null || true
 }
+
+# build_x265_multilib
+. "$SCRIPT_DIR/x265-multilib.sh"
 
 # ---------------------------------------------------------------------------
 # Target configuration
@@ -388,21 +392,35 @@ if ! stamp_done "x264-$X264_COMMIT"; then
   stamp_mark "x264-$X264_COMMIT"
 fi
 
-if ! stamp_done "x265-$X265_VERSION"; then
-  # Use the bitbucket downloads/ tarball: it carries x265Version.txt, without
-  # which no x265.pc is generated at all.
-  fetch x265 "https://bitbucket.org/multicoreware/x265_git/downloads/x265_$X265_VERSION.tar.gz" \
-        "x265-$X265_VERSION.tar.gz" "x265_$X265_VERSION"
-  msg "building x265"
-  x265_extra="-DENABLE_SHARED=OFF -DENABLE_CLI=OFF -DENABLE_LIBNUMA=OFF -DLIB_INSTALL_DIR=lib -DENABLE_ASSEMBLY=$X265_ASM"
-  if [ "$FF_ARCH" = "aarch64" ] && [ -n "$CROSS_PREFIX" ]; then
-    x265_extra="$x265_extra -DCROSS_COMPILE_ARM64=ON"
-  fi
-  cmake -S "$SRCDIR/x265_$X265_VERSION/source" -B "$WORKDIR/build-x265" $CMAKE_COMMON $CMAKE_CROSS_ARGS $x265_extra
-  cmake --build "$WORKDIR/build-x265" --parallel "$JOBS"
-  cmake --install "$WORKDIR/build-x265"
-  purge_shared_libs
-  stamp_mark "x265-$X265_VERSION"
+# x265 for 8, 10 and 12 bits in one library, and the x265 tool linked with it:
+# see scripts/x265-multilib.sh.
+if ! stamp_done "x265-$X265_VERSION-multilib"; then
+  build_x265_multilib build-x265 ON "$FF_LDFLAGS"
+  stamp_mark "x265-$X265_VERSION-multilib"
+fi
+
+# kvazaar is the encoder that writes tiles and dependent slice segments. It is
+# compiled for one bit depth, 8 bits (KVZ_BIT_DEPTH).
+if ! stamp_done "kvazaar-$KVAZAAR_VERSION"; then
+  fetch kvazaar "https://github.com/ultravideo/kvazaar/archive/refs/tags/v$KVAZAAR_VERSION.tar.gz" \
+        "kvazaar-$KVAZAAR_VERSION.tar.gz" "kvazaar-$KVAZAAR_VERSION"
+  # Targeting MinGW, kvazaar passes -muse-unaligned-vector-move to the
+  # assembler, an option of the GNU assembler that clang rejects.
+  kvazaar_cmake="$SRCDIR/kvazaar-$KVAZAAR_VERSION/CMakeLists.txt"
+  sed -e 's/-Wa,-muse-unaligned-vector-move //' "$kvazaar_cmake" > "$kvazaar_cmake.tmp" \
+    && mv "$kvazaar_cmake.tmp" "$kvazaar_cmake"
+  run_cmake kvazaar "$SRCDIR/kvazaar-$KVAZAAR_VERSION" \
+    -DBUILD_TESTS=OFF -DUSE_CRYPTO=OFF -DBUILD_KVAZAAR_BINARY=ON \
+    "-DCMAKE_EXE_LINKER_FLAGS=$FF_LDFLAGS"
+  # kvazaar.pc is the same for a shared and a static library. Linked statically
+  # on Windows, kvazaar.h needs KVZ_STATIC_LIB not to declare its functions as
+  # imported from a DLL, and the library needs winpthreads, which ffmpeg does
+  # not link by itself: it uses the Windows threads there.
+  kvazaar_pc="$PREFIX/lib/pkgconfig/kvazaar.pc"
+  [ -f "$kvazaar_pc" ] || { echo "kvazaar.pc was not installed" >&2; exit 1; }
+  sed -e 's/^Cflags:.*/& -DKVZ_STATIC_LIB/' -e 's/^Libs.private:.*/& -lpthread/' "$kvazaar_pc" > "$kvazaar_pc.tmp" \
+    && mv "$kvazaar_pc.tmp" "$kvazaar_pc"
+  stamp_mark "kvazaar-$KVAZAAR_VERSION"
 fi
 
 # ---------------------------------------------------------------------------
@@ -424,7 +442,7 @@ case "$TARGET" in
 esac
 
 msg "verifying dependencies are visible to pkg-config"
-for pkg in zlib libjxl libjxl_threads libwebp opus vpx aom SvtAv1Enc dav1d x264 x265; do
+for pkg in zlib libjxl libjxl_threads libwebp opus vpx aom SvtAv1Enc dav1d x264 x265 kvazaar; do
   if ! pkg-config --exists --print-errors --static "$pkg"; then
     echo "pkg-config package '$pkg' not found in $PREFIX" >&2
     exit 1
@@ -452,7 +470,7 @@ msg "configuring ffmpeg $FFMPEG_REF for $TARGET"
 FF_ARGS="--arch=$FF_ARCH --target-os=$FF_TARGET_OS
   --disable-shared --enable-static --disable-doc --disable-debug --disable-autodetect
   --enable-gpl --enable-runtime-cpudetect --pkg-config-flags=--static --enable-zlib
-  --enable-libx264 --enable-libx265 --enable-libvpx --enable-libaom
+  --enable-libx264 --enable-libx265 --enable-libkvazaar --enable-libvpx --enable-libaom
   --enable-libsvtav1 --enable-libdav1d --enable-libjxl --enable-libwebp --enable-libopus
   $FF_THREADS"
 
@@ -487,13 +505,20 @@ FFPROBE_OUT="$WORKDIR/ffprobe-$RID$EXE"
 cp "$FF_BUILD/ffmpeg$EXE" "$FFMPEG_OUT"
 cp "$FF_BUILD/ffprobe$EXE" "$FFPROBE_OUT"
 
+# The x265 and kvazaar tools are the ones of the libraries ffmpeg is linked
+# with. They are taken from the prefix, which is what the cache restores.
+X265_OUT="$WORKDIR/x265-$RID$EXE"
+KVAZAAR_OUT="$WORKDIR/kvazaar-$RID$EXE"
+cp "$PREFIX/bin/x265$EXE" "$X265_OUT"
+cp "$PREFIX/bin/kvazaar$EXE" "$KVAZAAR_OUT"
+
 msg "stripping"
 case "$TARGET" in
-  osx-arm64) strip -x "$FFMPEG_OUT" "$FFPROBE_OUT" ;;
-  win-*)     "${CROSS_PREFIX}strip" "$FFMPEG_OUT" "$FFPROBE_OUT" ;;
-  *)         strip "$FFMPEG_OUT" "$FFPROBE_OUT" ;;
+  osx-arm64) strip -x "$FFMPEG_OUT" "$FFPROBE_OUT" "$X265_OUT" "$KVAZAAR_OUT" ;;
+  win-*)     "${CROSS_PREFIX}strip" "$FFMPEG_OUT" "$FFPROBE_OUT" "$X265_OUT" "$KVAZAAR_OUT" ;;
+  *)         strip "$FFMPEG_OUT" "$FFPROBE_OUT" "$X265_OUT" "$KVAZAAR_OUT" ;;
 esac
-chmod +x "$FFMPEG_OUT" "$FFPROBE_OUT"
+chmod +x "$FFMPEG_OUT" "$FFPROBE_OUT" "$X265_OUT" "$KVAZAAR_OUT"
 
-ls -lh "$FFMPEG_OUT" "$FFPROBE_OUT"
-msg "built $(basename "$FFMPEG_OUT") and $(basename "$FFPROBE_OUT")"
+ls -lh "$FFMPEG_OUT" "$FFPROBE_OUT" "$X265_OUT" "$KVAZAAR_OUT"
+msg "built $(basename "$FFMPEG_OUT"), $(basename "$FFPROBE_OUT"), $(basename "$X265_OUT") and $(basename "$KVAZAAR_OUT")"

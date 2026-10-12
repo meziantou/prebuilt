@@ -100,6 +100,14 @@ public sealed class PrebuiltToolTests
         Assert.Equal("woff2_compress", PrebuiltTools.Woff2Compress.Name);
         Assert.Equal("woff2_decompress", PrebuiltTools.Woff2Decompress.Name);
         Assert.Equal("woff2_info", PrebuiltTools.Woff2Info.Name);
+        Assert.Equal("x265", PrebuiltTools.X265.Name);
+        Assert.Equal("kvazaar", PrebuiltTools.Kvazaar.Name);
+        Assert.Equal("dec265", PrebuiltTools.Dec265.Name);
+        Assert.Equal("heif-enc", PrebuiltTools.HeifEnc.Name);
+        Assert.Equal("heif-dec", PrebuiltTools.HeifDec.Name);
+        Assert.Equal("heif-info", PrebuiltTools.HeifInfo.Name);
+        Assert.Equal("TAppEncoder", PrebuiltTools.HmEncoder.Name);
+        Assert.Equal("TAppDecoder", PrebuiltTools.HmDecoder.Name);
     }
 
     public static bool IsManifestEmbedded => PrebuiltManifest.IsEmbedded;

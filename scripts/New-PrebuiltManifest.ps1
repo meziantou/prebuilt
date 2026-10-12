@@ -45,6 +45,14 @@ $versionKeys = [ordered]@{
     "woff2_compress"   = "Woff2"
     "woff2_decompress" = "Woff2"
     "woff2_info"       = "Woff2"
+    "x265"             = "X265"
+    "kvazaar"          = "Kvazaar"
+    "dec265"           = "LibDe265"
+    "heif-enc"         = "LibHeif"
+    "heif-dec"         = "LibHeif"
+    "heif-info"        = "LibHeif"
+    "TAppEncoder"      = "HM"
+    "TAppDecoder"      = "HM"
 }
 
 $versionsPath = Join-Path $BinariesPath "versions.json"
