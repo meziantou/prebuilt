@@ -11,7 +11,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.4.0
+  VERSION: 3.5.0
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.2.1" # https://github.com/shssoichiro/oxipng/releases
@@ -35,7 +35,11 @@ env:
   AOM_VERSION: "3.15.1" # https://aomedia.googlesource.com/aom
   SVT_AV1_VERSION: "4.2.0" # https://gitlab.com/AOMediaCodec/SVT-AV1/-/tags
   DAV1D_VERSION: "1.5.4" # https://code.videolan.org/videolan/dav1d/-/tags
-  X265_VERSION: "4.2" # https://bitbucket.org/multicoreware/x265_git/downloads/?tab=tags
+  X265_VERSION: "4.2" # https://bitbucket.org/multicoreware/x265_git/downloads/?tab=tags - built for 8, 10 and 12 bits; also the released x265 tool and the encoder of heif-enc
+  KVAZAAR_VERSION: "2.3.2" # https://github.com/ultravideo/kvazaar/tags - libkvazaar of ffmpeg and the released kvazaar tool
+  LIBDE265_VERSION: "1.1.3" # https://github.com/strukturag/libde265/releases - dec265 and the decoder of heif-dec
+  LIBHEIF_VERSION: "1.23.6" # https://github.com/strukturag/libheif/releases - heif-enc/heif-dec/heif-info
+  HM_VERSION: "18.0" # https://vcgit.hhi.fraunhofer.de/jvet/HM/-/tags - TAppEncoder/TAppDecoder, built from tag HM-<version>
   X264_COMMIT: "b35605ace3ddf7c1a5d67a2eb553f034aef41d55" # https://code.videolan.org/videolan/x264 - stable branch
 
 jobs:
@@ -70,7 +74,12 @@ jobs:
       woff2,
       woff2-windows-test,
       harfbuzz,
-      harfbuzz-windows-test
+      harfbuzz-windows-test,
+      libheif,
+      libheif-windows-test,
+      hm,
+      hm-windows-test,
+      hevc-test
     ]
     permissions:
       contents: write
@@ -163,6 +172,11 @@ jobs:
         $versions.HarfBuzz = "${{ env.HARFBUZZ_VERSION }}"
         # woff2 has no tag since v1.0.2, the version its build files still declare.
         $versions.Woff2 = "1.0.2+" + "${{ env.WOFF2_COMMIT }}".Substring(0, 7)
+        $versions.X265 = "${{ env.X265_VERSION }}"
+        $versions.Kvazaar = "${{ env.KVAZAAR_VERSION }}"
+        $versions.LibDe265 = "${{ env.LIBDE265_VERSION }}"
+        $versions.LibHeif = "${{ env.LIBHEIF_VERSION }}"
+        $versions.HM = "${{ env.HM_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
@@ -1063,6 +1077,252 @@ jobs:
       shell: bash
       run: bash scripts/verify-harfbuzz.sh win-x64 run
 
+  # dec265 (libde265) and heif-enc, heif-dec and heif-info (libheif), for HEVC
+  # only: x265 encodes, for 8, 10 and 12 bits, and libde265 decodes. Every
+  # target is built from the sources (scripts/build-libheif.sh): neither
+  # project publishes binaries, and the point of these builds is a known set of
+  # codecs. x265 is the version ffmpeg is built with, built the same way
+  # (scripts/x265-multilib.sh); zlib and libpng are the versions of the libjxl
+  # tools.
+  # No Windows arm64 build, as for the other image tools.
+  libheif:
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Build (Alpine, fully static against musl)
+      if: startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e LIBPNG_VERSION -e X265_VERSION -e LIBDE265_VERSION -e LIBHEIF_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              nasm git curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-libheif.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build nasm pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-libheif.sh win-x64
+    - name: Build (macOS)
+      if: matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-libheif.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-libheif.sh osx-arm64
+    - name: Verify and smoke test
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; libheif-windows-test runs their smoke tests.
+      run: bash scripts/verify-libheif.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-libheif-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           dec265-${{ matrix.rid }}*
+           heif-enc-${{ matrix.rid }}*
+           heif-dec-${{ matrix.rid }}*
+           heif-info-${{ matrix.rid }}*
+
+  libheif-windows-test:
+    runs-on: windows-latest
+    needs: [libheif]
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-libheif-win-x64
+        path: .
+    - name: Smoke test
+      shell: bash
+      run: bash scripts/verify-libheif.sh win-x64 run
+
+  # TAppEncoder and TAppDecoder, the encoder and the decoder of HM, the HEVC
+  # reference software, built with its high bit depth support
+  # (scripts/build-hm.sh). HM publishes no binaries.
+  # No Windows arm64 build, as for the other image tools.
+  hm:
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Build (Alpine, fully static against musl)
+      if: startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e HM_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              git curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-hm.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-hm.sh win-x64
+    - name: Build (macOS)
+      if: matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-hm.sh asserts with otool -L.
+      run: |
+        brew install cmake ninja
+        bash scripts/build-hm.sh osx-arm64
+    - name: Verify and smoke test
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; hm-windows-test runs their smoke tests.
+      run: bash scripts/verify-hm.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-hm-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           TAppEncoder-${{ matrix.rid }}*
+           TAppDecoder-${{ matrix.rid }}*
+
+  hm-windows-test:
+    runs-on: windows-latest
+    needs: [hm]
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-hm-win-x64
+        path: .
+    - name: Smoke test
+      shell: bash
+      run: bash scripts/verify-hm.sh win-x64 run
+
+  # The HEVC tools are published to be compared with each other. This runs them
+  # together on every platform (scripts/verify-hevc.sh): the streams of x265,
+  # kvazaar, HM and heif-enc are decoded by ffmpeg, dec265 and TAppDecoder,
+  # which must write the same pictures.
+  hevc-test:
+    needs: [ffmpeg-linux, ffmpeg-linux-arm64, ffmpeg-windows, ffmpeg-osx-arm64, libheif, hm]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+            ffmpeg: binaries-ffmpeg-linux
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+            ffmpeg: binaries-ffmpeg-linux-arm64
+          - rid: win-x64
+            os: windows-latest
+            ffmpeg: binaries-ffmpeg-windows
+          - rid: osx-arm64
+            os: macos-latest
+            ffmpeg: binaries-ffmpeg-osx-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: ${{ matrix.ffmpeg }}
+        path: .
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-libheif-${{ matrix.rid }}
+        path: .
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-hm-${{ matrix.rid }}
+        path: .
+    - name: Compare the encoders and the decoders
+      shell: bash
+      run: bash scripts/verify-hevc.sh ${{ matrix.rid }}
+
   ffmpeg-linux:
     runs-on: ubuntu-latest
     steps:
@@ -1092,6 +1352,7 @@ jobs:
           -e FFMPEG_VERSION -e ZLIB_VERSION -e BROTLI_VERSION -e HWY_VERSION \
           -e JXL_VERSION -e WEBP_VERSION -e OPUS_VERSION -e LIBVPX_VERSION \
           -e AOM_VERSION -e SVT_AV1_VERSION -e DAV1D_VERSION -e X265_VERSION -e X264_COMMIT \
+          -e KVAZAAR_VERSION \
           "$image" sh -euc '
             # Alpine has no "ninja" package, and its "meson" hard-depends on
             # samurai, which conflicts with real ninja -- hence pip for meson.
@@ -1114,6 +1375,8 @@ jobs:
         path: |
            ffmpeg-linux-x64
            ffprobe-linux-x64
+           x265-linux-x64
+           kvazaar-linux-x64
 
   ffmpeg-linux-arm64:
     runs-on: ubuntu-24.04-arm
@@ -1144,6 +1407,7 @@ jobs:
           -e FFMPEG_VERSION -e ZLIB_VERSION -e BROTLI_VERSION -e HWY_VERSION \
           -e JXL_VERSION -e WEBP_VERSION -e OPUS_VERSION -e LIBVPX_VERSION \
           -e AOM_VERSION -e SVT_AV1_VERSION -e DAV1D_VERSION -e X265_VERSION -e X264_COMMIT \
+          -e KVAZAAR_VERSION \
           "$image" sh -euc '
             # Alpine has no "ninja" package, and its "meson" hard-depends on
             # samurai, which conflicts with real ninja -- hence pip for meson.
@@ -1166,6 +1430,8 @@ jobs:
         path: |
            ffmpeg-linux-arm64
            ffprobe-linux-arm64
+           x265-linux-arm64
+           kvazaar-linux-arm64
 
   ffmpeg-windows:
     runs-on: ubuntu-latest
@@ -1215,6 +1481,8 @@ jobs:
         path: |
            ffmpeg-win-x64.exe
            ffprobe-win-x64.exe
+           x265-win-x64.exe
+           kvazaar-win-x64.exe
 
   ffmpeg-windows-arm64:
     runs-on: ubuntu-latest
@@ -1264,6 +1532,8 @@ jobs:
         path: |
            ffmpeg-win-arm64.exe
            ffprobe-win-arm64.exe
+           x265-win-arm64.exe
+           kvazaar-win-arm64.exe
 
   ffmpeg-windows-test:
     runs-on: windows-latest
@@ -1320,3 +1590,5 @@ jobs:
         path: |
            ffmpeg-osx-arm64
            ffprobe-osx-arm64
+           x265-osx-arm64
+           kvazaar-osx-arm64

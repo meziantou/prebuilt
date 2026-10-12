@@ -4,6 +4,8 @@
 /build-*/
 /ffmpeg-*-*
 /ffprobe-*-*
+/x265-*-*
+/kvazaar-*-*
 /smoke-*/
 
 # scripts/build-libavif.sh output
@@ -39,6 +41,19 @@
 /hb-subset-*-*
 /hb-vector-*-*
 /hb-raster-*-*
+
+# scripts/build-libheif.sh output
+/libheif-deps/
+/libheif-src/
+/dec265-*-*
+/heif-enc-*-*
+/heif-dec-*-*
+/heif-info-*-*
+
+# scripts/build-hm.sh output
+/hm-src/
+/TAppEncoder-*-*
+/TAppDecoder-*-*
 
 # .NET
 [Bb]in/

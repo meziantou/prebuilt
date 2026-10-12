@@ -209,6 +209,10 @@ $availableLatestVersions = [ordered]@{
     "SVT_AV1_VERSION" = Get-LatestGitLabTag -ProjectPath "AOMediaCodec/SVT-AV1"
     "DAV1D_VERSION" = Get-LatestGitLabTag -ProjectPath "videolan/dav1d" -Registry "https://code.videolan.org" -Pattern "^(?<version>\d+(?:\.\d+){1,3})$"
     "X265_VERSION" = Get-LatestX265Version
+    "KVAZAAR_VERSION" = Get-LatestTag -Repository "ultravideo/kvazaar" -Pattern "^v(?<version>\d+\.\d+\.\d+)$"
+    "LIBDE265_VERSION" = Get-ReleaseTag -Repository "strukturag/libde265" -TrimV
+    "LIBHEIF_VERSION" = Get-ReleaseTag -Repository "strukturag/libheif" -TrimV
+    "HM_VERSION" = Get-LatestGitLabTag -ProjectPath "jvet/HM" -Registry "https://vcgit.hhi.fraunhofer.de" -Pattern "^HM-(?<version>\d+\.\d+)$"
     "X264_COMMIT" = Get-LatestX264Commit
 }
 
