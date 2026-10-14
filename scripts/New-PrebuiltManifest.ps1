@@ -50,6 +50,7 @@ $versionKeys = [ordered]@{
     "opj_dump"         = "OpenJpeg"
     "ojph_compress"    = "OpenJph"
     "ojph_expand"      = "OpenJph"
+    "iso-jpeg"         = "IsoJpeg"
     "x265"             = "X265"
     "kvazaar"          = "Kvazaar"
     "dec265"           = "LibDe265"

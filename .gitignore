@@ -53,6 +53,10 @@
 /ojph_compress-*-*
 /ojph_expand-*-*
 
+# scripts/build-iso-jpeg.sh output
+/iso-jpeg-src/
+/iso-jpeg-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/

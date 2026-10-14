@@ -196,6 +196,18 @@
         "/^\\.github/workflows/ci\\.yml$/"
       ],
       "matchStrings": [
+        "ISO_JPEG_COMMIT: \"(?<currentDigest>.*?)\""
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "https://github.com/thorfdbg/libjpeg.git",
+      "currentValueTemplate": "master"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
         "OPUS_VERSION: \"(?<currentValue>.*?)\""
       ],
       "datasourceTemplate": "github-releases",
