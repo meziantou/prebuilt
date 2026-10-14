@@ -144,6 +144,15 @@ function Get-LatestWoff2Commit {
     return ($refs -split "\s+")[0]
 }
 
+function Get-LatestIsoJpegCommit {
+    $refs = & git ls-remote https://github.com/thorfdbg/libjpeg.git master
+    if ($LASTEXITCODE -ne 0 -or -not $refs) {
+        throw "Unable to resolve the libjpeg master branch."
+    }
+
+    return ($refs -split "\s+")[0]
+}
+
 function Set-YamlVariableValue {
     param(
         [Parameter(Mandatory = $true)]
@@ -205,6 +214,7 @@ $availableLatestVersions = [ordered]@{
     "WOFF2_COMMIT" = Get-LatestWoff2Commit
     "OPENJPEG_VERSION" = Get-ReleaseTag -Repository "uclouvain/openjpeg" -TrimV
     "OPENJPH_VERSION" = Get-ReleaseTag -Repository "aous72/OpenJPH"
+    "ISO_JPEG_COMMIT" = Get-LatestIsoJpegCommit
     "OPUS_VERSION" = Get-ReleaseTag -Repository "xiph/opus" -TrimV
     "LIBVPX_VERSION" = Get-LatestTag -Repository "webmproject/libvpx"
     "AOM_VERSION" = Get-LatestAomVersion

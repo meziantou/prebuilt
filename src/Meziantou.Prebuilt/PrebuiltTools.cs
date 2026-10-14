@@ -104,6 +104,9 @@ public static class PrebuiltTools
     /// <summary>ojph_expand, the OpenJPH HTJ2K (JPEG 2000 Part 15) decoder, built without libtiff: it writes PGM, PPM, PFM, yuv and raw files.</summary>
     public static PrebuiltTool OjphExpand { get; } = new("ojph_expand");
 
+    /// <summary>iso-jpeg, the <c>jpeg</c> tool of the ISO JPEG reference codec (thorfdbg/libjpeg): a JPEG encoder and decoder that shares no code with libjpeg-turbo, with arithmetic coding, 12-bit samples, and the progressive and hierarchical processes. It exits with 0 when a conversion fails: delete the output file first, and check afterwards that it exists and is not empty.</summary>
+    public static PrebuiltTool IsoJpeg { get; } = new("iso-jpeg");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -156,6 +159,7 @@ public static class PrebuiltTools
         OpjDump,
         OjphCompress,
         OjphExpand,
+        IsoJpeg,
         Dec265,
         HeifEnc,
         HeifDec,

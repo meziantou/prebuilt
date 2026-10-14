@@ -105,6 +105,7 @@ public sealed class PrebuiltToolTests
         Assert.Equal("opj_dump", PrebuiltTools.OpjDump.Name);
         Assert.Equal("ojph_compress", PrebuiltTools.OjphCompress.Name);
         Assert.Equal("ojph_expand", PrebuiltTools.OjphExpand.Name);
+        Assert.Equal("iso-jpeg", PrebuiltTools.IsoJpeg.Name);
         Assert.Equal("x265", PrebuiltTools.X265.Name);
         Assert.Equal("kvazaar", PrebuiltTools.Kvazaar.Name);
         Assert.Equal("dec265", PrebuiltTools.Dec265.Name);

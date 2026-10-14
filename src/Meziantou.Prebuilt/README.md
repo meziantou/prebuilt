@@ -24,12 +24,33 @@ var cache = new PrebuiltToolCache(cacheDirectory: "/tmp/tools", httpClient: myHt
 string cwebp = await cache.GetOrDownloadAsync(PrebuiltTools.Cwebp, runtimeIdentifier: "linux-arm64");
 ```
 
-Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
+Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `IsoJpeg`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
 
 On `win-arm64`, a tool that is not built for Arm64 (e.g. `pngout`) falls back to its `win-x64` build, which Windows on Arm runs through emulation. Pass `allowEmulation: false` to `GetAsset`, `IsSupported` or `GetOrDownloadAsync` to only get native builds:
 
 ```csharp
 string pngout = await PrebuiltTools.Pngout.GetOrDownloadAsync(allowEmulation: false); // throws PlatformNotSupportedException on win-arm64
+```
+
+## IsoJpeg
+
+`PrebuiltTools.IsoJpeg` is the `jpeg` command-line tool of [thorfdbg/libjpeg](https://github.com/thorfdbg/libjpeg), the ISO JPEG reference codec: a JPEG encoder and decoder that shares no code with libjpeg-turbo, with arithmetic coding, 12-bit samples, and the progressive and hierarchical processes. It is published as `iso-jpeg`, as `jpeg` says too little: the cached file is `iso-jpeg` (`iso-jpeg.exe` on Windows).
+
+- Its version is the last release of the `README.history` file of libjpeg followed by the commit it is built from (`1.72+702114c`): libjpeg has no release tag, and the tool prints no version.
+- libjpeg is available under the GNU General Public License, version 3 or later, or under the ITU software license, which covers evaluation and conformance testing. See [README.license.gpl](https://github.com/thorfdbg/libjpeg/blob/master/README.license.gpl) and [README.license.itu](https://github.com/thorfdbg/libjpeg/blob/master/README.license.itu).
+- It exits with 0 when a conversion fails: it prints the error and leaves an empty output file, or does not touch it, so a file that was there before the conversion can still be there. Delete the output file first, and check it afterwards, not the exit code:
+
+```csharp
+string isoJpeg = await PrebuiltTools.IsoJpeg.GetOrDownloadAsync();
+
+// iso-jpeg -q 85 -a input.ppm output.jpg encodes with arithmetic coding; iso-jpeg input.jpg output.ppm decodes
+File.Delete("output.jpg");
+using var process = Process.Start(isoJpeg, ["-q", "85", "-a", "input.ppm", "output.jpg"]);
+await process.WaitForExitAsync();
+if (process.ExitCode != 0 || !File.Exists("output.jpg") || new FileInfo("output.jpg").Length == 0)
+{
+    throw new InvalidOperationException("iso-jpeg failed");
+}
 ```
 
 ## Cache
