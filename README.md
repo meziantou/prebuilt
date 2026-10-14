@@ -4,7 +4,7 @@ Prebuilt, mostly statically linked, binaries of image, video, and font tools for
 
 The binaries are available from:
 
-- [GitHub releases](https://github.com/meziantou/prebuilt/releases). Each release also contains `versions.json` (tool versions) and `prebuilt-tools.json` (every file with its tool version, size, and SHA-256).
+- [GitHub releases](https://github.com/meziantou/prebuilt/releases). Each release also contains `versions.json` (tool versions), `prebuilt-tools.json` (every file with its tool version, size, and SHA-256), and `build-keys.json` (the hash of what each build depends on: CI takes the binaries whose hash did not change from the latest release instead of building them again; running the workflow manually with `rebuild` builds everything).
 - The [Meziantou.Prebuilt](https://www.nuget.org/packages/Meziantou.Prebuilt) NuGet package, which lists the tools and downloads them to a local cache:
 
   ```csharp
