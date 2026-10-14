@@ -162,6 +162,18 @@ CC_ONLY		=	$MINGW_TRIPLE-clang
 SETTINGS	=	clang
 EOF
     : > autoconfig.h
+    # The allocator of libjpeg puts its header, a union Align, in front of the
+    # blocks it returns, so they are aligned as that union is: 8 bytes. The
+    # jmp_buf of mingw is 16-byte aligned, and so is everything that holds one,
+    # the Environ of every JPEG object among them: clang copies it with aligned
+    # SSE stores, which fault on an 8-byte aligned block. malloc returns blocks
+    # aligned on 16 bytes, so an Align of 16 bytes keeps that alignment.
+    sed 's/^\(  union \)Align {$/\1alignas(16) Align {/' tools/environment.hpp > environment.hpp.new
+    grep -q 'union alignas(16) Align {$' environment.hpp.new || {
+      echo "tools/environment.hpp has no union Align to align on 16 bytes" >&2
+      exit 1
+    }
+    mv environment.hpp.new tools/environment.hpp
     # mingw-w64 has no libc.a for the -lc of the makefiles.
     LINK_LIBS="-lm"
     ;;
