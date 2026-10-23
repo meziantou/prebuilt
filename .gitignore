@@ -106,6 +106,14 @@
 /verapdf-smoke/
 /verapdf-*-*.tar.gz
 
+# scripts/build-pdfium.sh output
+/pdfium-depot-tools/
+/pdfium-checkout/
+/pdfium-bundle-*/
+/pdfium-verify-*/
+/pdfium-smoke/
+/pdfium_test-*-*
+
 # .NET
 [Bb]in/
 [Oo]bj/

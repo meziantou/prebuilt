@@ -223,6 +223,26 @@ function Get-LatestTemurinVersion {
     throw "No recent Temurin $current release has a JDK for every target."
 }
 
+# PDFium has no releases: the chromium/<N> branch of the latest release of
+# bblanchon/pdfium-binaries, which builds it for every target.
+function Get-LatestPdfiumVersion {
+    $tag = Get-ReleaseTag -Repository "bblanchon/pdfium-binaries"
+    if ($tag -notmatch "^chromium/(?<version>\d+)$") {
+        throw "Unexpected pdfium-binaries release tag '$tag'."
+    }
+
+    return $Matches["version"]
+}
+
+function Get-LatestDepotToolsCommit {
+    $refs = & git ls-remote https://chromium.googlesource.com/chromium/tools/depot_tools.git refs/heads/main
+    if ($LASTEXITCODE -ne 0 -or -not $refs) {
+        throw "Unable to resolve the depot_tools main branch."
+    }
+
+    return ($refs -split "\s+")[0]
+}
+
 # MuPDF publishes its releases on mupdf.com; the GitHub mirror has their tags.
 function Get-LatestMuPdfVersion {
     $refs = & git ls-remote --tags https://github.com/ArtifexSoftware/mupdf.git
@@ -327,6 +347,8 @@ $availableLatestVersions = [ordered]@{
     "ARLINGTON_COMMIT" = Get-LatestArlingtonCommit
     "VERAPDF_VERSION" = Get-LatestVeraPdfVersion
     "TEMURIN_VERSION" = Get-LatestTemurinVersion
+    "PDFIUM_VERSION" = Get-LatestPdfiumVersion
+    "DEPOT_TOOLS_COMMIT" = Get-LatestDepotToolsCommit
 }
 
 $selectedVariableNames =

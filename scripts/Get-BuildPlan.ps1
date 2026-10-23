@@ -57,7 +57,7 @@ $keyFormat = "v1"
 # lists the build units whose binaries it tests (inputs).
 $units = [ordered]@{}
 $rids = "linux-x64", "linux-arm64", "win-x64", "osx-arm64"
-foreach ($job in "libavif", "libjxl", "jxl-oxide", "woff2", "harfbuzz", "openjpeg", "openjph", "iso-jpeg", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf") {
+foreach ($job in "libavif", "libjxl", "jxl-oxide", "woff2", "harfbuzz", "openjpeg", "openjph", "iso-jpeg", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf", "pdfium") {
     foreach ($rid in $rids) {
         $units["binaries-$job-$rid"] = @{ job = $job; rid = $rid }
     }
@@ -78,6 +78,8 @@ foreach ($rid in $ffmpegArtifacts.Keys) {
 foreach ($job in "libjxl", "woff2", "harfbuzz", "openjpeg", "openjph", "iso-jpeg", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf") {
     $units["$job-windows-test"] = @{ job = "$job-windows-test"; rid = "win-x64"; inputs = @("binaries-$job-win-x64") }
 }
+# pdfium builds linux-arm64 on an x64 machine: this job runs it.
+$units["pdfium-linux-arm64-test"] = @{ job = "pdfium-linux-arm64-test"; rid = "linux-arm64"; inputs = @("binaries-pdfium-linux-arm64") }
 $units["ffmpeg-windows-test"] = @{ job = "ffmpeg-windows-test"; rid = "win-x64"; inputs = @("binaries-ffmpeg-windows") }
 $units["ffmpeg-windows-arm64-test"] = @{ job = "ffmpeg-windows-arm64-test"; rid = "win-arm64"; inputs = @("binaries-ffmpeg-windows-arm64") }
 foreach ($rid in $rids) {

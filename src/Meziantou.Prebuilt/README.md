@@ -24,7 +24,7 @@ var cache = new PrebuiltToolCache(cacheDirectory: "/tmp/tools", httpClient: myHt
 string cwebp = await cache.GetOrDownloadAsync(PrebuiltTools.Cwebp, runtimeIdentifier: "linux-arm64");
 ```
 
-Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `IsoJpeg`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
+Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `IsoJpeg`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
 
 On `win-arm64`, a tool that is not built for Arm64 (e.g. `pngout`) falls back to its `win-x64` build, which Windows on Arm runs through emulation. Pass `allowEmulation: false` to `GetAsset`, `IsSupported` or `GetOrDownloadAsync` to only get native builds:
 
@@ -55,7 +55,7 @@ if (process.ExitCode != 0 || !File.Exists("output.jpg") || new FileInfo("output.
 
 ## Tools with their files
 
-Some tools need more than their executable: `VeraPdf` comes with a Java runtime, and `ArlingtonTestGrammar` with the TSV files of the Arlington PDF Model. Their release file is a `.tar.gz` archive (`PrebuiltToolAsset.IsArchive`), with the executable at its root. `GetOrDownloadAsync` extracts it and still returns the path of the executable; the other files are in the same folder:
+Some tools need more than their executable: `VeraPdf` comes with a Java runtime, `ArlingtonTestGrammar` with the TSV files of the Arlington PDF Model, and `PdfiumTest` with the fonts of the PDFium pixel tests. Their release file is a `.tar.gz` archive (`PrebuiltToolAsset.IsArchive`), with the executable at its root. `GetOrDownloadAsync` extracts it and still returns the path of the executable; the other files are in the same folder:
 
 ```csharp
 string testGrammar = await PrebuiltTools.ArlingtonTestGrammar.GetOrDownloadAsync();
@@ -68,6 +68,8 @@ await process.WaitForExitAsync();
 
 - `ArlingtonTestGrammar` is built from a commit of the master branch of [pdf-association/arlington-pdf-model](https://github.com/pdf-association/arlington-pdf-model), whose last release is from 2021: its version is the version of TestGrammar followed by the commit (`0.81+d148fee`). The archive has the TSV files of every PDF version (`tsv/1.0` to `tsv/2.0`, and `tsv/latest`).
 - `VeraPdf` runs veraPDF with the Java runtime of the archive. The Linux runtimes need glibc. veraPDF writes its configuration to a `config` folder next to the executable the first time it runs, so the cache folder must be writable. It exits with 0 when every file is compliant and with 1 otherwise.
+
+- `PdfiumTest` is configured as the PDFium pixel tests are run, so that its rasters can be compared with the PDFium expectations. Its folder has `test_fonts/` (`third_party/test_fonts`) and `fonts/` (`testing/resources/fonts`): the pixel tests run `pdfium_test --send-events --png --md5 --time=1399672130 --font-dir=<folder>/test_fonts --croscore-font-names <file>.pdf`, or `--font-dir=<folder>/fonts/ahem` and `fonts/symbolneu` for the tests whose folder names say `use_ahem` or `use_symbolneu`. Its version is the N of the PDFium `chromium/N` branch it is built from. The Linux builds need glibc.
 
 ## Cache
 

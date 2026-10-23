@@ -68,6 +68,7 @@ $versionKeys = [ordered]@{
     "pdfsig"           = "Poppler"
     "TestGrammar"      = "Arlington"
     "verapdf"          = "VeraPdf"
+    "pdfium_test"      = "Pdfium"
 }
 
 $versionsPath = Join-Path $BinariesPath "versions.json"

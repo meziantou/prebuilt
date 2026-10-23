@@ -16,7 +16,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.10.0
+  VERSION: 3.11.0
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
@@ -63,6 +63,8 @@ env:
   ARLINGTON_VERSION: "0.81" # TestGrammar_VERSION of TestGrammar/src/TestGrammarVers.h at ARLINGTON_COMMIT - scripts/build-arlington.sh fails when it is not
   VERAPDF_VERSION: "1.30.3" # https://software.verapdf.org/releases/ - the veraPDF CLI, from verapdf-greenfield-<version>-installer.zip; even minor versions are the releases
   TEMURIN_VERSION: "21.0.12.1+1" # https://adoptium.net/temurin/releases/ - the Java runtime of the veraPDF bundle (jlink); a release published for every target
+  PDFIUM_VERSION: "8111" # https://github.com/bblanchon/pdfium-binaries/releases - pdfium_test, built from the PDFium branch chromium/<version>
+  DEPOT_TOOLS_COMMIT: "b1c2e86792a7f2b6576c181b7327ddd53b1a42a8" # https://chromium.googlesource.com/chromium/tools/depot_tools - main branch; the gclient/gn/ninja of the PDFium build
   X264_COMMIT: "b35605ace3ddf7c1a5d67a2eb553f034aef41d55" # https://code.videolan.org/videolan/x264 - stable branch
 
 jobs:
@@ -119,7 +121,9 @@ jobs:
       arlington,
       arlington-windows-test,
       verapdf,
-      verapdf-windows-test
+      verapdf-windows-test,
+      pdfium,
+      pdfium-linux-arm64-test
     ]
     permissions:
       contents: write
@@ -262,6 +266,8 @@ jobs:
         # The Arlington repository has no recent tag: the version of TestGrammar.
         $versions.Arlington = "${{ env.ARLINGTON_VERSION }}+" + "${{ env.ARLINGTON_COMMIT }}".Substring(0, 7)
         $versions.VeraPdf = "${{ env.VERAPDF_VERSION }}"
+        # PDFium has no releases: the N of its chromium/<N> branch.
+        $versions.Pdfium = "${{ env.PDFIUM_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
@@ -2122,6 +2128,91 @@ jobs:
       if: env.REUSE != 'true'
       shell: bash
       run: bash scripts/verify-verapdf.sh win-x64 run
+
+  # pdfium_test, the command-line tool of PDFium, built with the GN/depot_tools
+  # build of PDFium from a chromium/<N> branch, configured as the PDFium pixel
+  # tests are run, and bundled with their fonts (scripts/build-pdfium.sh):
+  # pdfium_test-<rid>.tar.gz. Chromium's toolchain needs glibc, and ships its
+  # clang for x64 Linux machines only: linux-arm64 is cross-compiled on
+  # ubuntu-latest, and pdfium-linux-arm64-test runs it. win-x64 is built on
+  # Windows (Visual Studio and the Windows SDK), osx-arm64 on macOS.
+  # No Windows arm64 build, as for the image tools.
+  pdfium:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-latest
+          - rid: win-x64
+            os: windows-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-pdfium-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-pdfium-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-pdfium-${{ matrix.rid }}
+    - name: Free disk space
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      # The PDFium checkout and build take more than the free space of the runner.
+      run: |
+        sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+        df -h "$GITHUB_WORKSPACE"
+    - name: Install the Windows SDK
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      # The SDK version the Chromium toolchain of the branch asks for, as
+      # bblanchon/pdfium-binaries installs it.
+      run: |
+        sdk_version="10.0.28000.0"
+        if [ ! -d "/c/Program Files (x86)/Windows Kits/10/bin/$sdk_version/x64" ]; then
+          curl -fsSL --retry 5 -o "$RUNNER_TEMP/winsdksetup.exe" "https://go.microsoft.com/fwlink/?linkid=2370315"
+          MSYS2_ARG_CONV_EXCL="*" "$RUNNER_TEMP/winsdksetup.exe" /features OptionId.DesktopCPPx64 /ceip off /quiet /norestart
+        fi
+        echo "/c/Program Files (x86)/Windows Kits/10/bin/$sdk_version/x64" >> "$GITHUB_PATH"
+    - name: Build
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/build-pdfium.sh ${{ matrix.rid }}
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself, but linux-arm64, cross-compiled:
+      # pdfium-linux-arm64-test runs its smoke tests.
+      run: bash scripts/verify-pdfium.sh ${{ matrix.rid }} ${{ matrix.rid == 'linux-arm64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-pdfium-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: pdfium_test-${{ matrix.rid }}.tar.gz
+
+  pdfium-linux-arm64-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['pdfium-linux-arm64-test'] && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
+    needs: [build-plan, pdfium]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['pdfium-linux-arm64-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-pdfium-linux-arm64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-pdfium.sh linux-arm64 run
 
   # dec265 (libde265) and heif-enc, heif-dec and heif-info (libheif), for HEVC
   # only: x265 encodes, for 8, 10 and 12 bits, and libde265 decodes. Every
