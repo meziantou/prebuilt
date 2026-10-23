@@ -15,9 +15,10 @@
 #   all   both (default)
 #
 # What the smoke tests found out about pdfium_test, and assert:
+# - The Linux builds need glibc and libgcc_s.
 # - It prints no version: its version is the chromium/<N> branch it is built
 #   from. --show-config prints the optional features it is built with, one
-#   line, empty for this build (no V8, XFA or Skia).
+#   line: empty on Linux and macOS, GDI on Windows (no V8, XFA or Skia).
 # - One output format per run: --ppm with --png is refused.
 # - The PPM files start with a comment line ("# PDF test render").
 # - --md5 prints "MD5:<output file>:<md5 of the pixels>", not the MD5 of the
@@ -96,13 +97,14 @@ assert_linkage() {
   bin="$1"
   case "$TARGET" in
     linux-*)
-      # Linked against the glibc of the Chromium sysroot: only glibc libraries.
+      # Linked against the glibc of the Chromium sysroot: only glibc libraries,
+      # and libgcc_s, the unwinder of GCC that every glibc system has.
       # readelf reads the binaries of either architecture.
       needed="$(readelf -d "$bin" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p' | sort -u)"
       [ -n "$needed" ] || fail "could not list the libraries of $bin"
       for library in $needed; do
         case "$library" in
-          libc.so.6|libm.so.6|libpthread.so.0|libdl.so.2|librt.so.1|ld-linux-x86-64.so.2|ld-linux-aarch64.so.1) ;;
+          libc.so.6|libm.so.6|libpthread.so.0|libdl.so.2|librt.so.1|libgcc_s.so.1|ld-linux-x86-64.so.2|ld-linux-aarch64.so.1) ;;
           *) fail "$bin needs a library that is not part of glibc: $library" ;;
         esac
       done
@@ -251,10 +253,14 @@ dark_pixels() {
 }
 
 assert_config() {
-  # Empty: no V8, no XFA, no Skia.
+  # A comma-separated list: empty on Linux and macOS, GDI on Windows (its
+  # GDI printing code), and never V8, XFA or Skia.
   run "pdfium_test --show-config" "$PDFIUM_TEST" --show-config
-  [ -z "$(tr -d '\n' < tool.log)" ] || fail "pdfium_test is built with optional features: $(cat tool.log)"
-  ok "pdfium_test is built without V8, XFA and Skia"
+  config="$(tr -d '\n' < tool.log)"
+  case ",$config," in
+    *,V8,*|*,XFA,*|*,SKIA,*|*,Skia,*) fail "pdfium_test is built with V8, XFA or Skia: $config" ;;
+  esac
+  ok "pdfium_test is built without V8, XFA and Skia (--show-config: '$config')"
 }
 
 smoke_test() {
