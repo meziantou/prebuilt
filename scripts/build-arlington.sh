@@ -75,6 +75,14 @@ if grep -F '#include <Windows.h>' "$UTILS"; then
   echo "the Windows.h include of $UTILS was not patched" >&2; exit 1
 fi
 
+# The PDFium copy crashes when it is destroyed, which TestGrammar already does
+# not do on Linux: it does not on MinGW either, as the process exits anyway.
+SHIM="$TESTGRAMMAR/src/ArlingtonPDFShimPDFium.cpp"
+sed 's/^#if !defined(__linux__) && !defined(DEBUG)$/#if !defined(__linux__) \&\& !defined(__MINGW32__) \&\& !defined(DEBUG)/' "$SHIM" > "$SHIM.patched"
+mv "$SHIM.patched" "$SHIM"
+grep -F '#if !defined(__linux__) && !defined(__MINGW32__) && !defined(DEBUG)' "$SHIM" >/dev/null \
+  || { echo "the PDFium teardown of $SHIM was not patched" >&2; exit 1; }
+
 # TestGrammar has a wmain on Windows, which MinGW links with -municode; on
 # the executable only, as the test programs of the configuration have a main.
 if ! grep -F 'target_link_options(TestGrammar PRIVATE -municode)' "$CMAKELISTS" >/dev/null; then
