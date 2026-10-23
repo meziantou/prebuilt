@@ -59,6 +59,8 @@ $versionKeys = [ordered]@{
     "heif-info"        = "LibHeif"
     "TAppEncoder"      = "HM"
     "TAppDecoder"      = "HM"
+    "qpdf"             = "Qpdf"
+    "mutool"           = "MuPdf"
 }
 
 $versionsPath = Join-Path $BinariesPath "versions.json"

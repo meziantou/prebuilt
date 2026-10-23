@@ -144,6 +144,17 @@ function Get-LatestWoff2Commit {
     return ($refs -split "\s+")[0]
 }
 
+# MuPDF publishes its releases on mupdf.com; the GitHub mirror has their tags.
+function Get-LatestMuPdfVersion {
+    $refs = & git ls-remote --tags https://github.com/ArtifexSoftware/mupdf.git
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to list tags for MuPDF."
+    }
+
+    $names = foreach ($ref in $refs) { ($ref -split "/")[-1] }
+    return Select-LatestVersion -Names $names -Pattern "^(?<version>\d+\.\d+\.\d+)$" -Description "MuPDF"
+}
+
 function Get-LatestIsoJpegCommit {
     $refs = & git ls-remote https://github.com/thorfdbg/libjpeg.git master
     if ($LASTEXITCODE -ne 0 -or -not $refs) {
@@ -226,6 +237,9 @@ $availableLatestVersions = [ordered]@{
     "LIBHEIF_VERSION" = Get-ReleaseTag -Repository "strukturag/libheif" -TrimV
     "HM_VERSION" = Get-LatestGitLabTag -ProjectPath "jvet/HM" -Registry "https://vcgit.hhi.fraunhofer.de" -Pattern "^HM-(?<version>\d+\.\d+)$"
     "X264_COMMIT" = Get-LatestX264Commit
+    "QPDF_VERSION" = Get-ReleaseTag -Repository "qpdf/qpdf" -TrimV
+    "LIBJPEG_TURBO_VERSION" = Get-ReleaseTag -Repository "libjpeg-turbo/libjpeg-turbo"
+    "MUPDF_VERSION" = Get-LatestMuPdfVersion
 }
 
 $selectedVariableNames =

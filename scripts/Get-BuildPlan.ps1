@@ -57,7 +57,7 @@ $keyFormat = "v1"
 # lists the build units whose binaries it tests (inputs).
 $units = [ordered]@{}
 $rids = "linux-x64", "linux-arm64", "win-x64", "osx-arm64"
-foreach ($job in "libavif", "libjxl", "jxl-oxide", "woff2", "harfbuzz", "openjpeg", "openjph", "iso-jpeg", "libheif", "hm") {
+foreach ($job in "libavif", "libjxl", "jxl-oxide", "woff2", "harfbuzz", "openjpeg", "openjph", "iso-jpeg", "libheif", "hm", "qpdf", "mupdf") {
     foreach ($rid in $rids) {
         $units["binaries-$job-$rid"] = @{ job = $job; rid = $rid }
     }
@@ -75,7 +75,7 @@ foreach ($rid in $ffmpegArtifacts.Keys) {
     $units[$artifact] = @{ job = $artifact -replace '^binaries-', ''; rid = $rid }
 }
 
-foreach ($job in "libjxl", "woff2", "harfbuzz", "openjpeg", "openjph", "iso-jpeg", "libheif", "hm") {
+foreach ($job in "libjxl", "woff2", "harfbuzz", "openjpeg", "openjph", "iso-jpeg", "libheif", "hm", "qpdf", "mupdf") {
     $units["$job-windows-test"] = @{ job = "$job-windows-test"; rid = "win-x64"; inputs = @("binaries-$job-win-x64") }
 }
 $units["ffmpeg-windows-test"] = @{ job = "ffmpeg-windows-test"; rid = "win-x64"; inputs = @("binaries-ffmpeg-windows") }

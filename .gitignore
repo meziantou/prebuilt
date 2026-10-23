@@ -70,6 +70,18 @@
 /TAppEncoder-*-*
 /TAppDecoder-*-*
 
+# scripts/build-qpdf.sh output
+/qpdf-deps/
+/qpdf-src/
+/qpdf-*-*
+/qpdf-smoke/
+
+# scripts/build-mupdf.sh output
+/mupdf-src/
+/mupdf-empty-pkgconfig/
+/mutool-*-*
+/mupdf-smoke/
+
 # .NET
 [Bb]in/
 [Oo]bj/

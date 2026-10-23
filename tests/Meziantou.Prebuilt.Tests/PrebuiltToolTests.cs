@@ -114,6 +114,8 @@ public sealed class PrebuiltToolTests
         Assert.Equal("heif-info", PrebuiltTools.HeifInfo.Name);
         Assert.Equal("TAppEncoder", PrebuiltTools.HmEncoder.Name);
         Assert.Equal("TAppDecoder", PrebuiltTools.HmDecoder.Name);
+        Assert.Equal("qpdf", PrebuiltTools.Qpdf.Name);
+        Assert.Equal("mutool", PrebuiltTools.Mutool.Name);
     }
 
     public static bool IsManifestEmbedded => PrebuiltManifest.IsEmbedded;

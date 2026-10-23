@@ -125,6 +125,12 @@ public static class PrebuiltTools
     /// <summary>TAppDecoder, the decoder of HM, the HEVC reference software, built with its high bit depth support.</summary>
     public static PrebuiltTool HmDecoder { get; } = new("TAppDecoder");
 
+    /// <summary>qpdf, the PDF structure tool (<c>--check</c>, <c>--json</c>, encryption and decryption), built with its native crypto provider only, which implements every encryption variant (RC4 40 and 128 bits, AES-128, AES-256), and statically linked with zlib and libjpeg-turbo.</summary>
+    public static PrebuiltTool Qpdf { get; } = new("qpdf");
+
+    /// <summary>mutool, the command-line tool of MuPDF (<c>draw</c>, <c>show</c>, <c>clean</c>, ...), statically linked with the third-party libraries MuPDF ships, and built with its built-in fonts, without libcrypto (no digital signatures) and without Tesseract (no OCR).</summary>
+    public static PrebuiltTool Mutool { get; } = new("mutool");
+
     /// <summary>Gets all the tools.</summary>
     public static IReadOnlyList<PrebuiltTool> All { get; } =
     [
@@ -166,6 +172,8 @@ public static class PrebuiltTools
         HeifInfo,
         HmEncoder,
         HmDecoder,
+        Qpdf,
+        Mutool,
     ];
 
     private static string? GetCurrentRuntimeIdentifier()
