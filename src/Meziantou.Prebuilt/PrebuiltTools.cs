@@ -146,6 +146,12 @@ public static class PrebuiltTools
     /// <summary>pdfsig, the Poppler tool that verifies the digital signatures of a PDF file, statically linked with NSS. It is not available for <c>win-x64</c>. Without an NSS database, no certificate is trusted: <c>-nocert</c> skips the certificate check.</summary>
     public static PrebuiltTool Pdfsig { get; } = new("pdfsig");
 
+    /// <summary>TestGrammar, the checker of the Arlington PDF Model, built with the copy of PDFium of its repository. The release file is an archive: the folder of the executable also holds <c>tsv/</c>, the TSV files of the model at the same commit (pass <c>--tsvdir &lt;folder&gt;/tsv/latest</c>). It exits with 0 whatever it finds: the problems are the <c>Error:</c> lines of its report.</summary>
+    public static PrebuiltTool ArlingtonTestGrammar { get; } = new("TestGrammar");
+
+    /// <summary>verapdf, the veraPDF PDF/A and PDF/UA validator. The release file is an archive with a Java runtime (Eclipse Temurin, cut with jlink): no Java needs to be installed, but the Linux runtimes need glibc. It exits with 1 when a file is not compliant, and writes its configuration to a <c>config</c> folder next to the executable the first time it runs.</summary>
+    public static PrebuiltTool VeraPdf { get; } = new("verapdf");
+
     /// <summary>Gets all the tools.</summary>
     public static IReadOnlyList<PrebuiltTool> All { get; } =
     [
@@ -194,6 +200,8 @@ public static class PrebuiltTools
         Pdffonts,
         Pdfinfo,
         Pdfsig,
+        ArlingtonTestGrammar,
+        VeraPdf,
     ];
 
     private static string? GetCurrentRuntimeIdentifier()

@@ -66,6 +66,8 @@ $versionKeys = [ordered]@{
     "pdffonts"         = "Poppler"
     "pdfinfo"          = "Poppler"
     "pdfsig"           = "Poppler"
+    "TestGrammar"      = "Arlington"
+    "verapdf"          = "VeraPdf"
 }
 
 $versionsPath = Join-Path $BinariesPath "versions.json"
@@ -82,8 +84,9 @@ foreach ($file in Get-ChildItem -LiteralPath $BinariesPath -File | Sort-Object N
         continue
     }
 
-    # Other files in the binaries folder are not tools
-    if ($file.Name -cnotmatch '^(?<name>.+)-(?<rid>(linux|win|osx)-(x64|arm64))(\.exe)?$') {
+    # Other files in the binaries folder are not tools. A .tar.gz file is a tool
+    # with the files it needs: its executable is at the root of the archive.
+    if ($file.Name -cnotmatch '^(?<name>.+)-(?<rid>(linux|win|osx)-(x64|arm64))(\.exe|\.tar\.gz)?$') {
         Write-Host "Skipping $($file.Name)"
         continue
     }

@@ -92,6 +92,20 @@
 /pdfsig-*-*
 /poppler-smoke/
 
+# scripts/build-arlington.sh output
+/arlington-src/
+/arlington-bundle-*/
+/arlington-verify-*/
+/arlington-smoke/
+/TestGrammar-*-*
+
+# scripts/build-verapdf.sh output
+/verapdf-src/
+/verapdf-bundle-*/
+/verapdf-verify-*/
+/verapdf-smoke/
+/verapdf-*-*.tar.gz
+
 # .NET
 [Bb]in/
 [Oo]bj/

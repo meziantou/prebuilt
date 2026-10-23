@@ -16,7 +16,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.9.0
+  VERSION: 3.10.0
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
@@ -52,13 +52,17 @@ env:
   LIBHEIF_VERSION: "1.23.6" # https://github.com/strukturag/libheif/releases - heif-enc/heif-dec/heif-info
   HM_VERSION: "18.0" # https://vcgit.hhi.fraunhofer.de/jvet/HM/-/tags - TAppEncoder/TAppDecoder, built from tag HM-<version>
   QPDF_VERSION: "12.4.2" # https://github.com/qpdf/qpdf/releases - qpdf, built from the release tarball of tag v<version>
-  LIBJPEG_TURBO_VERSION: "3.2.0" # https://github.com/libjpeg-turbo/libjpeg-turbo/releases - the libjpeg of qpdf (scripts/pdf-deps.sh)
+  LIBJPEG_TURBO_VERSION: "3.2.0" # https://github.com/libjpeg-turbo/libjpeg-turbo/releases - the libjpeg of qpdf (scripts/pdf-libs.sh)
   MUPDF_VERSION: "1.28.5" # https://mupdf.com/releases - mutool, built from mupdf-<version>-source.tar.gz with its third-party libraries
   POPPLER_VERSION: "26.10.0" # https://poppler.freedesktop.org/releases.html - pdftoppm/pdftotext/pdffonts/pdfinfo/pdfsig
-  FREETYPE_VERSION: "2.15.0" # https://github.com/freetype/freetype/tags - the FreeType of Poppler (scripts/pdf-deps.sh), built from tag VER-<version with dashes>
-  LCMS2_VERSION: "2.19.1" # https://github.com/mm2/Little-CMS/releases - the LittleCMS of Poppler (scripts/pdf-deps.sh)
-  NSS_VERSION: "3.132" # https://ftp.mozilla.org/pub/security/nss/releases/ - the signature backend of pdfsig (scripts/pdf-deps.sh)
+  FREETYPE_VERSION: "2.15.0" # https://github.com/freetype/freetype/tags - the FreeType of Poppler (scripts/pdf-libs.sh), built from tag VER-<version with dashes>
+  LCMS2_VERSION: "2.19.1" # https://github.com/mm2/Little-CMS/releases - the LittleCMS of Poppler (scripts/pdf-libs.sh)
+  NSS_VERSION: "3.132" # https://ftp.mozilla.org/pub/security/nss/releases/ - the signature backend of pdfsig (scripts/pdf-libs.sh)
   NSPR_VERSION: "4.39" # the NSPR bundled with NSS_VERSION: nss-<NSS_VERSION>-with-nspr-<NSPR_VERSION>.tar.gz
+  ARLINGTON_COMMIT: "d148fee5a0cb6dcacadf58c09ed842e32847024d" # https://github.com/pdf-association/arlington-pdf-model - master branch; TestGrammar and the TSV files of the model; no release since v0.5 (2021)
+  ARLINGTON_VERSION: "0.81" # TestGrammar_VERSION of TestGrammar/src/TestGrammarVers.h at ARLINGTON_COMMIT - scripts/build-arlington.sh fails when it is not
+  VERAPDF_VERSION: "1.30.3" # https://software.verapdf.org/releases/ - the veraPDF CLI, from verapdf-greenfield-<version>-installer.zip; even minor versions are the releases
+  TEMURIN_VERSION: "21.0.12.1+1" # https://adoptium.net/temurin/releases/ - the Java runtime of the veraPDF bundle (jlink); a release published for every target
   X264_COMMIT: "b35605ace3ddf7c1a5d67a2eb553f034aef41d55" # https://code.videolan.org/videolan/x264 - stable branch
 
 jobs:
@@ -111,7 +115,11 @@ jobs:
       mupdf,
       mupdf-windows-test,
       poppler,
-      poppler-windows-test
+      poppler-windows-test,
+      arlington,
+      arlington-windows-test,
+      verapdf,
+      verapdf-windows-test
     ]
     permissions:
       contents: write
@@ -251,6 +259,9 @@ jobs:
         $versions.Qpdf = "${{ env.QPDF_VERSION }}"
         $versions.MuPdf = "${{ env.MUPDF_VERSION }}"
         $versions.Poppler = "${{ env.POPPLER_VERSION }}"
+        # The Arlington repository has no recent tag: the version of TestGrammar.
+        $versions.Arlington = "${{ env.ARLINGTON_VERSION }}+" + "${{ env.ARLINGTON_COMMIT }}".Substring(0, 7)
+        $versions.VeraPdf = "${{ env.VERAPDF_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
@@ -1571,7 +1582,7 @@ jobs:
   # variant. The release has no musl binaries and links libqpdf dynamically,
   # so every target is built from the release tarball (scripts/build-qpdf.sh),
   # with qpdf's native crypto provider only, and the zlib and libjpeg-turbo of
-  # scripts/pdf-deps.sh.
+  # scripts/pdf-libs.sh.
   # No Windows arm64 build, as for the image tools.
   qpdf:
     needs: [build-plan]
@@ -1793,9 +1804,122 @@ jobs:
       shell: bash
       run: bash scripts/verify-mupdf.sh win-x64 run
 
+  # TestGrammar, the checker of the Arlington PDF Model, built with the copy of
+  # PDFium of its repository from a commit of the master branch, and bundled
+  # with the TSV files of the model at the same commit
+  # (scripts/build-arlington.sh): TestGrammar-<rid>.tar.gz.
+  # No Windows arm64 build, as for the image tools.
+  arlington:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-arlington-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-arlington-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-arlington-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ARLINGTON_COMMIT -e ARLINGTON_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              git curl bash pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-arlington.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-arlington.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-arlington.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-arlington.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binary
+      # runs outside of Alpine. The Windows binary is cross-compiled, so it
+      # cannot be executed here; arlington-windows-test runs its smoke tests.
+      run: bash scripts/verify-arlington.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-arlington-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: TestGrammar-${{ matrix.rid }}.tar.gz
+
+  arlington-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['arlington-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, arlington]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['arlington-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-arlington-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-arlington.sh win-x64 run
+
   # pdftoppm, pdftotext, pdffonts, pdfinfo and pdfsig, tools of Poppler, which
   # publishes source releases only: every target is built from them
-  # (scripts/build-poppler.sh) with the libraries of scripts/pdf-deps.sh (zlib,
+  # (scripts/build-poppler.sh) with the libraries of scripts/pdf-libs.sh (zlib,
   # libjpeg-turbo, libpng, brotli, FreeType, LittleCMS, OpenJPEG, and NSS for
   # pdfsig), and the "generic" font configuration. NSS is built with its gyp
   # build, which needs gyp-next. win-x64 has no pdfsig: NSS builds static
@@ -1917,6 +2041,87 @@ jobs:
       if: env.REUSE != 'true'
       shell: bash
       run: bash scripts/verify-poppler.sh win-x64 run
+
+  # veraPDF, the PDF/A and PDF/UA validator, with a Java runtime cut with
+  # jlink from Eclipse Temurin (scripts/build-verapdf.sh): verapdf-<rid>.tar.gz.
+  # Every target is linked natively, on its own runner, but win-x64, linked on
+  # Linux from the jmods of the Windows JDK, whose launcher
+  # (scripts/verapdf-launcher.c) is cross-compiled with llvm-mingw. The Linux
+  # runtimes are Temurin's, which need glibc: no Alpine container.
+  # No Windows arm64 build, as for the image tools.
+  verapdf:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-verapdf-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-verapdf-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-verapdf-${{ matrix.rid }}
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Build
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/build-verapdf.sh ${{ matrix.rid }}
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself. The Windows bundle is linked on Linux, so it
+      # cannot be executed here; verapdf-windows-test runs its smoke tests.
+      run: bash scripts/verify-verapdf.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-verapdf-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: verapdf-${{ matrix.rid }}.tar.gz
+
+  verapdf-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['verapdf-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, verapdf]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['verapdf-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-verapdf-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-verapdf.sh win-x64 run
 
   # dec265 (libde265) and heif-enc, heif-dec and heif-info (libheif), for HEVC
   # only: x265 encodes, for 8, 10 and 12 bits, and libde265 decodes. Every

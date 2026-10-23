@@ -13,6 +13,7 @@ public sealed class PrebuiltToolAsset
         Sha256 = entry.Sha256;
         DownloadUrl = entry.DownloadUrl;
         ExecutableName = RuntimeIdentifier.StartsWith("win-", StringComparison.OrdinalIgnoreCase) ? tool.Name + ".exe" : tool.Name;
+        IsArchive = FileName.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Gets the tool.</summary>
@@ -38,6 +39,13 @@ public sealed class PrebuiltToolAsset
 
     /// <summary>Gets the name of the executable once downloaded (e.g. <c>ffmpeg.exe</c> on Windows, <c>ffmpeg</c> otherwise).</summary>
     public string ExecutableName { get; }
+
+    /// <summary>
+    /// Gets a value indicating whether the file is a <c>.tar.gz</c> archive rather than the executable itself.
+    /// An archive holds <see cref="ExecutableName"/> at its root, next to the files it needs (a Java runtime, data files, fonts, ...):
+    /// it is extracted to the folder of the executable.
+    /// </summary>
+    public bool IsArchive { get; }
 
     /// <inheritdoc />
     public override string ToString() => FileName;

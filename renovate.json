@@ -392,6 +392,18 @@
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "mm2/Little-CMS",
       "extractVersionTemplate": "^lcms(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "ARLINGTON_COMMIT: \"(?<currentDigest>.*?)\""
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "https://github.com/pdf-association/arlington-pdf-model.git",
+      "currentValueTemplate": "master"
     }
   ]
 }

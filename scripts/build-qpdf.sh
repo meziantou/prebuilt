@@ -13,7 +13,7 @@
 # qpdf is built with its native crypto provider only, without OpenSSL or
 # GnuTLS: it implements RC4, AES-128 and AES-256 (and the MD5, SHA-2 hashes
 # they need) itself, so every encryption variant of the PDF specification is
-# available. zlib and libjpeg-turbo come from scripts/pdf-deps.sh.
+# available. zlib and libjpeg-turbo come from scripts/pdf-libs.sh.
 #
 # win-x64 is cross-compiled from Linux with llvm-mingw; point LLVM_MINGW_ROOT at
 # the extracted toolchain. Every other target builds natively.
@@ -33,6 +33,7 @@ esac
 TOOL_ID=qpdf
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/pdf-deps.sh"
+. "$SCRIPT_DIR/pdf-libs.sh"
 
 require_versions QPDF_VERSION ZLIB_VERSION LIBJPEG_TURBO_VERSION
 

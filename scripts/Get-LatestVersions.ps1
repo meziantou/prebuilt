@@ -172,6 +172,57 @@ function Get-LatestNssRelease {
     return @{ NSS = $nss; NSPR = $match.Groups[1].Value }
 }
 
+function Get-LatestArlingtonCommit {
+    $refs = & git ls-remote https://github.com/pdf-association/arlington-pdf-model.git master
+    if ($LASTEXITCODE -ne 0 -or -not $refs) {
+        throw "Unable to resolve the Arlington master branch."
+    }
+
+    return ($refs -split "\s+")[0]
+}
+
+# veraPDF releases have an even minor version; the odd ones are development builds.
+function Get-LatestVeraPdfVersion {
+    $page = Invoke-RestMethod -Method Get -Uri "https://software.verapdf.org/releases/"
+    $minors = [regex]::Matches($page, 'href="(\d+\.\d+)/"') | ForEach-Object { $_.Groups[1].Value } |
+        Where-Object { ([version]$_).Minor % 2 -eq 0 } | Sort-Object { [version]$_ } -Descending
+    foreach ($minor in $minors) {
+        $files = Invoke-RestMethod -Method Get -Uri "https://software.verapdf.org/releases/$minor/"
+        $names = [regex]::Matches($files, "verapdf-greenfield-(\d+\.\d+\.\d+)-installer\.zip") | ForEach-Object { $_.Groups[1].Value }
+        if ($names) {
+            return Select-LatestVersion -Names $names -Pattern "^(?<version>\d+\.\d+\.\d+)$" -Description "veraPDF"
+        }
+    }
+
+    throw "Unable to determine the latest veraPDF release."
+}
+
+# The latest Temurin release of the major version of TEMURIN_VERSION that has
+# a JDK for every target: the platforms of a release are not published at once.
+function Get-LatestTemurinVersion {
+    $current = [regex]::Match($workflowContent, 'TEMURIN_VERSION: "(\d+)').Groups[1].Value
+    $releases = Invoke-RestMethod -Method Get -Uri "https://api.adoptium.net/v3/info/release_names?release_type=ga&version=%5B$current%2C$([int]$current + 1)%29&page_size=10&sort_order=DESC"
+    foreach ($release in $releases.releases) {
+        $platforms = 0
+        foreach ($platform in "os=linux&architecture=x64", "os=linux&architecture=aarch64", "os=mac&architecture=aarch64", "os=windows&architecture=x64") {
+            try {
+                $assets = Invoke-RestMethod -Method Get -Uri "https://api.adoptium.net/v3/assets/release_name/eclipse/$([uri]::EscapeDataString($release))?image_type=jdk&$platform"
+                if ($assets.binaries | Where-Object { $_.image_type -eq "jdk" }) {
+                    $platforms++
+                }
+            }
+            catch {
+            }
+        }
+
+        if ($platforms -eq 4) {
+            return $release -replace "^jdk-", ""
+        }
+    }
+
+    throw "No recent Temurin $current release has a JDK for every target."
+}
+
 # MuPDF publishes its releases on mupdf.com; the GitHub mirror has their tags.
 function Get-LatestMuPdfVersion {
     $refs = & git ls-remote --tags https://github.com/ArtifexSoftware/mupdf.git
@@ -273,6 +324,9 @@ $availableLatestVersions = [ordered]@{
     "LCMS2_VERSION" = Get-LatestTag -Repository "mm2/Little-CMS" -Pattern "^lcms(?<version>\d+\.\d+(?:\.\d+)?)$"
     "NSS_VERSION" = (Get-LatestNssRelease).NSS
     "NSPR_VERSION" = (Get-LatestNssRelease).NSPR
+    "ARLINGTON_COMMIT" = Get-LatestArlingtonCommit
+    "VERAPDF_VERSION" = Get-LatestVeraPdfVersion
+    "TEMURIN_VERSION" = Get-LatestTemurinVersion
 }
 
 $selectedVariableNames =
