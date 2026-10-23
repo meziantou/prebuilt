@@ -133,18 +133,18 @@ jobs:
     # are recorded in build-keys.json, for the next runs to reuse.
     - id: download_release_artifacts
       continue-on-error: true
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         pattern: 'binaries-*'
         path: artifacts
     - if: steps.download_release_artifacts.outcome == 'failure'
       run: Remove-Item -LiteralPath artifacts -Recurse -Force -ErrorAction SilentlyContinue
     - if: steps.download_release_artifacts.outcome == 'failure'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         pattern: 'binaries-*'
         path: artifacts
-    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: build-keys
         path: build-keys
@@ -161,7 +161,7 @@ jobs:
         -ReleaseVersion "${{ env.VERSION }}"
         -DownloadBaseUrl "https://github.com/${{ github.repository }}/releases/download/${{ env.VERSION }}/"
         -OutputPath binaries/prebuilt-tools.json
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: nuget-manifest
         if-no-files-found: error
@@ -189,13 +189,13 @@ jobs:
     - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6
       with:
         global-json-file: global.json
-    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: nuget-manifest
         path: manifest
     - run: dotnet test --configuration Release -p:PrebuiltManifestPath=${{ github.workspace }}/manifest/prebuilt-tools.json
     - run: dotnet pack src/Meziantou.Prebuilt --configuration Release --output ./artifacts -p:Version=${{ env.VERSION }} -p:PrebuiltManifestPath=${{ github.workspace }}/manifest/prebuilt-tools.json
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: nuget-packages
         if-no-files-found: error
@@ -228,7 +228,7 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: ./scripts/Get-BuildPlan.ps1 -OutputPath build-keys/build-keys.json
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: build-keys
         if-no-files-found: error
@@ -269,7 +269,7 @@ jobs:
         # PDFium has no releases: the N of its chromium/<N> branch.
         $versions.Pdfium = "${{ env.PDFIUM_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-versions
         if-no-files-found: error
@@ -286,7 +286,7 @@ jobs:
     - run: make zopfli
     - run: |
         mv zopfli zopfli-linux-x64
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-zopfli-linux
         if-no-files-found: error
@@ -303,7 +303,7 @@ jobs:
     - run: make zopfli
     - run: |
         mv zopfli zopfli-linux-arm64
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-zopfli-linux-arm64
         if-no-files-found: error
@@ -331,7 +331,7 @@ jobs:
         & link -nologo /LTCG /OUT:zopfli.exe *.obj user32.lib advapi32.lib kernel32.lib
 
         Move-Item zopfli.exe zopfli-win-x64.exe
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-zopfli-windows
         if-no-files-found: error
@@ -348,7 +348,7 @@ jobs:
     - run: make zopfli
     - run: |
         Move-Item zopfli zopfli-osx-arm64
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-zopfli-osx-arm64
         if-no-files-found: error
@@ -385,7 +385,7 @@ jobs:
     - run: |
         Get-ChildItem -Path ".\" -Recurse -Filter "oxipng.exe" | Copy-Item -Destination ".\"
         Move-Item oxipng.exe oxipng-win-x64.exe
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-oxipng-windows
         if-no-files-found: error
@@ -420,7 +420,7 @@ jobs:
        }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-x86_64-unknown-linux-musl/oxipng oxipng-linux-x64
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-oxipng-linux
         if-no-files-found: error
@@ -455,7 +455,7 @@ jobs:
        }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-aarch64-unknown-linux-musl/oxipng oxipng-linux-arm64
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-oxipng-linux-arm64
         if-no-files-found: error
@@ -490,7 +490,7 @@ jobs:
        }
     - run: tar -xvf oxipng.tar.gz
     - run: mv oxipng-*-aarch64-apple-darwin/oxipng oxipng-osx-arm64
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-oxipng-osx-arm64
         if-no-files-found: error
@@ -522,7 +522,7 @@ jobs:
         "https://web.archive.org/web/20260930221300id_/http://advsys.net/ken/util/pngout.exe"
     # Copy, not move: the cache is saved from pngout-download after the job.
     - run: Copy-Item pngout-download/pngout.exe pngout-win-x64.exe
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-pngout-windows
         if-no-files-found: error
@@ -548,7 +548,7 @@ jobs:
         "https://web.archive.org/web/20260222142256id_/https://jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz"
     - run: tar -xvf pngout-download/pngout.tar.gz
     - run: mv pngout-*-linux/amd64/pngout pngout-linux-x64
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-pngout-linux
         if-no-files-found: error
@@ -574,7 +574,7 @@ jobs:
         "https://web.archive.org/web/20260222142256id_/https://jonof.id.au/files/kenutils/pngout-20200115-linux.tar.gz"
     - run: tar -xvf pngout-download/pngout.tar.gz
     - run: mv pngout-*-linux/aarch64/pngout pngout-linux-arm64
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-pngout-linux-arm64
         if-no-files-found: error
@@ -606,7 +606,7 @@ jobs:
         }
 
         Move-Item -LiteralPath $pngout.FullName -Destination "./pngout-osx-arm64"
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-pngout-osx-arm64
         if-no-files-found: error
@@ -687,7 +687,7 @@ jobs:
          }
          Write-Host "$tool $version"
        }
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-libwebp-${{ matrix.rid }}
         if-no-files-found: error
@@ -796,7 +796,7 @@ jobs:
       # On the runner itself, on every platform: for Linux this also checks that
       # the musl binaries run outside of Alpine.
       run: bash scripts/verify-libavif.sh ${{ matrix.rid }} all
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-libavif-${{ matrix.rid }}
         if-no-files-found: error
@@ -893,7 +893,7 @@ jobs:
       # run outside of Alpine. The Windows binaries are cross-compiled, so they
       # cannot be executed here; libjxl-windows-test runs their smoke tests.
       run: bash scripts/verify-libjxl.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-libjxl-${{ matrix.rid }}
         if-no-files-found: error
@@ -913,7 +913,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-libjxl-win-x64
         path: .
@@ -961,7 +961,7 @@ jobs:
       shell: bash
       run: bash scripts/build-jxl-oxide.sh ${{ matrix.rid }}
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-libjxl-${{ matrix.rid }}
         path: .
@@ -969,7 +969,7 @@ jobs:
       if: env.REUSE != 'true'
       shell: bash
       run: bash scripts/verify-jxl-oxide.sh ${{ matrix.rid }} all
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-jxl-oxide-${{ matrix.rid }}
         if-no-files-found: error
@@ -1064,7 +1064,7 @@ jobs:
       # run outside of Alpine. The Windows binaries are cross-compiled, so they
       # cannot be executed here; woff2-windows-test runs their smoke tests.
       run: bash scripts/verify-woff2.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-woff2-${{ matrix.rid }}
         if-no-files-found: error
@@ -1083,7 +1083,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-woff2-win-x64
         path: .
@@ -1182,7 +1182,7 @@ jobs:
       run: |
         brew install pkgconf cmake ninja meson
         bash scripts/build-harfbuzz.sh osx-arm64
-    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       if: env.REUSE != 'true' && matrix.rid != 'win-x64'
       with:
         name: binaries-woff2-${{ matrix.rid }}
@@ -1194,7 +1194,7 @@ jobs:
       # run outside of Alpine. The Windows binaries are cross-compiled, so they
       # cannot be executed here; harfbuzz-windows-test runs their smoke tests.
       run: bash scripts/verify-harfbuzz.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-harfbuzz-${{ matrix.rid }}
         if-no-files-found: error
@@ -1215,12 +1215,12 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-woff2-win-x64
         path: .
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-harfbuzz-win-x64
         path: .
@@ -1319,7 +1319,7 @@ jobs:
       # run outside of Alpine. The Windows binaries are cross-compiled, so they
       # cannot be executed here; openjpeg-windows-test runs their smoke tests.
       run: bash scripts/verify-openjpeg.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-openjpeg-${{ matrix.rid }}
         if-no-files-found: error
@@ -1338,7 +1338,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-openjpeg-win-x64
         path: .
@@ -1429,7 +1429,7 @@ jobs:
       run: |
         brew install pkgconf cmake ninja
         bash scripts/build-openjph.sh osx-arm64
-    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       if: env.REUSE != 'true' && matrix.rid != 'win-x64'
       with:
         name: binaries-openjpeg-${{ matrix.rid }}
@@ -1441,7 +1441,7 @@ jobs:
       # run outside of Alpine. The Windows binaries are cross-compiled, so they
       # cannot be executed here; openjph-windows-test runs their smoke tests.
       run: bash scripts/verify-openjph.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-openjph-${{ matrix.rid }}
         if-no-files-found: error
@@ -1459,12 +1459,12 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-openjpeg-win-x64
         path: .
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-openjph-win-x64
         path: .
@@ -1559,7 +1559,7 @@ jobs:
       # runs outside of Alpine. The Windows binary is cross-compiled, so it
       # cannot be executed here; iso-jpeg-windows-test runs its smoke tests.
       run: bash scripts/verify-iso-jpeg.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-iso-jpeg-${{ matrix.rid }}
         if-no-files-found: error
@@ -1575,7 +1575,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-iso-jpeg-win-x64
         path: .
@@ -1673,7 +1673,7 @@ jobs:
       # runs outside of Alpine. The Windows binary is cross-compiled, so it
       # cannot be executed here; qpdf-windows-test runs its smoke tests.
       run: bash scripts/verify-qpdf.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-qpdf-${{ matrix.rid }}
         if-no-files-found: error
@@ -1689,7 +1689,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-qpdf-win-x64
         path: .
@@ -1785,7 +1785,7 @@ jobs:
       # runs outside of Alpine. The Windows binary is cross-compiled, so it
       # cannot be executed here; mupdf-windows-test runs its smoke tests.
       run: bash scripts/verify-mupdf.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-mupdf-${{ matrix.rid }}
         if-no-files-found: error
@@ -1801,7 +1801,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-mupdf-win-x64
         path: .
@@ -1898,7 +1898,7 @@ jobs:
       # runs outside of Alpine. The Windows binary is cross-compiled, so it
       # cannot be executed here; arlington-windows-test runs its smoke tests.
       run: bash scripts/verify-arlington.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-arlington-${{ matrix.rid }}
         if-no-files-found: error
@@ -1914,7 +1914,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-arlington-win-x64
         path: .
@@ -2018,7 +2018,7 @@ jobs:
       # cannot be executed here; poppler-windows-test runs their smoke tests.
       # The signature test signs a file with the openssl of the runner.
       run: bash scripts/verify-poppler.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-poppler-${{ matrix.rid }}
         if-no-files-found: error
@@ -2039,7 +2039,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-poppler-win-x64
         path: .
@@ -2104,7 +2104,7 @@ jobs:
       # On the runner itself. The Windows bundle is linked on Linux, so it
       # cannot be executed here; verapdf-windows-test runs its smoke tests.
       run: bash scripts/verify-verapdf.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-verapdf-${{ matrix.rid }}
         if-no-files-found: error
@@ -2120,7 +2120,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-verapdf-win-x64
         path: .
@@ -2191,7 +2191,7 @@ jobs:
       # On the runner itself, but linux-arm64, cross-compiled:
       # pdfium-linux-arm64-test runs its smoke tests.
       run: bash scripts/verify-pdfium.sh ${{ matrix.rid }} ${{ matrix.rid == 'linux-arm64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-pdfium-${{ matrix.rid }}
         if-no-files-found: error
@@ -2207,7 +2207,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-pdfium-linux-arm64
         path: .
@@ -2307,7 +2307,7 @@ jobs:
       # run outside of Alpine. The Windows binaries are cross-compiled, so they
       # cannot be executed here; libheif-windows-test runs their smoke tests.
       run: bash scripts/verify-libheif.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-libheif-${{ matrix.rid }}
         if-no-files-found: error
@@ -2327,7 +2327,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-libheif-win-x64
         path: .
@@ -2423,7 +2423,7 @@ jobs:
       # run outside of Alpine. The Windows binaries are cross-compiled, so they
       # cannot be executed here; hm-windows-test runs their smoke tests.
       run: bash scripts/verify-hm.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-hm-${{ matrix.rid }}
         if-no-files-found: error
@@ -2441,7 +2441,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-hm-win-x64
         path: .
@@ -2478,17 +2478,17 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: ${{ matrix.ffmpeg }}
         path: .
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-libheif-${{ matrix.rid }}
         path: .
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-hm-${{ matrix.rid }}
         path: .
@@ -2552,7 +2552,7 @@ jobs:
             bash scripts/build-ffmpeg.sh linux-x64
             bash scripts/verify-ffmpeg.sh linux-x64 all
           '
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-ffmpeg-linux
         if-no-files-found: error
@@ -2618,7 +2618,7 @@ jobs:
             bash scripts/build-ffmpeg.sh linux-arm64
             bash scripts/verify-ffmpeg.sh linux-arm64 all
           '
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-ffmpeg-linux-arm64
         if-no-files-found: error
@@ -2683,7 +2683,7 @@ jobs:
       # Cross-compiled, so it cannot be executed here; the functional smoke
       # tests run in ffmpeg-windows-test on a real Windows runner.
       run: bash scripts/verify-ffmpeg.sh win-x64 link
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-ffmpeg-windows
         if-no-files-found: error
@@ -2748,7 +2748,7 @@ jobs:
       # Cross-compiled, so it cannot be executed here; the functional smoke
       # tests run in ffmpeg-windows-arm64-test on a real Windows runner.
       run: bash scripts/verify-ffmpeg.sh win-arm64 link
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-ffmpeg-windows-arm64
         if-no-files-found: error
@@ -2768,7 +2768,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-ffmpeg-windows
         path: .
@@ -2786,7 +2786,7 @@ jobs:
     - if: env.REUSE != 'true'
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - if: env.REUSE != 'true'
-      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: binaries-ffmpeg-windows-arm64
         path: .
@@ -2829,7 +2829,7 @@ jobs:
       if: env.REUSE != 'true'
       shell: bash
       run: bash scripts/verify-ffmpeg.sh osx-arm64 all
-    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+    - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: binaries-ffmpeg-osx-arm64
         if-no-files-found: error
