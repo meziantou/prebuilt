@@ -332,6 +332,66 @@
       "datasourceTemplate": "git-refs",
       "depNameTemplate": "https://code.videolan.org/videolan/x264.git",
       "currentValueTemplate": "stable"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "QPDF_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "qpdf/qpdf",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "LIBJPEG_TURBO_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "libjpeg-turbo/libjpeg-turbo"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "MUPDF_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "git-tags",
+      "depNameTemplate": "https://github.com/ArtifexSoftware/mupdf.git",
+      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "POPPLER_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "gitlab-tags",
+      "depNameTemplate": "poppler/poppler",
+      "registryUrlTemplate": "https://gitlab.freedesktop.org",
+      "extractVersionTemplate": "^poppler-(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "LCMS2_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "mm2/Little-CMS",
+      "extractVersionTemplate": "^lcms(?<version>.*)$"
     }
   ]
 }

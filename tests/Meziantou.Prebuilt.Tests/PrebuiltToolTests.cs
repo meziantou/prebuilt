@@ -114,6 +114,13 @@ public sealed class PrebuiltToolTests
         Assert.Equal("heif-info", PrebuiltTools.HeifInfo.Name);
         Assert.Equal("TAppEncoder", PrebuiltTools.HmEncoder.Name);
         Assert.Equal("TAppDecoder", PrebuiltTools.HmDecoder.Name);
+        Assert.Equal("qpdf", PrebuiltTools.Qpdf.Name);
+        Assert.Equal("mutool", PrebuiltTools.Mutool.Name);
+        Assert.Equal("pdftoppm", PrebuiltTools.Pdftoppm.Name);
+        Assert.Equal("pdftotext", PrebuiltTools.Pdftotext.Name);
+        Assert.Equal("pdffonts", PrebuiltTools.Pdffonts.Name);
+        Assert.Equal("pdfinfo", PrebuiltTools.Pdfinfo.Name);
+        Assert.Equal("pdfsig", PrebuiltTools.Pdfsig.Name);
     }
 
     public static bool IsManifestEmbedded => PrebuiltManifest.IsEmbedded;

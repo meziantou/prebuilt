@@ -125,6 +125,27 @@ public static class PrebuiltTools
     /// <summary>TAppDecoder, the decoder of HM, the HEVC reference software, built with its high bit depth support.</summary>
     public static PrebuiltTool HmDecoder { get; } = new("TAppDecoder");
 
+    /// <summary>qpdf, the PDF structure tool (<c>--check</c>, <c>--json</c>, encryption and decryption), built with its native crypto provider only, which implements every encryption variant (RC4 40 and 128 bits, AES-128, AES-256), and statically linked with zlib and libjpeg-turbo.</summary>
+    public static PrebuiltTool Qpdf { get; } = new("qpdf");
+
+    /// <summary>mutool, the command-line tool of MuPDF (<c>draw</c>, <c>show</c>, <c>clean</c>, ...), statically linked with the third-party libraries MuPDF ships, and built with its built-in fonts, without libcrypto (no digital signatures) and without Tesseract (no OCR).</summary>
+    public static PrebuiltTool Mutool { get; } = new("mutool");
+
+    /// <summary>pdftoppm, the Poppler tool that renders pages to PPM, PGM, PBM, PNG or JPEG images, statically linked with FreeType, LittleCMS, libjpeg-turbo, OpenJPEG and libpng. It is built with the "generic" font configuration: a font a file does not embed is drawn only when the URW base 35 Type 1 fonts are in a Ghostscript font directory.</summary>
+    public static PrebuiltTool Pdftoppm { get; } = new("pdftoppm");
+
+    /// <summary>pdftotext, the Poppler tool that extracts the text of a PDF file.</summary>
+    public static PrebuiltTool Pdftotext { get; } = new("pdftotext");
+
+    /// <summary>pdffonts, the Poppler tool that lists the fonts of a PDF file, and whether they are embedded and subset.</summary>
+    public static PrebuiltTool Pdffonts { get; } = new("pdffonts");
+
+    /// <summary>pdfinfo, the Poppler tool that describes a PDF file (version, page count and sizes, encryption, metadata, ...).</summary>
+    public static PrebuiltTool Pdfinfo { get; } = new("pdfinfo");
+
+    /// <summary>pdfsig, the Poppler tool that verifies the digital signatures of a PDF file, statically linked with NSS. It is not available for <c>win-x64</c>. Without an NSS database, no certificate is trusted: <c>-nocert</c> skips the certificate check.</summary>
+    public static PrebuiltTool Pdfsig { get; } = new("pdfsig");
+
     /// <summary>Gets all the tools.</summary>
     public static IReadOnlyList<PrebuiltTool> All { get; } =
     [
@@ -166,6 +187,13 @@ public static class PrebuiltTools
         HeifInfo,
         HmEncoder,
         HmDecoder,
+        Qpdf,
+        Mutool,
+        Pdftoppm,
+        Pdftotext,
+        Pdffonts,
+        Pdfinfo,
+        Pdfsig,
     ];
 
     private static string? GetCurrentRuntimeIdentifier()

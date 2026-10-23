@@ -144,6 +144,45 @@ function Get-LatestWoff2Commit {
     return ($refs -split "\s+")[0]
 }
 
+# FreeType tags are VER-2-15-0.
+function Get-LatestFreeTypeVersion {
+    $tags = Invoke-GitHubApi -Uri "https://api.github.com/repos/freetype/freetype/tags?per_page=100"
+    $names = $tags | ForEach-Object { if ($_.name -match "^VER-(\d+)-(\d+)-(\d+)$") { "$($Matches[1]).$($Matches[2]).$($Matches[3])" } }
+    return Select-LatestVersion -Names $names -Pattern "^(?<version>\d+\.\d+\.\d+)$" -Description "FreeType"
+}
+
+function Get-LatestPopplerVersion {
+    $page = Invoke-RestMethod -Method Get -Uri "https://poppler.freedesktop.org/releases.html"
+    $names = [regex]::Matches($page, "poppler-(\d+\.\d+\.\d+)\.tar\.xz") | ForEach-Object { $_.Groups[1].Value }
+    return Select-LatestVersion -Names $names -Pattern "^(?<version>\d+\.\d+\.\d+)$" -Description "Poppler"
+}
+
+# The NSS release and the NSPR version its source tarball bundles.
+function Get-LatestNssRelease {
+    $page = Invoke-RestMethod -Method Get -Uri "https://ftp.mozilla.org/pub/security/nss/releases/"
+    $names = [regex]::Matches($page, "NSS_(\d+(?:_\d+)+)_RTM") | ForEach-Object { $_.Groups[1].Value -replace "_", "." }
+    $nss = Select-LatestVersion -Names $names -Pattern "^(?<version>\d+\.\d+(?:\.\d+)?)$" -Description "NSS"
+    $tag = "NSS_" + ($nss -replace "\.", "_") + "_RTM"
+    $files = Invoke-RestMethod -Method Get -Uri "https://ftp.mozilla.org/pub/security/nss/releases/$tag/src/"
+    $match = [regex]::Match($files, "nss-$([regex]::Escape($nss))-with-nspr-(\d+\.\d+(?:\.\d+)?)\.tar\.gz")
+    if (-not $match.Success) {
+        throw "No NSS $nss source tarball with NSPR."
+    }
+
+    return @{ NSS = $nss; NSPR = $match.Groups[1].Value }
+}
+
+# MuPDF publishes its releases on mupdf.com; the GitHub mirror has their tags.
+function Get-LatestMuPdfVersion {
+    $refs = & git ls-remote --tags https://github.com/ArtifexSoftware/mupdf.git
+    if ($LASTEXITCODE -ne 0) {
+        throw "Unable to list tags for MuPDF."
+    }
+
+    $names = foreach ($ref in $refs) { ($ref -split "/")[-1] }
+    return Select-LatestVersion -Names $names -Pattern "^(?<version>\d+\.\d+\.\d+)$" -Description "MuPDF"
+}
+
 function Get-LatestIsoJpegCommit {
     $refs = & git ls-remote https://github.com/thorfdbg/libjpeg.git master
     if ($LASTEXITCODE -ne 0 -or -not $refs) {
@@ -226,6 +265,14 @@ $availableLatestVersions = [ordered]@{
     "LIBHEIF_VERSION" = Get-ReleaseTag -Repository "strukturag/libheif" -TrimV
     "HM_VERSION" = Get-LatestGitLabTag -ProjectPath "jvet/HM" -Registry "https://vcgit.hhi.fraunhofer.de" -Pattern "^HM-(?<version>\d+\.\d+)$"
     "X264_COMMIT" = Get-LatestX264Commit
+    "QPDF_VERSION" = Get-ReleaseTag -Repository "qpdf/qpdf" -TrimV
+    "LIBJPEG_TURBO_VERSION" = Get-ReleaseTag -Repository "libjpeg-turbo/libjpeg-turbo"
+    "MUPDF_VERSION" = Get-LatestMuPdfVersion
+    "POPPLER_VERSION" = Get-LatestPopplerVersion
+    "FREETYPE_VERSION" = Get-LatestFreeTypeVersion
+    "LCMS2_VERSION" = Get-LatestTag -Repository "mm2/Little-CMS" -Pattern "^lcms(?<version>\d+\.\d+(?:\.\d+)?)$"
+    "NSS_VERSION" = (Get-LatestNssRelease).NSS
+    "NSPR_VERSION" = (Get-LatestNssRelease).NSPR
 }
 
 $selectedVariableNames =
