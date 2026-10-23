@@ -84,8 +84,14 @@ if [ ! -d "$DEPOT_TOOLS/.git" ]; then
 fi
 export PATH="$DEPOT_TOOLS:$PATH"
 # What update_depot_tools does but the update: the Python and CIPD tools the
-# wrappers (gn, ninja, ...) run with.
-"$DEPOT_TOOLS/ensure_bootstrap"
+# wrappers (gn, ninja, ...) run with. On Windows, the batch script does it:
+# ensure_bootstrap does not install the Python of the .bat wrappers there.
+if [ "$TARGET" = "win-x64" ]; then
+  MSYS2_ARG_CONV_EXCL='*' cmd.exe /c "$(cygpath -w "$DEPOT_TOOLS/bootstrap/win_tools.bat")"
+  [ -f "$DEPOT_TOOLS/python3_bin_reldir.txt" ] || { echo "depot_tools is not bootstrapped: no python3_bin_reldir.txt" >&2; exit 1; }
+else
+  "$DEPOT_TOOLS/ensure_bootstrap"
+fi
 
 # ---------------------------------------------------------------------------
 # PDFium

@@ -2140,6 +2140,8 @@ jobs:
   pdfium:
     needs: [build-plan]
     strategy:
+      # Each build takes long: a failure on one target does not cancel the others.
+      fail-fast: false
       matrix:
         include:
           - rid: linux-x64
