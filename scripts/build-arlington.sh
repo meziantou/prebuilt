@@ -66,6 +66,15 @@ awk '$0 == "    add_compile_options(/EHsc)" { print "    if(MSVC)"; print "     
 mv "$CMAKELISTS.patched" "$CMAKELISTS"
 grep -F '        add_compile_options(/EHsc)' "$CMAKELISTS" >/dev/null \
   || { echo "the /EHsc option of $CMAKELISTS was not patched" >&2; exit 1; }
+# src/Utils.cpp includes <Windows.h>, which only a case-insensitive file
+# system finds: the MinGW header is windows.h.
+UTILS="$TESTGRAMMAR/src/Utils.cpp"
+sed 's/#include <Windows\.h>/#include <windows.h>/' "$UTILS" > "$UTILS.patched"
+mv "$UTILS.patched" "$UTILS"
+if grep -F '#include <Windows.h>' "$UTILS"; then
+  echo "the Windows.h include of $UTILS was not patched" >&2; exit 1
+fi
+
 # TestGrammar has a wmain on Windows, which MinGW links with -municode; on
 # the executable only, as the test programs of the configuration have a main.
 if ! grep -F 'target_link_options(TestGrammar PRIVATE -municode)' "$CMAKELISTS" >/dev/null; then
