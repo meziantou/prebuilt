@@ -16,7 +16,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.8.0
+  VERSION: 3.9.0
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
@@ -54,6 +54,11 @@ env:
   QPDF_VERSION: "12.4.2" # https://github.com/qpdf/qpdf/releases - qpdf, built from the release tarball of tag v<version>
   LIBJPEG_TURBO_VERSION: "3.2.0" # https://github.com/libjpeg-turbo/libjpeg-turbo/releases - the libjpeg of qpdf (scripts/pdf-deps.sh)
   MUPDF_VERSION: "1.28.5" # https://mupdf.com/releases - mutool, built from mupdf-<version>-source.tar.gz with its third-party libraries
+  POPPLER_VERSION: "26.10.0" # https://poppler.freedesktop.org/releases.html - pdftoppm/pdftotext/pdffonts/pdfinfo/pdfsig
+  FREETYPE_VERSION: "2.15.0" # https://github.com/freetype/freetype/tags - the FreeType of Poppler (scripts/pdf-deps.sh), built from tag VER-<version with dashes>
+  LCMS2_VERSION: "2.19.1" # https://github.com/mm2/Little-CMS/releases - the LittleCMS of Poppler (scripts/pdf-deps.sh)
+  NSS_VERSION: "3.132" # https://ftp.mozilla.org/pub/security/nss/releases/ - the signature backend of pdfsig (scripts/pdf-deps.sh)
+  NSPR_VERSION: "4.39" # the NSPR bundled with NSS_VERSION: nss-<NSS_VERSION>-with-nspr-<NSPR_VERSION>.tar.gz
   X264_COMMIT: "b35605ace3ddf7c1a5d67a2eb553f034aef41d55" # https://code.videolan.org/videolan/x264 - stable branch
 
 jobs:
@@ -104,7 +109,9 @@ jobs:
       qpdf,
       qpdf-windows-test,
       mupdf,
-      mupdf-windows-test
+      mupdf-windows-test,
+      poppler,
+      poppler-windows-test
     ]
     permissions:
       contents: write
@@ -243,6 +250,7 @@ jobs:
         $versions.HM = "${{ env.HM_VERSION }}"
         $versions.Qpdf = "${{ env.QPDF_VERSION }}"
         $versions.MuPdf = "${{ env.MUPDF_VERSION }}"
+        $versions.Poppler = "${{ env.POPPLER_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
@@ -1784,6 +1792,131 @@ jobs:
       if: env.REUSE != 'true'
       shell: bash
       run: bash scripts/verify-mupdf.sh win-x64 run
+
+  # pdftoppm, pdftotext, pdffonts, pdfinfo and pdfsig, tools of Poppler, which
+  # publishes source releases only: every target is built from them
+  # (scripts/build-poppler.sh) with the libraries of scripts/pdf-deps.sh (zlib,
+  # libjpeg-turbo, libpng, brotli, FreeType, LittleCMS, OpenJPEG, and NSS for
+  # pdfsig), and the "generic" font configuration. NSS is built with its gyp
+  # build, which needs gyp-next. win-x64 has no pdfsig: NSS builds static
+  # libraries for MSVC only.
+  # No Windows arm64 build, as for the image tools.
+  poppler:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-poppler-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-poppler-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-poppler-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e POPPLER_VERSION -e ZLIB_VERSION -e LIBJPEG_TURBO_VERSION -e LIBPNG_VERSION -e BROTLI_VERSION \
+          -e FREETYPE_VERSION -e LCMS2_VERSION -e OPENJPEG_VERSION -e NSS_VERSION -e NSPR_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              py3-pip python3 git curl bash perl pkgconf linux-headers tar xz
+            pip install --break-system-packages --quiet gyp-next
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-poppler.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-poppler.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-poppler.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        pipx install gyp-next
+        bash scripts/build-poppler.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; poppler-windows-test runs their smoke tests.
+      # The signature test signs a file with the openssl of the runner.
+      run: bash scripts/verify-poppler.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-poppler-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           pdftoppm-${{ matrix.rid }}*
+           pdftotext-${{ matrix.rid }}*
+           pdffonts-${{ matrix.rid }}*
+           pdfinfo-${{ matrix.rid }}*
+           pdfsig-${{ matrix.rid }}*
+
+  poppler-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['poppler-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, poppler]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['poppler-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-poppler-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-poppler.sh win-x64 run
 
   # dec265 (libde265) and heif-enc, heif-dec and heif-info (libheif), for HEVC
   # only: x265 encodes, for 8, 10 and 12 bits, and libde265 decodes. Every

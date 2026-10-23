@@ -82,6 +82,16 @@
 /mutool-*-*
 /mupdf-smoke/
 
+# scripts/build-poppler.sh output
+/poppler-deps/
+/poppler-src/
+/pdftoppm-*-*
+/pdftotext-*-*
+/pdffonts-*-*
+/pdfinfo-*-*
+/pdfsig-*-*
+/poppler-smoke/
+
 # .NET
 [Bb]in/
 [Oo]bj/

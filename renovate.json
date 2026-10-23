@@ -367,6 +367,31 @@
       "datasourceTemplate": "git-tags",
       "depNameTemplate": "https://github.com/ArtifexSoftware/mupdf.git",
       "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "POPPLER_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "gitlab-tags",
+      "depNameTemplate": "poppler/poppler",
+      "registryUrlTemplate": "https://gitlab.freedesktop.org",
+      "extractVersionTemplate": "^poppler-(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "LCMS2_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "mm2/Little-CMS",
+      "extractVersionTemplate": "^lcms(?<version>.*)$"
     }
   ]
 }

@@ -61,6 +61,11 @@ $versionKeys = [ordered]@{
     "TAppDecoder"      = "HM"
     "qpdf"             = "Qpdf"
     "mutool"           = "MuPdf"
+    "pdftoppm"         = "Poppler"
+    "pdftotext"        = "Poppler"
+    "pdffonts"         = "Poppler"
+    "pdfinfo"          = "Poppler"
+    "pdfsig"           = "Poppler"
 }
 
 $versionsPath = Join-Path $BinariesPath "versions.json"

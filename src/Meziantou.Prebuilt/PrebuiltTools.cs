@@ -131,6 +131,21 @@ public static class PrebuiltTools
     /// <summary>mutool, the command-line tool of MuPDF (<c>draw</c>, <c>show</c>, <c>clean</c>, ...), statically linked with the third-party libraries MuPDF ships, and built with its built-in fonts, without libcrypto (no digital signatures) and without Tesseract (no OCR).</summary>
     public static PrebuiltTool Mutool { get; } = new("mutool");
 
+    /// <summary>pdftoppm, the Poppler tool that renders pages to PPM, PGM, PBM, PNG or JPEG images, statically linked with FreeType, LittleCMS, libjpeg-turbo, OpenJPEG and libpng. It is built with the "generic" font configuration: a font a file does not embed is drawn only when the URW base 35 Type 1 fonts are in a Ghostscript font directory.</summary>
+    public static PrebuiltTool Pdftoppm { get; } = new("pdftoppm");
+
+    /// <summary>pdftotext, the Poppler tool that extracts the text of a PDF file.</summary>
+    public static PrebuiltTool Pdftotext { get; } = new("pdftotext");
+
+    /// <summary>pdffonts, the Poppler tool that lists the fonts of a PDF file, and whether they are embedded and subset.</summary>
+    public static PrebuiltTool Pdffonts { get; } = new("pdffonts");
+
+    /// <summary>pdfinfo, the Poppler tool that describes a PDF file (version, page count and sizes, encryption, metadata, ...).</summary>
+    public static PrebuiltTool Pdfinfo { get; } = new("pdfinfo");
+
+    /// <summary>pdfsig, the Poppler tool that verifies the digital signatures of a PDF file, statically linked with NSS. It is not available for <c>win-x64</c>. Without an NSS database, no certificate is trusted: <c>-nocert</c> skips the certificate check.</summary>
+    public static PrebuiltTool Pdfsig { get; } = new("pdfsig");
+
     /// <summary>Gets all the tools.</summary>
     public static IReadOnlyList<PrebuiltTool> All { get; } =
     [
@@ -174,6 +189,11 @@ public static class PrebuiltTools
         HmDecoder,
         Qpdf,
         Mutool,
+        Pdftoppm,
+        Pdftotext,
+        Pdffonts,
+        Pdfinfo,
+        Pdfsig,
     ];
 
     private static string? GetCurrentRuntimeIdentifier()
