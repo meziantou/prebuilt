@@ -121,6 +121,9 @@ public sealed class PrebuiltToolTests
         Assert.Equal("pdffonts", PrebuiltTools.Pdffonts.Name);
         Assert.Equal("pdfinfo", PrebuiltTools.Pdfinfo.Name);
         Assert.Equal("pdfsig", PrebuiltTools.Pdfsig.Name);
+        Assert.Equal("TestGrammar", PrebuiltTools.ArlingtonTestGrammar.Name);
+        Assert.Equal("verapdf", PrebuiltTools.VeraPdf.Name);
+        Assert.Equal("pdfium_test", PrebuiltTools.PdfiumTest.Name);
     }
 
     public static bool IsManifestEmbedded => PrebuiltManifest.IsEmbedded;

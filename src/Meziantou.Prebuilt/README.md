@@ -24,7 +24,7 @@ var cache = new PrebuiltToolCache(cacheDirectory: "/tmp/tools", httpClient: myHt
 string cwebp = await cache.GetOrDownloadAsync(PrebuiltTools.Cwebp, runtimeIdentifier: "linux-arm64");
 ```
 
-Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `IsoJpeg`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
+Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `IsoJpeg`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
 
 On `win-arm64`, a tool that is not built for Arm64 (e.g. `pngout`) falls back to its `win-x64` build, which Windows on Arm runs through emulation. Pass `allowEmulation: false` to `GetAsset`, `IsSupported` or `GetOrDownloadAsync` to only get native builds:
 
@@ -53,6 +53,24 @@ if (process.ExitCode != 0 || !File.Exists("output.jpg") || new FileInfo("output.
 }
 ```
 
+## Tools with their files
+
+Some tools need more than their executable: `VeraPdf` comes with a Java runtime, `ArlingtonTestGrammar` with the TSV files of the Arlington PDF Model, and `PdfiumTest` with the fonts of the PDFium pixel tests. Their release file is a `.tar.gz` archive (`PrebuiltToolAsset.IsArchive`), with the executable at its root. `GetOrDownloadAsync` extracts it and still returns the path of the executable; the other files are in the same folder:
+
+```csharp
+string testGrammar = await PrebuiltTools.ArlingtonTestGrammar.GetOrDownloadAsync();
+string tsv = Path.Combine(Path.GetDirectoryName(testGrammar)!, "tsv", "latest");
+
+// TestGrammar --tsvdir <tsv> --pdf file.pdf: the problems are the "Error:" lines, the exit code is 0
+using var process = Process.Start(testGrammar, ["--no-color", "--tsvdir", tsv, "--pdf", "file.pdf"]);
+await process.WaitForExitAsync();
+```
+
+- `ArlingtonTestGrammar` is built from a commit of the master branch of [pdf-association/arlington-pdf-model](https://github.com/pdf-association/arlington-pdf-model), whose last release is from 2021: its version is the version of TestGrammar followed by the commit (`0.81+d148fee`). The archive has the TSV files of every PDF version (`tsv/1.0` to `tsv/2.0`, and `tsv/latest`).
+- `VeraPdf` runs veraPDF with the Java runtime of the archive. The Linux runtimes need glibc. veraPDF writes its configuration to a `config` folder next to the executable the first time it runs, so the cache folder must be writable. It exits with 0 when every file is compliant and with 1 otherwise.
+
+- `PdfiumTest` is configured as the PDFium pixel tests are run, so that its rasters can be compared with the PDFium expectations. Its folder has `test_fonts/` (`third_party/test_fonts`) and `fonts/` (`testing/resources/fonts`): the pixel tests run `pdfium_test --send-events --png --md5 --time=1399672130 --font-dir=<folder>/test_fonts --croscore-font-names <file>.pdf`, or `--font-dir=<folder>/fonts/ahem` and `fonts/symbolneu` for the tests whose folder names say `use_ahem` or `use_symbolneu`. Its version is the N of the PDFium `chromium/N` branch it is built from. The Linux builds need glibc and libgcc_s.
+
 ## Cache
 
 The default cache folder is `Meziantou.Prebuilt` in the local application data folder (`%LOCALAPPDATA%` on Windows, `~/.local/share` on Linux, `~/Library/Application Support` on macOS). Files are stored at:
@@ -61,4 +79,4 @@ The default cache folder is `Meziantou.Prebuilt` in the local application data f
 <cache>/<tool>/<version>-<rid>-<first 16 chars of the SHA-256>/<tool>[.exe]
 ```
 
-Versions and builds never collide, and identical files are shared between package versions. A file is downloaded to a temporary file next to its final path, verified, made executable, and then moved into place. Concurrent calls for the same file within a process share a single download; concurrent downloads from several processes are also safe.
+Versions and builds never collide, and identical files are shared between package versions. A file is downloaded to a temporary file next to its final path, verified, made executable, and then moved into place. An archive is verified, extracted to a temporary folder, and that folder is then moved into place: the executable exists only once every file of the archive does. Concurrent calls for the same file within a process share a single download; concurrent downloads from several processes are also safe.

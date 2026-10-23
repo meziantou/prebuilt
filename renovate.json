@@ -392,6 +392,43 @@
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "mm2/Little-CMS",
       "extractVersionTemplate": "^lcms(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "ARLINGTON_COMMIT: \"(?<currentDigest>.*?)\""
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "https://github.com/pdf-association/arlington-pdf-model.git",
+      "currentValueTemplate": "master"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "PDFIUM_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "bblanchon/pdfium-binaries",
+      "versioningTemplate": "loose",
+      "extractVersionTemplate": "^chromium/(?<version>\\d+)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "DEPOT_TOOLS_COMMIT: \"(?<currentDigest>.*?)\""
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "https://chromium.googlesource.com/chromium/tools/depot_tools.git",
+      "currentValueTemplate": "main"
     }
   ]
 }

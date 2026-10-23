@@ -8,7 +8,7 @@
 # Targets: linux-x64 | linux-arm64 | win-x64 | osx-arm64
 #
 # Poppler publishes source releases only: every target is built from them,
-# with the libraries of scripts/pdf-deps.sh: zlib, libjpeg-turbo, libpng,
+# with the libraries of scripts/pdf-libs.sh: zlib, libjpeg-turbo, libpng,
 # brotli, FreeType, LittleCMS 2, OpenJPEG, and NSS (with NSPR), the signature
 # backend of pdfsig.
 #
@@ -46,6 +46,7 @@ esac
 TOOL_ID=poppler
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 . "$SCRIPT_DIR/pdf-deps.sh"
+. "$SCRIPT_DIR/pdf-libs.sh"
 
 require_versions POPPLER_VERSION ZLIB_VERSION LIBJPEG_TURBO_VERSION LIBPNG_VERSION BROTLI_VERSION \
   FREETYPE_VERSION LCMS2_VERSION OPENJPEG_VERSION

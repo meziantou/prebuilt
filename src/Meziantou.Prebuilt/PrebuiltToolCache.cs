@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Formats.Tar;
+using System.IO.Compression;
 using System.Security.Cryptography;
 
 namespace Meziantou.Prebuilt;
@@ -8,6 +10,8 @@ namespace Meziantou.Prebuilt;
 /// Each file is stored at <c>&lt;CacheDirectory&gt;/&lt;tool&gt;/&lt;version&gt;-&lt;rid&gt;-&lt;sha256 prefix&gt;/&lt;executable&gt;</c>,
 /// so different versions or builds never collide. A file is downloaded to a temporary file in the same folder,
 /// checked against the expected size and SHA-256, and only then moved to its final path.
+/// An archive (<see cref="PrebuiltToolAsset.IsArchive"/>) is extracted to a temporary folder once checked, and that
+/// folder is then moved to the folder of the executable: the executable exists only once every file is in place.
 /// Concurrent calls for the same file in the same process share a single download.
 /// </remarks>
 public sealed class PrebuiltToolCache
@@ -39,6 +43,7 @@ public sealed class PrebuiltToolCache
     public string CacheDirectory { get; }
 
     /// <summary>Gets the full path where the file is stored once downloaded. The file may not exist.</summary>
+    /// <remarks>For an archive, it is the path of the executable it holds; the other files of the archive are in the same folder.</remarks>
     public string GetPath(PrebuiltToolAsset asset)
     {
         ArgumentNullException.ThrowIfNull(asset);
@@ -150,6 +155,12 @@ public sealed class PrebuiltToolCache
 
             var cancellationToken = download.CancellationToken;
             var directory = Path.GetDirectoryName(path)!;
+            if (asset.IsArchive)
+            {
+                await DownloadArchiveToCacheAsync(asset, path, directory, cancellationToken).ConfigureAwait(false);
+                return;
+            }
+
             Directory.CreateDirectory(directory);
 
             var tempPath = Path.Combine(directory, asset.ExecutableName + "." + Guid.NewGuid().ToString("N") + ".tmp");
@@ -190,6 +201,63 @@ public sealed class PrebuiltToolCache
             }
 
             download.Dispose();
+        }
+    }
+
+    private async Task DownloadArchiveToCacheAsync(PrebuiltToolAsset asset, string path, string directory, CancellationToken cancellationToken)
+    {
+        // The archive and its extracted files go next to the final folder, which only appears once complete
+        var parent = Path.GetDirectoryName(directory)!;
+        Directory.CreateDirectory(parent);
+        var uniqueName = Path.GetFileName(directory) + "." + Guid.NewGuid().ToString("N");
+        var archivePath = Path.Combine(parent, uniqueName + ".tar.gz.tmp");
+        var extractPath = Path.Combine(parent, uniqueName + ".tmp");
+        try
+        {
+            await DownloadAsync(asset, archivePath, cancellationToken).ConfigureAwait(false);
+
+            Directory.CreateDirectory(extractPath);
+            var archive = new FileStream(archivePath, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.Asynchronous);
+            await using (archive.ConfigureAwait(false))
+            {
+                var decompressed = new GZipStream(archive, CompressionMode.Decompress);
+                await using (decompressed.ConfigureAwait(false))
+                {
+                    // Entries whose path goes outside of the folder are rejected
+                    await TarFile.ExtractToDirectoryAsync(decompressed, extractPath, overwriteFiles: false, cancellationToken).ConfigureAwait(false);
+                }
+            }
+
+            var extractedExecutable = Path.Combine(extractPath, asset.ExecutableName);
+            if (!File.Exists(extractedExecutable))
+                throw new InvalidDataException($"The archive '{asset.DownloadUrl}' has no '{asset.ExecutableName}' at its root.");
+
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(extractedExecutable, File.GetUnixFileMode(extractedExecutable) |
+                    UnixFileMode.UserRead | UnixFileMode.UserExecute | UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                    UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+            }
+
+            // A folder without the executable is what an interrupted older version could leave
+            if (Directory.Exists(directory) && !File.Exists(path))
+            {
+                TryDeleteDirectory(directory);
+            }
+
+            try
+            {
+                Directory.Move(extractPath, directory);
+            }
+            catch (IOException) when (File.Exists(path))
+            {
+                // Another process extracted the same archive concurrently. Both have the same checksum.
+            }
+        }
+        finally
+        {
+            TryDeleteFile(archivePath);
+            TryDeleteDirectory(extractPath);
         }
     }
 
@@ -240,6 +308,23 @@ public sealed class PrebuiltToolCache
         try
         {
             File.Delete(path);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
+    }
+
+    private static void TryDeleteDirectory(string path)
+    {
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, recursive: true);
+            }
         }
         catch (IOException)
         {
