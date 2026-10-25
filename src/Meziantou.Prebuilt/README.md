@@ -24,7 +24,7 @@ var cache = new PrebuiltToolCache(cacheDirectory: "/tmp/tools", httpClient: myHt
 string cwebp = await cache.GetOrDownloadAsync(PrebuiltTools.Cwebp, runtimeIdentifier: "linux-arm64");
 ```
 
-Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `IsoJpeg`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
+Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `IsoJpeg`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`, `Zint`, `ZXingReader`, `ZBarImg`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
 
 On `win-arm64`, a tool that is not built for Arm64 (e.g. `pngout`) falls back to its `win-x64` build, which Windows on Arm runs through emulation. Pass `allowEmulation: false` to `GetAsset`, `IsSupported` or `GetOrDownloadAsync` to only get native builds:
 
@@ -52,6 +52,32 @@ if (process.ExitCode != 0 || !File.Exists("output.jpg") || new FileInfo("output.
     throw new InvalidOperationException("iso-jpeg failed");
 }
 ```
+
+## Barcode tools
+
+`Zint` writes barcodes and their module matrix, `ZXingReader` (zxing-cpp) and `ZBarImg` (ZBar) read them back from image files:
+
+```csharp
+string zint = await PrebuiltTools.Zint.GetOrDownloadAsync();
+string reader = await PrebuiltTools.ZXingReader.GetOrDownloadAsync();
+
+// A version 2 QR Code, level M, mask 3: --dump prints its module matrix, -o writes it
+using (var process = Process.Start(zint, ["-b", "58", "--vers=2", "--secure=2", "--mask=3", "-d", "Hello, World!", "--scale=4", "-o", "qr.png"]))
+{
+    await process.WaitForExitAsync();
+}
+
+// ZXingReader -1 qr.png prints: qr.png QR Code "Hello, World!"
+using (var process = Process.Start(new ProcessStartInfo(reader, ["-1", "qr.png"]) { RedirectStandardOutput = true }))
+{
+    string result = await process.StandardOutput.ReadToEndAsync();
+    await process.WaitForExitAsync();
+}
+```
+
+- `zint --dump` prints one line per row of modules, in hexadecimal, 4 modules per digit with the first one in the high bit, in groups of 2 digits, the last group with the digits the row needs only: `FE 5B F8` is the 21 modules `111111100101101111111`.
+- `ZXingReader` prints the version, error correction level and mask of a QR Code, Micro QR or rMQR symbol, and `-symbol` the module matrix it sampled. It reports UPC-A as EAN-13 unless `-formats UPC-A`, and exits with 0 when it cannot load an image.
+- `ZBarImg` reads EAN/UPC (with `-Sean2.enable` and `-Sean5.enable` for the add-ons, reported as separate `EAN-2` and `EAN-5` symbols), DataBar, Code 128, Code 93, Code 39, Codabar, Interleaved 2 of 5 and QR Code, not Micro QR or rMQR. It reads PNG, BMP, GIF, PCX, PNM and TGA files, and exits with 4 when it finds no barcode. ZBar is available under the GNU Lesser General Public License, version 2.1 or later; its sources are the ZBar release of the version of the tool.
 
 ## Tools with their files
 

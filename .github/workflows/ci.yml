@@ -16,7 +16,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.11.0
+  VERSION: 3.12.0
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
@@ -66,6 +66,12 @@ env:
   PDFIUM_VERSION: "8111" # https://github.com/bblanchon/pdfium-binaries/releases - pdfium_test, built from the PDFium branch chromium/<version>
   DEPOT_TOOLS_COMMIT: "b1c2e86792a7f2b6576c181b7327ddd53b1a42a8" # https://chromium.googlesource.com/chromium/tools/depot_tools - main branch; the gclient/gn/ninja of the PDFium build
   X264_COMMIT: "b35605ace3ddf7c1a5d67a2eb553f034aef41d55" # https://code.videolan.org/videolan/x264 - stable branch
+  ZINT_VERSION: "2.16.0" # https://github.com/zint/zint/tags - zint, built from the release tag
+  ZXING_CPP_VERSION: "3.1.1" # https://github.com/zxing-cpp/zxing-cpp/releases - ZXingReader, built from zxing-cpp-<version>.tar.gz; tags have a leading v
+  STB_COMMIT: "003501f6d7a8668ce8b6d875e34dd97ad0d5d5b5" # https://github.com/nothings/stb - master branch; the stb_image of ZXingReader; no release tag
+  ZBAR_VERSION: "0.23.95" # https://github.com/mchehab/zbar/releases - zbarimg, built from https://linuxtv.org/downloads/zbar/zbar-<version>.tar.gz
+  GRAPHICSMAGICK_VERSION: "1.3.49" # https://sourceforge.net/projects/graphicsmagick/files/graphicsmagick/ - the image reader of zbarimg
+  LIBICONV_VERSION: "1.19" # https://ftp.gnu.org/pub/gnu/libiconv/ - the iconv of zbarimg on Windows
 
 jobs:
   create-release:
@@ -123,7 +129,13 @@ jobs:
       verapdf,
       verapdf-windows-test,
       pdfium,
-      pdfium-linux-arm64-test
+      pdfium-linux-arm64-test,
+      zint,
+      zint-windows-test,
+      zxing-cpp,
+      zxing-cpp-windows-test,
+      zbar,
+      zbar-windows-test
     ]
     permissions:
       contents: write
@@ -268,6 +280,9 @@ jobs:
         $versions.VeraPdf = "${{ env.VERAPDF_VERSION }}"
         # PDFium has no releases: the N of its chromium/<N> branch.
         $versions.Pdfium = "${{ env.PDFIUM_VERSION }}"
+        $versions.Zint = "${{ env.ZINT_VERSION }}"
+        $versions.ZXingCpp = "${{ env.ZXING_CPP_VERSION }}"
+        $versions.ZBar = "${{ env.ZBAR_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
@@ -2496,6 +2511,383 @@ jobs:
       if: env.REUSE != 'true'
       shell: bash
       run: bash scripts/verify-hevc.sh ${{ matrix.rid }}
+
+  # zint, the barcode encoder: the module matrices (--dump) and PNG files the
+  # barcode readers below are checked with. zint publishes a Windows binary
+  # only, with its Qt frontend, so every target is built from the release tag
+  # (scripts/build-zint.sh), with libpng, without Qt and the GS1 Syntax Engine.
+  # zlib and libpng are the versions ffmpeg and the HarfBuzz tools are built
+  # with.
+  # No Windows arm64 build, as for the image tools.
+  zint:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-zint-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-zint-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-zint-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e LIBPNG_VERSION -e ZINT_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang cmake ninja-build ninja-is-really-ninja \
+              git curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-zint.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-zint.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-zint.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-zint.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; zint-windows-test runs their smoke tests.
+      run: bash scripts/verify-zint.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-zint-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           zint-${{ matrix.rid }}*
+
+  zint-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['zint-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, zint]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['zint-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-zint-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-zint.sh win-x64 run
+
+  # ZXingReader, the barcode reader of the example programs of zxing-cpp,
+  # which publishes no binaries: every target is built from the release
+  # tarball (scripts/build-zxing-cpp.sh), with every reader and no writer, and
+  # the stb_image of STB_COMMIT.
+  # It needs zint for its smoke tests: they decode the barcodes zint writes, and
+  # compare the module matrices with the ones zint dumps.
+  # No Windows arm64 build, as for the image tools.
+  zxing-cpp:
+    needs: [build-plan, zint]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-zxing-cpp-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-zxing-cpp-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-zxing-cpp-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZXING_CPP_VERSION -e STB_COMMIT \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              git curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-zxing-cpp.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-zxing-cpp.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-zxing-cpp.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-zxing-cpp.sh osx-arm64
+    # The smoke tests decode the barcodes of zint. ZINT_VERSION is named here
+    # to be part of the build key of this job: a new zint is checked again.
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      if: env.REUSE != 'true' && matrix.rid != 'win-x64'
+      with:
+        name: binaries-zint-${{ matrix.rid }}
+        path: .
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; zxing-cpp-windows-test runs their smoke tests.
+      run: bash scripts/verify-zxing-cpp.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-zxing-cpp-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ZXingReader-${{ matrix.rid }}*
+
+  zxing-cpp-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['zxing-cpp-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, zint, zxing-cpp]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['zxing-cpp-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-zint-win-x64
+        path: .
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-zxing-cpp-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # With the zint of the run: ZINT_VERSION is part of the build key.
+      run: bash scripts/verify-zxing-cpp.sh win-x64 run
+
+  # zbarimg, the image scanner of ZBar, which publishes dynamically linked
+  # builds only: every target is built from the release tarball
+  # (scripts/build-zbar.sh), with GraphicsMagick (PNG and zlib only) to read
+  # the images, and GNU libiconv on Windows. zlib and libpng are the versions
+  # ffmpeg and the HarfBuzz tools are built with.
+  # It needs zint for its smoke tests: they decode the barcodes zint writes.
+  # No Windows arm64 build, as for the image tools.
+  zbar:
+    needs: [build-plan, zint]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-zbar-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-zbar-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-zbar-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e LIBPNG_VERSION -e LIBICONV_VERSION -e GRAPHICSMAGICK_VERSION -e ZBAR_VERSION \
+          "$image" sh -euc '
+            # meson comes from pip for the same reason as in ffmpeg-linux.
+            apk add --no-cache build-base clang cmake ninja-build ninja-is-really-ninja \
+              py3-pip python3 git curl bash perl pkgconf linux-headers tar xz
+            pip install --break-system-packages --quiet meson
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-zbar.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+        pipx install meson
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-zbar.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-zbar.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja meson
+        bash scripts/build-zbar.sh osx-arm64
+    # The smoke tests decode the barcodes of zint. ZINT_VERSION is named here
+    # to be part of the build key of this job: a new zint is checked again.
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      if: env.REUSE != 'true' && matrix.rid != 'win-x64'
+      with:
+        name: binaries-zint-${{ matrix.rid }}
+        path: .
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; zbar-windows-test runs their smoke tests.
+      run: bash scripts/verify-zbar.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-zbar-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           zbarimg-${{ matrix.rid }}*
+
+  zbar-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['zbar-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, zint, zbar]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['zbar-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-zint-win-x64
+        path: .
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-zbar-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # With the zint of the run: ZINT_VERSION is part of the build key.
+      run: bash scripts/verify-zbar.sh win-x64 run
 
   ffmpeg-linux:
     needs: [build-plan]

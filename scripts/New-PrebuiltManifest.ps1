@@ -69,6 +69,9 @@ $versionKeys = [ordered]@{
     "TestGrammar"      = "Arlington"
     "verapdf"          = "VeraPdf"
     "pdfium_test"      = "Pdfium"
+    "zint"             = "Zint"
+    "ZXingReader"      = "ZXingCpp"
+    "zbarimg"          = "ZBar"
 }
 
 $versionsPath = Join-Path $BinariesPath "versions.json"

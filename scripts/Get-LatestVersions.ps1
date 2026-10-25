@@ -144,6 +144,28 @@ function Get-LatestWoff2Commit {
     return ($refs -split "\s+")[0]
 }
 
+function Get-LatestStbCommit {
+    $refs = & git ls-remote https://github.com/nothings/stb.git master
+    if ($LASTEXITCODE -ne 0 -or -not $refs) {
+        throw "Unable to resolve the stb master branch."
+    }
+
+    return ($refs -split "\s+")[0]
+}
+
+# GraphicsMagick is released on SourceForge only.
+function Get-LatestGraphicsMagickVersion {
+    $feed = Invoke-RestMethod -Method Get -Uri "https://sourceforge.net/projects/graphicsmagick/rss?path=/graphicsmagick"
+    $names = $feed | ForEach-Object { if ("$($_.title.InnerText)$($_.title)" -match "/graphicsmagick/(\d+\.\d+\.\d+)/GraphicsMagick-\1\.tar\.xz") { $Matches[1] } }
+    return Select-LatestVersion -Names $names -Pattern "^(?<version>\d+\.\d+\.\d+)$" -Description "GraphicsMagick"
+}
+
+function Get-LatestLibIconvVersion {
+    $page = Invoke-RestMethod -Method Get -Uri "https://ftp.gnu.org/pub/gnu/libiconv/"
+    $names = [regex]::Matches($page, "libiconv-(\d+\.\d+(?:\.\d+)?)\.tar\.gz") | ForEach-Object { $_.Groups[1].Value }
+    return Select-LatestVersion -Names $names -Pattern "^(?<version>\d+\.\d+(?:\.\d+)?)$" -Description "libiconv"
+}
+
 # FreeType tags are VER-2-15-0.
 function Get-LatestFreeTypeVersion {
     $tags = Invoke-GitHubApi -Uri "https://api.github.com/repos/freetype/freetype/tags?per_page=100"
@@ -349,6 +371,12 @@ $availableLatestVersions = [ordered]@{
     "TEMURIN_VERSION" = Get-LatestTemurinVersion
     "PDFIUM_VERSION" = Get-LatestPdfiumVersion
     "DEPOT_TOOLS_COMMIT" = Get-LatestDepotToolsCommit
+    "ZINT_VERSION" = Get-LatestTag -Repository "zint/zint" -Pattern "^(?<version>\d+\.\d+\.\d+)$"
+    "ZXING_CPP_VERSION" = Get-ReleaseTag -Repository "zxing-cpp/zxing-cpp" -TrimV
+    "STB_COMMIT" = Get-LatestStbCommit
+    "ZBAR_VERSION" = Get-ReleaseTag -Repository "mchehab/zbar"
+    "GRAPHICSMAGICK_VERSION" = Get-LatestGraphicsMagickVersion
+    "LIBICONV_VERSION" = Get-LatestLibIconvVersion
 }
 
 $selectedVariableNames =
