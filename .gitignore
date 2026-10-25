@@ -114,6 +114,21 @@
 /pdfium-smoke/
 /pdfium_test-*-*
 
+# scripts/build-zint.sh output
+/zint-deps/
+/zint-src/
+/zint-*-*
+
+# scripts/build-zxing-cpp.sh output
+/zxing-cpp-src/
+/ZXingReader-*-*
+
+# scripts/build-zbar.sh output
+/zbar-deps/
+/zbar-src/
+/zbar-cross.txt
+/zbarimg-*-*
+
 # .NET
 [Bb]in/
 [Oo]bj/

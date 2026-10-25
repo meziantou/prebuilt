@@ -57,7 +57,7 @@ $keyFormat = "v1"
 # lists the build units whose binaries it tests (inputs).
 $units = [ordered]@{}
 $rids = "linux-x64", "linux-arm64", "win-x64", "osx-arm64"
-foreach ($job in "libavif", "libjxl", "jxl-oxide", "woff2", "harfbuzz", "openjpeg", "openjph", "iso-jpeg", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf", "pdfium") {
+foreach ($job in "libavif", "libjxl", "jxl-oxide", "woff2", "harfbuzz", "openjpeg", "openjph", "iso-jpeg", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf", "pdfium", "zint", "zxing-cpp", "zbar") {
     foreach ($rid in $rids) {
         $units["binaries-$job-$rid"] = @{ job = $job; rid = $rid }
     }
@@ -75,8 +75,12 @@ foreach ($rid in $ffmpegArtifacts.Keys) {
     $units[$artifact] = @{ job = $artifact -replace '^binaries-', ''; rid = $rid }
 }
 
-foreach ($job in "libjxl", "woff2", "harfbuzz", "openjpeg", "openjph", "iso-jpeg", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf") {
+foreach ($job in "libjxl", "woff2", "harfbuzz", "openjpeg", "openjph", "iso-jpeg", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf", "zint") {
     $units["$job-windows-test"] = @{ job = "$job-windows-test"; rid = "win-x64"; inputs = @("binaries-$job-win-x64") }
+}
+# The barcode readers are tested with the barcodes zint writes.
+foreach ($job in "zxing-cpp", "zbar") {
+    $units["$job-windows-test"] = @{ job = "$job-windows-test"; rid = "win-x64"; inputs = @("binaries-$job-win-x64", "binaries-zint-win-x64") }
 }
 # pdfium builds linux-arm64 on an x64 machine: this job runs it.
 $units["pdfium-linux-arm64-test"] = @{ job = "pdfium-linux-arm64-test"; rid = "linux-arm64"; inputs = @("binaries-pdfium-linux-arm64") }

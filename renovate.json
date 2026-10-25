@@ -429,6 +429,52 @@
       "datasourceTemplate": "git-refs",
       "depNameTemplate": "https://chromium.googlesource.com/chromium/tools/depot_tools.git",
       "currentValueTemplate": "main"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "ZINT_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "zint/zint"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "ZXING_CPP_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "zxing-cpp/zxing-cpp",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "STB_COMMIT: \"(?<currentDigest>.*?)\""
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "https://github.com/nothings/stb.git",
+      "currentValueTemplate": "master"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "ZBAR_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "mchehab/zbar"
     }
   ]
 }

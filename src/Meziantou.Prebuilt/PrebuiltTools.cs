@@ -155,6 +155,15 @@ public static class PrebuiltTools
     /// <summary>pdfium_test, the command-line tool of PDFium, configured as the PDFium pixel tests are run (AGG renderer, no V8 or XFA). The release file is an archive: the folder of the executable also holds <c>test_fonts/</c> and <c>fonts/</c>, the fonts of the pixel tests (<c>--png --md5 --time=1399672130 --font-dir=&lt;folder&gt;/test_fonts --croscore-font-names</c>). Its version is the N of the chromium/N branch it is built from. The Linux builds need glibc and libgcc_s.</summary>
     public static PrebuiltTool PdfiumTest { get; } = new("pdfium_test");
 
+    /// <summary>zint, the barcode encoder of the zint library (QR Code, Micro QR, rMQR, Code 128, Code 39, Code 93, EAN/UPC with their add-ons, Codabar, Interleaved 2 of 5, ...), built with libpng and without the GS1 Syntax Engine. <c>--dump</c> prints the module matrix, one row per line, in hexadecimal: 4 modules per digit, the first one in the high bit, in groups of 2 digits, the last group with the digits the row needs only. <c>-b</c> selects the symbology, and <c>--vers</c>, <c>--mask</c> and <c>--secure</c> pin the version, the mask and the error correction level.</summary>
+    public static PrebuiltTool Zint { get; } = new("zint");
+
+    /// <summary>ZXingReader, the barcode reader of the example programs of zxing-cpp, built with every reader. It reads PNG, BMP, GIF, JPEG, PNM and TGA files (stb_image), and prints the text, format, version, error correction level and mask of each barcode (<c>-1</c> for one line per barcode, <c>-json</c>, <c>-symbol</c> for the module matrix). It exits with 0 when it cannot load an image.</summary>
+    public static PrebuiltTool ZXingReader { get; } = new("ZXingReader");
+
+    /// <summary>zbarimg, the image scanner of ZBar (EAN/UPC with their add-ons, DataBar, Code 128, Code 93, Code 39, Codabar, Interleaved 2 of 5, QR Code, SQ Code; not Micro QR or rMQR), built with GraphicsMagick for PNG, BMP, GIF, PCX, PNM and TGA files (no JPEG or TIFF). It exits with 4 when it finds no barcode. ZBar is available under the GNU Lesser General Public License, version 2.1 or later.</summary>
+    public static PrebuiltTool ZBarImg { get; } = new("zbarimg");
+
     /// <summary>Gets all the tools.</summary>
     public static IReadOnlyList<PrebuiltTool> All { get; } =
     [
@@ -206,6 +215,9 @@ public static class PrebuiltTools
         ArlingtonTestGrammar,
         VeraPdf,
         PdfiumTest,
+        Zint,
+        ZXingReader,
+        ZBarImg,
     ];
 
     private static string? GetCurrentRuntimeIdentifier()
