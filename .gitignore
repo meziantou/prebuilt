@@ -53,6 +53,24 @@
 /ojph_compress-*-*
 /ojph_expand-*-*
 
+# scripts/build-openexr.sh output
+/openexr-src/
+/exrheader-*-*
+/exrinfo-*-*
+/exrmaketiled-*-*
+/exrmetrics-*-*
+/exrstdattr-*-*
+/exrcheck-*-*
+/exrmultipart-*-*
+/exrmultiview-*-*
+/exrenvmap-*-*
+/exrmakepreview-*-*
+/exrmanifest-*-*
+/exr2aces-*-*
+/exr-from-raw-*-*
+/exr-to-raw-*-*
+/openexr-smoke/
+
 # scripts/build-iso-jpeg.sh output
 /iso-jpeg-src/
 /iso-jpeg-*-*
