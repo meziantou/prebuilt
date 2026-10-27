@@ -25,7 +25,7 @@ The binaries are available from:
 
 ## OpenEXR
 
-The OpenEXR tools are built from the source tarball of the [OpenEXR](https://github.com/AcademySoftwareFoundation/openexr) release, with the libdeflate, zstd and OpenJPH it comes with and the Imath it pins, and compiled with `-ffp-contract=off`, so that the lossy compressions decode the same samples on every runtime identifier.
+The OpenEXR tools are built from the source tarball of the [OpenEXR](https://github.com/AcademySoftwareFoundation/openexr) release, with the libdeflate, zstd and OpenJPH it comes with and the Imath it pins, and compiled with `-ffp-contract=off` and without the SIMD code OpenEXR and OpenJPH choose at run time on x64, so that the lossy compressions decode the same samples on every runtime identifier.
 
 - `exrheader`, `exrinfo`, `exrmaketiled`, `exrmetrics`, `exrstdattr`, `exrcheck`, `exrmultipart`, `exrmultiview`, `exrenvmap`, `exrmakepreview`, `exrmanifest`, and `exr2aces` (deprecated) are the utilities of the release.
 - `exr-from-raw <description.json> <output.exr>` writes an EXR file from a JSON description of its header and files of raw samples: every compression and pixel type, subsampled channels, scan lines and tiles, every line order, mipmaps and ripmaps, deep scan lines and deep tiles, multi-part files, and any attribute, even a malformed one. `exr-to-raw [--header-only] <input.exr> <output-directory>` writes the header of a file as that JSON, with the offset tables and the bytes of every attribute, and its decoded samples as raw little-endian files, without any conversion. Their sources are `scripts/exr-from-raw.cpp` and `scripts/exr-to-raw.cpp`, and their formats are described in [src/Meziantou.Prebuilt/README.md](src/Meziantou.Prebuilt/README.md#openexr).

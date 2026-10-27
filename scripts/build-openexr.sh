@@ -24,8 +24,11 @@
 # Everything is compiled with -ffp-contract=off: without it, clang fuses the
 # multiplications and additions of the lossy codecs (DWAA, DWAB, B44, PXR24)
 # into FMA instructions on arm64 and not on x64, and the decoded samples could
-# depend on the processor. scripts/verify-openexr.sh checks the hash of the
-# decoded samples of a fixed input on every target.
+# depend on the processor. For the same reason, the SIMD code OpenEXR and
+# OpenJPH select at run time on x64 is left out: OpenJPH is built with
+# OJPH_DISABLE_SIMD (it has no arm64 SIMD code), and the DWA decoder keeps its
+# scalar inverse DCT (see below). scripts/verify-openexr.sh checks the hash of
+# the decoded samples of a fixed input on every target.
 #
 # win-x64 is cross-compiled from Linux with llvm-mingw; point LLVM_MINGW_ROOT at
 # the extracted toolchain. Every other target builds natively.
@@ -161,6 +164,23 @@ for dependency in deflate zstd OpenJPH; do
   [ -d "$SOURCE/external/$dependency" ] || { echo "OpenEXR $OPENEXR_VERSION has no external/$dependency" >&2; exit 1; }
 done
 
+# On x64, the DWAA/DWAB decoder picks an AVX or SSE2 inverse DCT and an F16C
+# half conversion at run time; arm64 always uses the scalar DCT. The SIMD DCTs
+# round differently, so the decoded samples would depend on the processor (see
+# the top of this file). Skipping the processor check keeps every x64 machine on
+# the scalar code, like arm64. The check is the only line of OpenEXR this build
+# changes; the build fails when a new release no longer has it.
+DWA_SIMD="$SOURCE/src/lib/OpenEXRCore/internal_dwa_simd.h"
+DWA_SIMD_CHECK='    check_for_x86_simd (&f16c, &avx, &sse2);'
+DWA_SIMD_PATCHED='    /* meziantou/prebuilt: scalar DCT on every processor */'
+if ! grep -qF "$DWA_SIMD_PATCHED" "$DWA_SIMD"; then
+  [ "$(grep -cF "$DWA_SIMD_CHECK" "$DWA_SIMD")" = 1 ] \
+    || { echo "$DWA_SIMD does not call check_for_x86_simd exactly once" >&2; exit 1; }
+  awk -v check="$DWA_SIMD_CHECK" -v patched="$DWA_SIMD_PATCHED" \
+    '$0 == check { print patched; next } { print }' "$DWA_SIMD" > "$DWA_SIMD.tmp"
+  mv "$DWA_SIMD.tmp" "$DWA_SIMD"
+fi
+
 # ---------------------------------------------------------------------------
 # OpenEXR
 # ---------------------------------------------------------------------------
@@ -176,6 +196,7 @@ cmake -S "$SOURCE" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release $CMAKE_CROSS_
   -DOPENEXR_BUILD_TOOLS=ON -DOPENEXR_INSTALL_TOOLS=ON -DOPENEXR_INSTALL_PKG_CONFIG=OFF \
   -DOPENEXR_FORCE_INTERNAL_DEFLATE=ON -DOPENEXR_FORCE_INTERNAL_ZSTD=ON -DOPENEXR_FORCE_INTERNAL_OPENJPH=ON \
   -DOPENEXR_FORCE_INTERNAL_IMATH=ON "-DFETCHCONTENT_SOURCE_DIR_IMATH=$IMATH_SOURCE" -DFETCHCONTENT_FULLY_DISCONNECTED=ON \
+  -DOJPH_DISABLE_SIMD=ON \
   "-DCMAKE_C_FLAGS=$FP_FLAGS" "-DCMAKE_CXX_FLAGS=$FP_FLAGS" \
   "-DCMAKE_EXE_LINKER_FLAGS=$EXE_LDFLAGS"
 

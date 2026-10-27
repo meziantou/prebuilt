@@ -20,8 +20,9 @@
 # exr-to-raw. A lossy one (PXR24 FLOAT, B44 and B44A HALF, DWAA, DWAB and LJ2K
 # HALF and FLOAT) must change the samples of the channels it compresses
 # lossily, and the decoded samples must have the SHA-256 of the table below,
-# the same on every target: the codecs are compiled with -ffp-contract=off (see
-# scripts/build-openexr.sh). The shipped OpenEXR utilities are run on these
+# the same on every target: the codecs are compiled with -ffp-contract=off and
+# without the SIMD code chosen at run time on x64 (see scripts/build-openexr.sh).
+# The shipped OpenEXR utilities are run on these
 # files too.
 #
 # OPENEXR_VERSION comes from the environment (see .github/workflows/ci.yml).
