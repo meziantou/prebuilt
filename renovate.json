@@ -196,6 +196,18 @@
         "/^\\.github/workflows/ci\\.yml$/"
       ],
       "matchStrings": [
+        "OPENEXR_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "AcademySoftwareFoundation/openexr",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
         "ISO_JPEG_COMMIT: \"(?<currentDigest>.*?)\""
       ],
       "datasourceTemplate": "git-refs",

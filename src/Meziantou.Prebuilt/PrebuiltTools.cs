@@ -104,6 +104,48 @@ public static class PrebuiltTools
     /// <summary>ojph_expand, the OpenJPH HTJ2K (JPEG 2000 Part 15) decoder, built without libtiff: it writes PGM, PPM, PFM, yuv and raw files.</summary>
     public static PrebuiltTool OjphExpand { get; } = new("ojph_expand");
 
+    /// <summary>exrheader, the OpenEXR tool that prints the header of every part of an EXR file.</summary>
+    public static PrebuiltTool ExrHeader { get; } = new("exrheader");
+
+    /// <summary>exrinfo, the OpenEXR tool that prints the header attributes of an EXR file, read with OpenEXRCore.</summary>
+    public static PrebuiltTool ExrInfo { get; } = new("exrinfo");
+
+    /// <summary>exrmaketiled, the OpenEXR tool that writes a tiled version of an EXR file, with one level, mipmaps or ripmaps.</summary>
+    public static PrebuiltTool ExrMakeTiled { get; } = new("exrmaketiled");
+
+    /// <summary>exrmetrics, the OpenEXR tool that measures how fast and how small each compression writes a file, and, with <c>--convert</c>, writes the file again with another compression (<c>-z</c>) or pixel type (<c>--pixelmode</c>).</summary>
+    public static PrebuiltTool ExrMetrics { get; } = new("exrmetrics");
+
+    /// <summary>exrstdattr, the OpenEXR tool that sets standard attributes (chromaticities, owner, ...) in the headers of an EXR file.</summary>
+    public static PrebuiltTool ExrStdAttr { get; } = new("exrstdattr");
+
+    /// <summary>exrcheck, the OpenEXR tool that reads an EXR file with every API of the library to validate it. It also reports some valid files as bad: see the README.</summary>
+    public static PrebuiltTool ExrCheck { get; } = new("exrcheck");
+
+    /// <summary>exrmultipart, the OpenEXR tool that combines EXR files into a multi-part file, or separates one. <c>-combine</c> leaves offset tables filled with zeros: see the README.</summary>
+    public static PrebuiltTool ExrMultiPart { get; } = new("exrmultipart");
+
+    /// <summary>exrmultiview, the OpenEXR tool that combines single-view EXR files into a multi-view file.</summary>
+    public static PrebuiltTool ExrMultiView { get; } = new("exrmultiview");
+
+    /// <summary>exrenvmap, the OpenEXR tool that converts a latitude-longitude environment map into a cube-face one, or the other way around.</summary>
+    public static PrebuiltTool ExrEnvMap { get; } = new("exrenvmap");
+
+    /// <summary>exrmakepreview, the OpenEXR tool that adds a preview image to the header of an EXR file.</summary>
+    public static PrebuiltTool ExrMakePreview { get; } = new("exrmakepreview");
+
+    /// <summary>exrmanifest, the OpenEXR tool that prints the ID manifest embedded in an EXR file.</summary>
+    public static PrebuiltTool ExrManifest { get; } = new("exrmanifest");
+
+    /// <summary>exr2aces, the deprecated OpenEXR tool that writes an EXR file as an ACES image container file.</summary>
+    public static PrebuiltTool Exr2Aces { get; } = new("exr2aces");
+
+    /// <summary>exr-from-raw, a program of meziantou/prebuilt built with OpenEXR that writes an EXR file from a JSON description of its header and files of raw samples: every compression, pixel type, sampling, line order, tiles, levels, deep data, multi-part files, and any attribute. See the README for the format.</summary>
+    public static PrebuiltTool ExrFromRaw { get; } = new("exr-from-raw");
+
+    /// <summary>exr-to-raw, a program of meziantou/prebuilt built with OpenEXR that dumps the header of an EXR file as JSON and its decoded samples as raw little-endian files, bit for bit. See the README for the format.</summary>
+    public static PrebuiltTool ExrToRaw { get; } = new("exr-to-raw");
+
     /// <summary>iso-jpeg, the <c>jpeg</c> tool of the ISO JPEG reference codec (thorfdbg/libjpeg): a JPEG encoder and decoder that shares no code with libjpeg-turbo, with arithmetic coding, 12-bit samples, and the progressive and hierarchical processes. It exits with 0 when a conversion fails: delete the output file first, and check afterwards that it exists and is not empty.</summary>
     public static PrebuiltTool IsoJpeg { get; } = new("iso-jpeg");
 
@@ -198,6 +240,20 @@ public static class PrebuiltTools
         OpjDump,
         OjphCompress,
         OjphExpand,
+        ExrHeader,
+        ExrInfo,
+        ExrMakeTiled,
+        ExrMetrics,
+        ExrStdAttr,
+        ExrCheck,
+        ExrMultiPart,
+        ExrMultiView,
+        ExrEnvMap,
+        ExrMakePreview,
+        ExrManifest,
+        Exr2Aces,
+        ExrFromRaw,
+        ExrToRaw,
         IsoJpeg,
         Dec265,
         HeifEnc,

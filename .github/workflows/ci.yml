@@ -16,7 +16,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.12.0
+  VERSION: 3.13.0
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
@@ -39,6 +39,8 @@ env:
   WOFF2_COMMIT: "fb9c3379f2605b10f3e8f1d9636664ab5576775c" # https://github.com/google/woff2 - master branch; woff2_compress/woff2_decompress/woff2_info; no tag since v1.0.2 (2017)
   OPENJPEG_VERSION: "2.5.4" # https://github.com/uclouvain/openjpeg/releases - opj_compress/opj_decompress/opj_dump, built from tag v<version>
   OPENJPH_VERSION: "0.32.0" # https://github.com/aous72/OpenJPH/releases - ojph_compress/ojph_expand; tags have no leading v
+  OPENEXR_VERSION: "3.5.2" # https://github.com/AcademySoftwareFoundation/openexr/releases - exrheader/exrinfo/exrmaketiled/... and exr-from-raw/exr-to-raw, built from tag v<version> with the libdeflate, zstd and OpenJPH of its tarball
+  IMATH_VERSION: "3.2.3" # the Imath OPENEXR_VERSION pins (OPENEXR_IMATH_TAG of its cmake/OpenEXRSetup.cmake) - scripts/build-openexr.sh fails when it is not
   ISO_JPEG_COMMIT: "702114c8130ae818ccd2354cc03e879dac69e579" # https://github.com/thorfdbg/libjpeg - master branch; the jpeg tool of the ISO JPEG reference codec, released as iso-jpeg; no release tag
   ISO_JPEG_VERSION: "1.72" # last release of README.history at ISO_JPEG_COMMIT - scripts/build-iso-jpeg.sh fails when it is not
   OPUS_VERSION: "1.5.2" # https://github.com/xiph/opus/releases - releases only; v1.6.x tags ship no tarball
@@ -111,6 +113,8 @@ jobs:
       openjpeg-windows-test,
       openjph,
       openjph-windows-test,
+      openexr,
+      openexr-windows-test,
       iso-jpeg,
       iso-jpeg-windows-test,
       libheif,
@@ -265,6 +269,7 @@ jobs:
         $versions.Woff2 = "1.0.2+" + "${{ env.WOFF2_COMMIT }}".Substring(0, 7)
         $versions.OpenJpeg = "${{ env.OPENJPEG_VERSION }}"
         $versions.OpenJph = "${{ env.OPENJPH_VERSION }}"
+        $versions.OpenExr = "${{ env.OPENEXR_VERSION }}"
         # libjpeg has no release tag: the last release of its README.history.
         $versions.IsoJpeg = "${{ env.ISO_JPEG_VERSION }}+" + "${{ env.ISO_JPEG_COMMIT }}".Substring(0, 7)
         $versions.X265 = "${{ env.X265_VERSION }}"
@@ -1487,6 +1492,136 @@ jobs:
       if: env.REUSE != 'true'
       shell: bash
       run: bash scripts/verify-openjph.sh win-x64 run
+
+  # The OpenEXR utilities (exrheader, exrinfo, exrmaketiled, exrmetrics,
+  # exrstdattr, exrcheck, exrmultipart, exrmultiview, exrenvmap, exrmakepreview,
+  # exrmanifest, exr2aces), and exr-from-raw and exr-to-raw, which write an EXR
+  # file from raw samples and dump the samples of an EXR file
+  # (scripts/exr-from-raw.cpp, scripts/exr-to-raw.cpp). OpenEXR publishes no
+  # binaries: every target is built from its sources (scripts/build-openexr.sh),
+  # with the libdeflate, zstd and OpenJPH of its tarball and the Imath it pins.
+  # No Windows arm64 build, as for the other image tools.
+  openexr:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-openexr-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-openexr-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-openexr-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e OPENEXR_VERSION -e IMATH_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              git curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-openexr.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-openexr.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-openexr.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-openexr.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; openexr-windows-test runs their smoke tests.
+      run: bash scripts/verify-openexr.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-openexr-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           exrheader-${{ matrix.rid }}*
+           exrinfo-${{ matrix.rid }}*
+           exrmaketiled-${{ matrix.rid }}*
+           exrmetrics-${{ matrix.rid }}*
+           exrstdattr-${{ matrix.rid }}*
+           exrcheck-${{ matrix.rid }}*
+           exrmultipart-${{ matrix.rid }}*
+           exrmultiview-${{ matrix.rid }}*
+           exrenvmap-${{ matrix.rid }}*
+           exrmakepreview-${{ matrix.rid }}*
+           exrmanifest-${{ matrix.rid }}*
+           exr2aces-${{ matrix.rid }}*
+           exr-from-raw-${{ matrix.rid }}*
+           exr-to-raw-${{ matrix.rid }}*
+
+  openexr-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['openexr-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, openexr]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['openexr-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-openexr-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-openexr.sh win-x64 run
 
   # iso-jpeg, the jpeg tool of the ISO JPEG reference codec (thorfdbg/libjpeg),
   # which publishes no binaries and has no release tag: every target is built

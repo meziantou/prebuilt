@@ -166,6 +166,19 @@ function Get-LatestLibIconvVersion {
     return Select-LatestVersion -Names $names -Pattern "^(?<version>\d+\.\d+(?:\.\d+)?)$" -Description "libiconv"
 }
 
+# The Imath OpenEXR pins: OPENEXR_IMATH_TAG of its cmake/OpenEXRSetup.cmake,
+# at the tag of the latest release.
+function Get-OpenExrImathVersion {
+    $openExr = Get-ReleaseTag -Repository "AcademySoftwareFoundation/openexr"
+    $setup = Invoke-RestMethod -Method Get -Uri "https://raw.githubusercontent.com/AcademySoftwareFoundation/openexr/$openExr/cmake/OpenEXRSetup.cmake"
+    $match = [regex]::Match($setup, 'set\(OPENEXR_IMATH_TAG "v(?<version>[^"]+)"')
+    if (-not $match.Success) {
+        throw "No OPENEXR_IMATH_TAG in the cmake/OpenEXRSetup.cmake of OpenEXR $openExr."
+    }
+
+    return $match.Groups["version"].Value
+}
+
 # FreeType tags are VER-2-15-0.
 function Get-LatestFreeTypeVersion {
     $tags = Invoke-GitHubApi -Uri "https://api.github.com/repos/freetype/freetype/tags?per_page=100"
@@ -346,6 +359,8 @@ $availableLatestVersions = [ordered]@{
     "WOFF2_COMMIT" = Get-LatestWoff2Commit
     "OPENJPEG_VERSION" = Get-ReleaseTag -Repository "uclouvain/openjpeg" -TrimV
     "OPENJPH_VERSION" = Get-ReleaseTag -Repository "aous72/OpenJPH"
+    "OPENEXR_VERSION" = Get-ReleaseTag -Repository "AcademySoftwareFoundation/openexr" -TrimV
+    "IMATH_VERSION" = Get-OpenExrImathVersion
     "ISO_JPEG_COMMIT" = Get-LatestIsoJpegCommit
     "OPUS_VERSION" = Get-ReleaseTag -Repository "xiph/opus" -TrimV
     "LIBVPX_VERSION" = Get-LatestTag -Repository "webmproject/libvpx"
