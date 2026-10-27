@@ -24,11 +24,11 @@
 # Everything is compiled with -ffp-contract=off: without it, clang fuses the
 # multiplications and additions of the lossy codecs (DWAA, DWAB, B44, PXR24)
 # into FMA instructions on arm64 and not on x64, and the decoded samples could
-# depend on the processor. For the same reason, the SIMD code OpenEXR and
-# OpenJPH select at run time on x64 is left out: OpenJPH is built with
-# OJPH_DISABLE_SIMD (it has no arm64 SIMD code), and the DWA decoder keeps its
-# scalar inverse DCT (see below). scripts/verify-openexr.sh checks the hash of
-# the decoded samples of a fixed input on every target.
+# depend on the processor. For the same reason, the x64 SIMD code of the lossy
+# codecs is left out: OpenJPH is built with OJPH_DISABLE_SIMD (it has no arm64
+# SIMD code), and the DWA code keeps its scalar versions (see below).
+# scripts/verify-openexr.sh checks the hash of the decoded samples of a fixed
+# input on every target.
 #
 # win-x64 is cross-compiled from Linux with llvm-mingw; point LLVM_MINGW_ROOT at
 # the extracted toolchain. Every other target builds natively.
@@ -164,22 +164,34 @@ for dependency in deflate zstd OpenJPH; do
   [ -d "$SOURCE/external/$dependency" ] || { echo "OpenEXR $OPENEXR_VERSION has no external/$dependency" >&2; exit 1; }
 done
 
-# On x64, the DWAA/DWAB decoder picks an AVX or SSE2 inverse DCT and an F16C
-# half conversion at run time; arm64 always uses the scalar DCT. The SIMD DCTs
-# round differently, so the decoded samples would depend on the processor (see
-# the top of this file). Skipping the processor check keeps every x64 machine on
-# the scalar code, like arm64. The check is the only line of OpenEXR this build
-# changes; the build fails when a new release no longer has it.
+# Replaces the line $2 of the file $1, which must be there exactly once, with
+# $3. Does nothing when the file already has $3 (the sources are reused).
+replace_line() {
+  file="$1"
+  old="$2"
+  new="$3"
+  grep -qxF "$new" "$file" && return 0
+  [ "$(grep -cxF "$old" "$file")" = 1 ] \
+    || { echo "$file does not have this line exactly once: $old" >&2; exit 1; }
+  awk -v old="$old" -v new="$new" '$0 == old { print new; next } { print }' "$file" > "$file.tmp"
+  mv "$file.tmp" "$file"
+}
+
+# On x64, the DWAA/DWAB code uses SSE2 versions of the forward DCT, of the color
+# conversions and of the inverse DCT, chosen at compile time (IMF_HAVE_SSE2, from
+# __SSE2__), and AVX and F16C versions chosen at run time; arm64 always uses the
+# scalar versions. The SIMD versions round differently, so the encoded and the
+# decoded samples would depend on the processor (see the top of this file).
+# Not defining IMF_HAVE_SSE2 and skipping the processor check keeps x64 on the
+# scalar code, like arm64. These two lines are the only lines of OpenEXR this
+# build changes; the build fails when a new release no longer has them.
 DWA_SIMD="$SOURCE/src/lib/OpenEXRCore/internal_dwa_simd.h"
-DWA_SIMD_CHECK='    check_for_x86_simd (&f16c, &avx, &sse2);'
-DWA_SIMD_PATCHED='    /* meziantou/prebuilt: scalar DCT on every processor */'
-if ! grep -qF "$DWA_SIMD_PATCHED" "$DWA_SIMD"; then
-  [ "$(grep -cF "$DWA_SIMD_CHECK" "$DWA_SIMD")" = 1 ] \
-    || { echo "$DWA_SIMD does not call check_for_x86_simd exactly once" >&2; exit 1; }
-  awk -v check="$DWA_SIMD_CHECK" -v patched="$DWA_SIMD_PATCHED" \
-    '$0 == check { print patched; next } { print }' "$DWA_SIMD" > "$DWA_SIMD.tmp"
-  mv "$DWA_SIMD.tmp" "$DWA_SIMD"
-fi
+replace_line "$DWA_SIMD" \
+  '#if defined __SSE2__ || (_MSC_VER && (_M_IX86 || _M_X64) && !defined(_M_ARM64EC))' \
+  '#if 0 /* meziantou/prebuilt: no SSE2 DWA code */'
+replace_line "$DWA_SIMD" \
+  '    check_for_x86_simd (&f16c, &avx, &sse2);' \
+  '    /* meziantou/prebuilt: no AVX or F16C DWA code */'
 
 # ---------------------------------------------------------------------------
 # OpenEXR

@@ -21,7 +21,7 @@
 # HALF and FLOAT) must change the samples of the channels it compresses
 # lossily, and the decoded samples must have the SHA-256 of the table below,
 # the same on every target: the codecs are compiled with -ffp-contract=off and
-# without the SIMD code chosen at run time on x64 (see scripts/build-openexr.sh).
+# without their x64 SIMD code (see scripts/build-openexr.sh).
 # The shipped OpenEXR utilities are run on these
 # files too.
 #
