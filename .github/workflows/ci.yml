@@ -32,7 +32,7 @@ env:
   JXL_VERSION: "0.12.0" # https://github.com/libjxl/libjxl/releases - pinned; 0.12 changed skcms/CMS handling - also the released cjxl/djxl/jxlinfo/jxl_from_tree tools
   LIBPNG_VERSION: "1.6.59" # https://github.com/pnggroup/libpng/tags - PNG and APNG support of cjxl/djxl, PNG glyphs and PNG output of the HarfBuzz tools; 1.6.x, the 1.7 tags are betas
   JXL_OXIDE_VERSION: "0.12.6" # https://crates.io/crates/jxl-oxide-cli
-  RUST_TOOLCHAIN: "1.99.0" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
+  RUST_TOOLCHAIN: "1.99.1" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
   WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags - also the released cwebp/dwebp/webpmux/... tools
   LIBAVIF_VERSION: "1.4.2" # https://github.com/AOMediaCodec/libavif/releases - avifenc/avifdec; releases only: the Windows and macOS binaries are release assets
   HARFBUZZ_VERSION: "14.6.0" # https://github.com/harfbuzz/harfbuzz/releases - hb-shape/hb-info/hb-subset/hb-vector/hb-raster; glib, libffi, pcre2 and freetype are the versions its meson wraps pin
