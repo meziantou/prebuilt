@@ -16,7 +16,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.13.0
+  VERSION: 3.13.1
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
@@ -29,7 +29,7 @@ env:
   ZLIB_VERSION: "1.3.2" # https://github.com/madler/zlib/tags
   BROTLI_VERSION: "1.2.0" # https://github.com/google/brotli/tags
   HWY_VERSION: "1.4.0" # https://github.com/google/highway/tags - tags have no leading v
-  JXL_VERSION: "0.12.0" # https://github.com/libjxl/libjxl/releases - pinned; 0.12 changed skcms/CMS handling - also the released cjxl/djxl/jxlinfo/jxl_from_tree tools
+  JXL_VERSION: "0.13.0" # https://github.com/libjxl/libjxl/releases - the libjxl of ffmpeg and the released cjxl/djxl/jxlinfo/jxl_from_tree tools
   LIBPNG_VERSION: "1.6.59" # https://github.com/pnggroup/libpng/tags - PNG and APNG support of cjxl/djxl, PNG glyphs and PNG output of the HarfBuzz tools; 1.6.x, the 1.7 tags are betas
   JXL_OXIDE_VERSION: "0.12.6" # https://crates.io/crates/jxl-oxide-cli
   RUST_TOOLCHAIN: "1.99.0" # https://github.com/rust-lang/rust/releases - builds jxl-oxide

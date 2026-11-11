@@ -116,7 +116,7 @@ assert_linkage() {
 # ---------------------------------------------------------------------------
 
 # cjxl and djxl print the same banner, for instance:
-#   cjxl v0.12.0 0.12.0 [_NEON_,NEON_WITHOUT_AES]
+#   cjxl v0.13.0 0.13.0 [_NEON_,NEON_WITHOUT_AES]
 # jxlinfo and jxl_from_tree have no --version.
 assert_version() {
   tool="$1"; bin="$2"
@@ -279,6 +279,16 @@ EOF
   [ "$(($(wc -c < jpeg.ppm)))" -eq $((13 + 768)) ] || fail "jpeg.ppm is not a 16x16 8-bit PPM"
   ok "djxl decodes the transcoded JPEG to pixels"
 
+  # source.jpg is 4:2:0: libjxl 0.13 is the first to decode a frame with
+  # subsampled chroma that smooths its LF image; djxl 0.12 refuses the file.
+  run "LF smoothing" jpeg-lfs.jxl "$CJXL" source.jpg jpeg-lfs.jxl --lossless_jpeg=1 --jpeg_reconstruction_lfs=1
+  run "LF smoothing" jpeg-lfs.ppm "$DJXL" jpeg-lfs.jxl jpeg-lfs.ppm
+  [ "$(($(wc -c < jpeg-lfs.ppm)))" -eq $((13 + 768)) ] || fail "jpeg-lfs.ppm is not a 16x16 8-bit PPM"
+  cmp -s jpeg.jxl jpeg-lfs.jxl && fail "--jpeg_reconstruction_lfs=1 did not change the file"
+  run "LF smoothing" reconstructed-lfs.jpg "$DJXL" jpeg-lfs.jxl reconstructed-lfs.jpg
+  cmp -s source.jpg reconstructed-lfs.jpg || fail "djxl did not reconstruct the original JPEG file from jpeg-lfs.jxl"
+  ok "djxl decodes a 4:2:0 JPEG transcoded with LF smoothing"
+
   msg "jxl_from_tree: tree"
   # The red channel is 200 everywhere, the green and blue ones are 100.
   printf 'Width 16\nHeight 16\nBitdepth 8\nif c > 0\n  - Set 100\n  - Set 200\n' > solid.txt
@@ -351,7 +361,7 @@ case "$MODE" in
     assert_version cjxl "$CJXL"
     assert_version djxl "$DJXL"
     msg "command-line options"
-    assert_options cjxl "$CJXL" --distance --effort --modular --lossless_jpeg --container --compress_boxes \
+    assert_options cjxl "$CJXL" --distance --effort --modular --lossless_jpeg --jpeg_reconstruction_lfs --container --compress_boxes \
       --modular_predictor --modular_group_size --patches --noise --gaborish --epf --resampling --progressive_dc
     # APNG: the tools are linked with libpng.
     assert_options djxl "$DJXL" --bits_per_sample --output_frames --no_coalescing --color_space --icc_out APNG
