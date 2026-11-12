@@ -27,12 +27,12 @@ env:
   # Alpine 3.23 ships CMake 4, which several of the dependencies below reject.
   ALPINE_IMAGE: "alpine:3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce"
   ZLIB_VERSION: "1.3.2" # https://github.com/madler/zlib/tags
-  BROTLI_VERSION: "1.2.0" # https://github.com/google/brotli/tags
+  BROTLI_VERSION: "1.2.1" # https://github.com/google/brotli/tags
   HWY_VERSION: "1.4.0" # https://github.com/google/highway/tags - tags have no leading v
   JXL_VERSION: "0.13.0" # https://github.com/libjxl/libjxl/releases - the libjxl of ffmpeg and the released cjxl/djxl/jxlinfo/jxl_from_tree tools
   LIBPNG_VERSION: "1.6.59" # https://github.com/pnggroup/libpng/tags - PNG and APNG support of cjxl/djxl, PNG glyphs and PNG output of the HarfBuzz tools; 1.6.x, the 1.7 tags are betas
   JXL_OXIDE_VERSION: "0.12.6" # https://crates.io/crates/jxl-oxide-cli
-  RUST_TOOLCHAIN: "1.99.0" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
+  RUST_TOOLCHAIN: "1.99.1" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
   WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags - also the released cwebp/dwebp/webpmux/... tools
   LIBAVIF_VERSION: "1.4.2" # https://github.com/AOMediaCodec/libavif/releases - avifenc/avifdec; releases only: the Windows and macOS binaries are release assets
   HARFBUZZ_VERSION: "14.6.0" # https://github.com/harfbuzz/harfbuzz/releases - hb-shape/hb-info/hb-subset/hb-vector/hb-raster; glib, libffi, pcre2 and freetype are the versions its meson wraps pin
@@ -51,10 +51,10 @@ env:
   X265_VERSION: "4.2" # https://bitbucket.org/multicoreware/x265_git/downloads/?tab=tags - built for 8, 10 and 12 bits; also the released x265 tool and the encoder of heif-enc
   KVAZAAR_VERSION: "2.3.2" # https://github.com/ultravideo/kvazaar/tags - libkvazaar of ffmpeg and the released kvazaar tool
   LIBDE265_VERSION: "1.1.3" # https://github.com/strukturag/libde265/releases - dec265 and the decoder of heif-dec
-  LIBHEIF_VERSION: "1.23.6" # https://github.com/strukturag/libheif/releases - heif-enc/heif-dec/heif-info
+  LIBHEIF_VERSION: "1.23.7" # https://github.com/strukturag/libheif/releases - heif-enc/heif-dec/heif-info
   HM_VERSION: "18.0" # https://vcgit.hhi.fraunhofer.de/jvet/HM/-/tags - TAppEncoder/TAppDecoder, built from tag HM-<version>
   QPDF_VERSION: "12.4.2" # https://github.com/qpdf/qpdf/releases - qpdf, built from the release tarball of tag v<version>
-  LIBJPEG_TURBO_VERSION: "3.2.0" # https://github.com/libjpeg-turbo/libjpeg-turbo/releases - the libjpeg of qpdf (scripts/pdf-libs.sh)
+  LIBJPEG_TURBO_VERSION: "3.2.1" # https://github.com/libjpeg-turbo/libjpeg-turbo/releases - the libjpeg of qpdf (scripts/pdf-libs.sh)
   MUPDF_VERSION: "1.28.5" # https://mupdf.com/releases - mutool, built from mupdf-<version>-source.tar.gz with its third-party libraries
   POPPLER_VERSION: "26.10.0" # https://poppler.freedesktop.org/releases.html - pdftoppm/pdftotext/pdffonts/pdfinfo/pdfsig
   FREETYPE_VERSION: "2.15.0" # https://github.com/freetype/freetype/tags - the FreeType of Poppler (scripts/pdf-libs.sh), built from tag VER-<version with dashes>
