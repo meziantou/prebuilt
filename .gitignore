@@ -75,6 +75,17 @@
 /iso-jpeg-src/
 /iso-jpeg-*-*
 
+# scripts/build-radiance.sh output
+/radiance-src/
+/pvalue-*-*
+/getinfo-*-*
+/pflip-*-*
+/protate-*-*
+/ra_xyze-*-*
+/ra_rgbe-*-*
+/ra_ppm-*-*
+/ra_bmp-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/

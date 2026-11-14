@@ -120,6 +120,14 @@ public sealed class PrebuiltToolTests
         Assert.Equal("exr-from-raw", PrebuiltTools.ExrFromRaw.Name);
         Assert.Equal("exr-to-raw", PrebuiltTools.ExrToRaw.Name);
         Assert.Equal("iso-jpeg", PrebuiltTools.IsoJpeg.Name);
+        Assert.Equal("pvalue", PrebuiltTools.Pvalue.Name);
+        Assert.Equal("getinfo", PrebuiltTools.RadianceGetInfo.Name);
+        Assert.Equal("pflip", PrebuiltTools.Pflip.Name);
+        Assert.Equal("protate", PrebuiltTools.Protate.Name);
+        Assert.Equal("ra_xyze", PrebuiltTools.RaXyze.Name);
+        Assert.Equal("ra_rgbe", PrebuiltTools.RaRgbe.Name);
+        Assert.Equal("ra_ppm", PrebuiltTools.RaPpm.Name);
+        Assert.Equal("ra_bmp", PrebuiltTools.RaBmp.Name);
         Assert.Equal("x265", PrebuiltTools.X265.Name);
         Assert.Equal("kvazaar", PrebuiltTools.Kvazaar.Name);
         Assert.Equal("dec265", PrebuiltTools.Dec265.Name);

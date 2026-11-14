@@ -24,7 +24,7 @@ var cache = new PrebuiltToolCache(cacheDirectory: "/tmp/tools", httpClient: myHt
 string cwebp = await cache.GetOrDownloadAsync(PrebuiltTools.Cwebp, runtimeIdentifier: "linux-arm64");
 ```
 
-Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `ExrHeader`, `ExrInfo`, `ExrMakeTiled`, `ExrMetrics`, `ExrStdAttr`, `ExrCheck`, `ExrMultiPart`, `ExrMultiView`, `ExrEnvMap`, `ExrMakePreview`, `ExrManifest`, `Exr2Aces`, `ExrFromRaw`, `ExrToRaw`, `IsoJpeg`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`, `Zint`, `ZXingReader`, `ZBarImg`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
+Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `ExrHeader`, `ExrInfo`, `ExrMakeTiled`, `ExrMetrics`, `ExrStdAttr`, `ExrCheck`, `ExrMultiPart`, `ExrMultiView`, `ExrEnvMap`, `ExrMakePreview`, `ExrManifest`, `Exr2Aces`, `ExrFromRaw`, `ExrToRaw`, `IsoJpeg`, `Pvalue`, `RadianceGetInfo`, `Pflip`, `Protate`, `RaXyze`, `RaRgbe`, `RaPpm`, `RaBmp`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`, `Zint`, `ZXingReader`, `ZBarImg`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
 
 On `win-arm64`, a tool that is not built for Arm64 (e.g. `pngout`) falls back to its `win-x64` build, which Windows on Arm runs through emulation. Pass `allowEmulation: false` to `GetAsset`, `IsSupported` or `GetOrDownloadAsync` to only get native builds:
 
@@ -51,6 +51,25 @@ if (process.ExitCode != 0 || !File.Exists("output.jpg") || new FileInfo("output.
 {
     throw new InvalidOperationException("iso-jpeg failed");
 }
+```
+
+## Radiance
+
+`Pvalue`, `RadianceGetInfo` (`getinfo`), `Pflip`, `Protate`, `RaXyze` (`ra_xyze`), `RaRgbe` (`ra_rgbe`), `RaPpm` (`ra_ppm`) and `RaBmp` (`ra_bmp`) are the picture tools of [Radiance](https://github.com/LBNL-ETA/Radiance), built from the sources of a release, without the renderer, X11 and libtiff (no `ra_tiff`). They read and write Radiance pictures (`.hdr`): RGBE or XYZE pixels, with a text header and a resolution string.
+
+- Their version is the one of Radiance followed by the release tag, the first 8 digits of its commit (`6.1a+5b2a2154`): the tools print no version.
+- Radiance is available under the Radiance Software License, Version 2.0, a BSD 3-Clause-style license ([License.txt](https://github.com/LBNL-ETA/Radiance/blob/master/License.txt)).
+- Scan lines: `pvalue -r` and `ra_rgbe -r` write the new-style run-length encoding, and `pvalue -r -u`, `ra_rgbe` and `ra_xyze` (without `-c`) flat scan lines; a scan line shorter than 17 or longer than 32767 pixels is always flat. Every tool reads the old-style run-length encoding, and none writes it.
+- Values: `pvalue -h -H -df` dumps the pixels as little-endian floats (`-dF`: big-endian), in the order of the file, and `pvalue -r -h -df -y <height> +x <width>` writes a picture from them; a mantissa `m` with the exponent `e` is `(m + 0.5) * 2^(e - 136)`, and the exponent 0 is 0. `pvalue -o` divides the values by the `EXPOSURE` of the header; for XYZE, `-O` divides them by 179 lm/W. `pvalue -r -pXYZ` writes XYZE.
+- Orientation: the order of the `-y`/`+y` and `+x`/`-x` options of `pvalue -r` is the resolution string it writes (`-Y N +X M` is the usual top to bottom, left to right; `+X M -Y N` has the columns first), and `pvalue +di` gives the image coordinates of each pixel (`y` is 0 at the bottom). Without `-c`, `pflip` and `protate` change the order of the scan lines and the resolution string, and the image stays the same; with `-c`, they flip or rotate the image.
+
+```csharp
+string pvalue = await PrebuiltTools.Pvalue.GetOrDownloadAsync();
+
+// The pixels of a picture as little-endian floats, R G B for each pixel in the order of the file:
+// pvalue -h -H -df input.hdr > pixels.f32
+// A run-length encoded picture of 3 x 2 pixels from them, top to bottom:
+// pvalue -r -h -df -y 2 +x 3 pixels.f32 > output.hdr
 ```
 
 ## OpenEXR
