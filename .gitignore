@@ -20,6 +20,8 @@
 /djxl-*-*
 /jxlinfo-*-*
 /jxl_from_tree-*-*
+/ssimulacra2-*-*
+/butteraugli_main-*-*
 
 # jxl-oxide job output
 /jxl-oxide-build/

@@ -91,6 +91,8 @@ public sealed class PrebuiltToolTests
         Assert.Equal("djxl", PrebuiltTools.Djxl.Name);
         Assert.Equal("jxlinfo", PrebuiltTools.Jxlinfo.Name);
         Assert.Equal("jxl_from_tree", PrebuiltTools.JxlFromTree.Name);
+        Assert.Equal("ssimulacra2", PrebuiltTools.Ssimulacra2.Name);
+        Assert.Equal("butteraugli_main", PrebuiltTools.Butteraugli.Name);
         Assert.Equal("jxl-oxide", PrebuiltTools.JxlOxide.Name);
         Assert.Equal("hb-shape", PrebuiltTools.HbShape.Name);
         Assert.Equal("hb-info", PrebuiltTools.HbInfo.Name);

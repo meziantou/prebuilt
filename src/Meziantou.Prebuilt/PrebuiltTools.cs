@@ -62,6 +62,12 @@ public static class PrebuiltTools
     /// <summary>jxl_from_tree, the libjxl developer tool that writes a JPEG XL file from the textual description of a modular tree.</summary>
     public static PrebuiltTool JxlFromTree { get; } = new("jxl_from_tree");
 
+    /// <summary>ssimulacra2, the libjxl developer tool that prints the SSIMULACRA 2 score of a distorted image against an original (100: the same image; PNG, PPM, PFM, JPEG XL, ... files).</summary>
+    public static PrebuiltTool Ssimulacra2 { get; } = new("ssimulacra2");
+
+    /// <summary>butteraugli_main, the libjxl developer tool that prints the Butteraugli distance of a distorted image against a reference (the maximum, then the p-norm with <c>--pnorm</c>; 0: the same image), and writes a distance map with <c>--distmap</c>.</summary>
+    public static PrebuiltTool Butteraugli { get; } = new("butteraugli_main");
+
     /// <summary>jxl-oxide, a JPEG XL decoder that does not share any code with libjxl.</summary>
     public static PrebuiltTool JxlOxide { get; } = new("jxl-oxide");
 
@@ -256,6 +262,8 @@ public static class PrebuiltTools
         Djxl,
         Jxlinfo,
         JxlFromTree,
+        Ssimulacra2,
+        Butteraugli,
         JxlOxide,
         HbShape,
         HbInfo,

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Verifies the cjxl/djxl/jxlinfo/jxl_from_tree set built by scripts/build-libjxl.sh.
+# Verifies the cjxl/djxl/jxlinfo/jxl_from_tree set, and the metrics
+# ssimulacra2 and butteraugli_main, built by scripts/build-libjxl.sh.
 #
 #   bash scripts/verify-libjxl.sh <target> [link|run|all]
 #
@@ -29,7 +30,9 @@ CJXL="./cjxl-$TARGET$EXE"
 DJXL="./djxl-$TARGET$EXE"
 JXLINFO="./jxlinfo-$TARGET$EXE"
 JXL_FROM_TREE="./jxl_from_tree-$TARGET$EXE"
-for bin in "$CJXL" "$DJXL" "$JXLINFO" "$JXL_FROM_TREE"; do
+SSIMULACRA2="./ssimulacra2-$TARGET$EXE"
+BUTTERAUGLI="./butteraugli_main-$TARGET$EXE"
+for bin in "$CJXL" "$DJXL" "$JXLINFO" "$JXL_FROM_TREE" "$SSIMULACRA2" "$BUTTERAUGLI"; do
   [ -f "$bin" ] || { echo "missing $bin" >&2; exit 1; }
   chmod +x "$bin" 2>/dev/null || true
 done
@@ -212,6 +215,8 @@ smoke_test() {
   DJXL="../$(basename "$DJXL")"
   JXLINFO="../$(basename "$JXLINFO")"
   JXL_FROM_TREE="../$(basename "$JXL_FROM_TREE")"
+  SSIMULACRA2="../$(basename "$SSIMULACRA2")"
+  BUTTERAUGLI="../$(basename "$BUTTERAUGLI")"
 
   msg "test images"
   { printf 'P6\n64 48\n255\n'; pixels 64 48 3; } > still.ppm
@@ -339,8 +344,45 @@ EOF
   run "APNG input" animation-apng.jxl "$CJXL" animation.apng animation-apng.jxl --distance=0
   expect_info animation-apng.jxl "JPEG XL animation, 16x16" "duration: 100.0 ms" "duration: 200.0 ms"
 
+  metrics_test
   cd ..
   ok "all smoke tests passed"
+}
+
+# in_range <label> <value> <min> <max>: min <= value <= max, as decimals.
+in_range() {
+  awk -v v="$2" -v lo="$3" -v hi="$4" 'BEGIN { exit !(v + 0 >= lo + 0 && v + 0 <= hi + 0) }' \
+    || fail "$1: $2 is not in [$3, $4]"
+  ok "$1: $2 (in [$3, $4])"
+}
+
+# ssimulacra2 and butteraugli_main, the metrics of the libjxl developer tools.
+# ssimulacra2 prints the score (100: the same image); butteraugli_main prints
+# the maximum distance, then "3-norm: <p-norm>" (0: the same image). The
+# scores of the lossy files depend on the SIMD code of the encoder, so they
+# are checked against ranges.
+metrics_test() {
+  msg "ssimulacra2 and butteraugli_main"
+  score="$("$SSIMULACRA2" still.ppm still.ppm | tr -d '\r')" || fail "ssimulacra2 failed"
+  expect_value "ssimulacra2 of an image with itself" "$score" "100.00000000"
+  out="$("$BUTTERAUGLI" still.ppm still.ppm | tr -d '\r' | tr '\n' '|')" || fail "butteraugli_main failed"
+  expect_value "butteraugli_main of an image with itself" "$out" "0.0000000000|3-norm: 0.000000|"
+  "$CJXL" still.ppm distance2.jxl --distance=2 > tool.log 2>&1 || { cat tool.log >&2; fail "cjxl --distance=2 failed"; }
+  "$DJXL" distance2.jxl distance2.ppm > tool.log 2>&1 || { cat tool.log >&2; fail "djxl failed"; }
+  in_range "ssimulacra2, distance 2" "$("$SSIMULACRA2" still.ppm distance2.ppm | tr -d '\r')" 0 99.9
+  max="$("$BUTTERAUGLI" still.ppm distance2.ppm --pnorm 3 | tr -d '\r' | head -n 1)"
+  in_range "butteraugli_main, distance 2: maximum distance" "$max" 0.01 10
+  # PNG input, and a distance map.
+  "$BUTTERAUGLI" still.ppm distance2.ppm --distmap distmap.ppm > tool.log 2>&1 || { cat tool.log >&2; fail "butteraugli_main --distmap failed"; }
+  [ -s distmap.ppm ] || fail "butteraugli_main --distmap wrote no file"
+  ok "butteraugli_main --distmap writes a heat map"
+  "$DJXL" lossless.jxl lossless.png > tool.log 2>&1 || { cat tool.log >&2; fail "djxl to PNG failed"; }
+  expect_value "ssimulacra2 reads PNG files" "$("$SSIMULACRA2" still.ppm lossless.png | tr -d '\r')" "100.00000000"
+}
+
+expect_value() {
+  [ "$2" = "$3" ] || fail "$1: $2, expected $3"
+  ok "$1: $2"
 }
 
 # ---------------------------------------------------------------------------
@@ -352,6 +394,8 @@ case "$MODE" in
     assert_linkage "$DJXL"
     assert_linkage "$JXLINFO"
     assert_linkage "$JXL_FROM_TREE"
+    assert_linkage "$SSIMULACRA2"
+    assert_linkage "$BUTTERAUGLI"
     ;;
 esac
 
