@@ -590,6 +590,19 @@
       ],
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "ARM-software/astc-encoder"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "BASISU_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "BinomialLLC/basis_universal",
+      "extractVersionTemplate": "^v(?<major>\\d+)_(?<minor>\\d+)$",
+      "versioningTemplate": "loose"
     }
   ]
 }

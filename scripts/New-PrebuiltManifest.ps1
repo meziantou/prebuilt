@@ -78,6 +78,7 @@ $versionKeys = [ordered]@{
     "magick"           = "ImageMagick"
     "psd-tools"        = "PsdTools"
     "astcenc"          = "Astcenc"
+    "basisu"           = "Basisu"
     "x265"             = "X265"
     "kvazaar"          = "Kvazaar"
     "dec265"           = "LibDe265"

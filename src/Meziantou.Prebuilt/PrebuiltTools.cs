@@ -188,6 +188,9 @@ public static class PrebuiltTools
     /// <summary>astcenc, the ASTC encoder and decoder of Arm, LDR and HDR (<c>-cl</c>, <c>-cs</c>, <c>-ch</c>, <c>-cH</c> to compress; <c>-dl</c>, <c>-ds</c>, <c>-dh</c>, <c>-dH</c> to decompress; <c>-tl</c>... to compress and decompress), every 2D and 3D block size, reading and writing PNG, TGA, BMP, HDR, EXR, KTX and DDS files. It is built for no SIMD instruction set: it writes the same bytes on every runtime identifier.</summary>
     public static PrebuiltTool Astcenc { get; } = new("astcenc");
 
+    /// <summary>basisu, the Basis Universal encoder, transcoder and validator: it writes .basis and KTX2 files (ETC1S with BasisLZ, UASTC LDR 4x4 and the HDR formats with Zstandard supercompression; mipmaps, cube maps, arrays), shows them (<c>-info</c>), checks them (<c>-validate</c>) and transcodes them to BC1 to BC7, ETC1, ETC2, EAC, ASTC, PVRTC1 and PNG files (<c>-unpack</c>). It is built without SSE: it writes the same bytes on every runtime identifier.</summary>
+    public static PrebuiltTool Basisu { get; } = new("basisu");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -307,6 +310,7 @@ public static class PrebuiltTools
         Magick,
         PsdTools,
         Astcenc,
+        Basisu,
         Dec265,
         HeifEnc,
         HeifDec,

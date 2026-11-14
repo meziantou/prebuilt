@@ -104,6 +104,11 @@
 /astcenc-deps/
 /astcenc-*-*
 
+# scripts/build-basisu.sh output
+/basisu-src/
+/basisu-deps/
+/basisu-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/

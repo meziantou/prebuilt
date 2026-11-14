@@ -464,6 +464,7 @@ $availableLatestVersions = [ordered]@{
     "ATTRS_VERSION" = Get-LatestPyPIVersion -Package "attrs"
     "LIBICONV_VERSION" = Get-LatestLibIconvVersion
     "ASTCENC_VERSION" = Get-ReleaseTag -Repository "ARM-software/astc-encoder"
+    "BASISU_VERSION" = (Get-ReleaseTag -Repository "BinomialLLC/basis_universal").TrimStart("v").Replace("_", ".")
 }
 
 $selectedVariableNames =
