@@ -128,6 +128,8 @@ public sealed class PrebuiltToolTests
         Assert.Equal("ra_rgbe", PrebuiltTools.RaRgbe.Name);
         Assert.Equal("ra_ppm", PrebuiltTools.RaPpm.Name);
         Assert.Equal("ra_bmp", PrebuiltTools.RaBmp.Name);
+        Assert.Equal("magick", PrebuiltTools.Magick.Name);
+        Assert.Equal("psd-tools", PrebuiltTools.PsdTools.Name);
         Assert.Equal("x265", PrebuiltTools.X265.Name);
         Assert.Equal("kvazaar", PrebuiltTools.Kvazaar.Name);
         Assert.Equal("dec265", PrebuiltTools.Dec265.Name);

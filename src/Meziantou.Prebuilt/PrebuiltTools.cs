@@ -173,6 +173,12 @@ public static class PrebuiltTools
     /// <summary>ra_bmp, the Radiance tool that converts a Radiance picture to a BMP file, or a BMP file to a Radiance picture with <c>-r</c>.</summary>
     public static PrebuiltTool RaBmp { get; } = new("ra_bmp");
 
+    /// <summary>magick, the command-line tool of ImageMagick 7 (Q16, HDRI), built with zlib, LittleCMS 2, libpng and libtiff only: the writer of PSD and PSB files (RGB, CMYK, grayscale, indexed and bitmap, 8 or 16 bits, raw or RLE, with layers, alpha and an ICC profile) and a reader of them (also 32 bits), and of PNG, TIFF, PNM, BMP and raw samples. Write PSD files with <c>-endian MSB</c> after the input images, and read them with <c>-define psd:alpha-unblend=off</c> to get the colors of a composite with alpha as stored.</summary>
+    public static PrebuiltTool Magick { get; } = new("magick");
+
+    /// <summary>psd-tools, the command-line tool of meziantou/prebuilt for the psd-tools Python library, which shares no code with ImageMagick: <c>dump</c> writes the description of a PSD or PSB file as JSON and the samples of its composite and layers as raw files, as stored; <c>write</c> writes a file from them (every color mode, 1, 8, 16 and 32 bits, raw, RLE, ZIP and ZIP with prediction, layers in the layer info or in Lr16/Lr32 blocks, masks, ICC profile, no real composite). The release file is an archive with a Python runtime: no Python needs to be installed, but the Linux runtimes need glibc 2.28. See the README for the format.</summary>
+    public static PrebuiltTool PsdTools { get; } = new("psd-tools");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -287,6 +293,8 @@ public static class PrebuiltTools
         RaRgbe,
         RaPpm,
         RaBmp,
+        Magick,
+        PsdTools,
         Dec265,
         HeifEnc,
         HeifDec,

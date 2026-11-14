@@ -300,6 +300,57 @@ function Get-LatestRadianceCommit {
     return ($refs -split "\s+")[0]
 }
 
+# ImageMagick tags its releases <version>-<patch level>: 7.1.2-35.
+function Get-LatestImageMagickVersion {
+    $tags = Invoke-GitHubApi -Uri "https://api.github.com/repos/ImageMagick/ImageMagick/tags?per_page=100"
+    $versions =
+        foreach ($tag in $tags) {
+            if ($tag.name -match "^(?<version>\d+\.\d+\.\d+)-(?<patch>\d+)$") {
+                [PSCustomObject]@{
+                    Version = [version]"$($Matches["version"]).$($Matches["patch"])"
+                    Text = $tag.name
+                }
+            }
+        }
+
+    if (-not $versions) {
+        throw "Unable to determine the latest ImageMagick version."
+    }
+
+    return ($versions | Sort-Object Version -Descending | Select-Object -First 1).Text
+}
+
+function Get-LatestPyPIVersion {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Package
+    )
+
+    $response = Invoke-RestMethod -Method Get -Uri "https://pypi.org/pypi/$Package/json" -Headers @{ "User-Agent" = "prebuilt-version-updater" }
+    $version = "$($response.info.version)".Trim()
+    if ([string]::IsNullOrWhiteSpace($version)) {
+        throw "Unable to get the latest version of the PyPI package '$Package'."
+    }
+
+    return $version
+}
+
+# The latest python-build-standalone release, and the version of the CPython
+# of the same minor version as PSD_TOOLS_PYTHON_VERSION it has.
+function Get-LatestPythonBuildStandalone {
+    $release = Invoke-GitHubApi -Uri "https://api.github.com/repos/astral-sh/python-build-standalone/releases/latest"
+    $tag = "$($release.tag_name)".Trim()
+    $current = [regex]::Match($workflowContent, '(?m)^\s*PSD_TOOLS_PYTHON_VERSION:\s*"(?<major>\d+)\.(?<minor>\d+)\.')
+    if (-not $current.Success) {
+        throw "No PSD_TOOLS_PYTHON_VERSION in the workflow."
+    }
+
+    $minor = "$($current.Groups["major"].Value).$($current.Groups["minor"].Value)"
+    $names = $release.assets | ForEach-Object { $_.name }
+    $python = Select-LatestVersion -Names $names -Pattern "^cpython-(?<version>$([regex]::Escape($minor))\.\d+)\+$tag-aarch64-apple-darwin-install_only_stripped\.tar\.gz$" -Description "python-build-standalone $tag"
+    return [PSCustomObject]@{ Release = $tag; Python = $python }
+}
+
 function Get-LatestIsoJpegCommit {
     $refs = & git ls-remote https://github.com/thorfdbg/libjpeg.git master
     if ($LASTEXITCODE -ne 0 -or -not $refs) {
@@ -403,6 +454,14 @@ $availableLatestVersions = [ordered]@{
     "STB_COMMIT" = Get-LatestStbCommit
     "ZBAR_VERSION" = Get-ReleaseTag -Repository "mchehab/zbar"
     "GRAPHICSMAGICK_VERSION" = Get-LatestGraphicsMagickVersion
+    "LIBTIFF_VERSION" = Get-LatestGitLabTag -ProjectPath "libtiff/libtiff" -Pattern "^v(?<version>\d+\.\d+\.\d+)$"
+    "IMAGEMAGICK_VERSION" = Get-LatestImageMagickVersion
+    "PSD_TOOLS_VERSION" = Get-LatestPyPIVersion -Package "psd-tools"
+    "PYTHON_BUILD_STANDALONE_RELEASE" = (Get-LatestPythonBuildStandalone).Release
+    "PSD_TOOLS_PYTHON_VERSION" = (Get-LatestPythonBuildStandalone).Python
+    "NUMPY_VERSION" = Get-LatestPyPIVersion -Package "numpy"
+    "PILLOW_VERSION" = Get-LatestPyPIVersion -Package "pillow"
+    "ATTRS_VERSION" = Get-LatestPyPIVersion -Package "attrs"
     "LIBICONV_VERSION" = Get-LatestLibIconvVersion
 }
 

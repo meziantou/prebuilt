@@ -86,6 +86,17 @@
 /ra_ppm-*-*
 /ra_bmp-*-*
 
+# scripts/build-imagemagick.sh output
+/imagemagick-deps/
+/imagemagick-src/
+/magick-*-*
+
+# scripts/build-psd-tools.sh output
+/psd-tools-src/
+/psd-tools-bundle-*/
+/psd-tools-verify-*/
+/psd-tools-*-*.tar.gz
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/

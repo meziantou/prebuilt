@@ -24,7 +24,7 @@ var cache = new PrebuiltToolCache(cacheDirectory: "/tmp/tools", httpClient: myHt
 string cwebp = await cache.GetOrDownloadAsync(PrebuiltTools.Cwebp, runtimeIdentifier: "linux-arm64");
 ```
 
-Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `ExrHeader`, `ExrInfo`, `ExrMakeTiled`, `ExrMetrics`, `ExrStdAttr`, `ExrCheck`, `ExrMultiPart`, `ExrMultiView`, `ExrEnvMap`, `ExrMakePreview`, `ExrManifest`, `Exr2Aces`, `ExrFromRaw`, `ExrToRaw`, `IsoJpeg`, `Pvalue`, `RadianceGetInfo`, `Pflip`, `Protate`, `RaXyze`, `RaRgbe`, `RaPpm`, `RaBmp`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`, `Zint`, `ZXingReader`, `ZBarImg`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
+Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `ExrHeader`, `ExrInfo`, `ExrMakeTiled`, `ExrMetrics`, `ExrStdAttr`, `ExrCheck`, `ExrMultiPart`, `ExrMultiView`, `ExrEnvMap`, `ExrMakePreview`, `ExrManifest`, `Exr2Aces`, `ExrFromRaw`, `ExrToRaw`, `IsoJpeg`, `Pvalue`, `RadianceGetInfo`, `Pflip`, `Protate`, `RaXyze`, `RaRgbe`, `RaPpm`, `RaBmp`, `Magick`, `PsdTools`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`, `Zint`, `ZXingReader`, `ZBarImg`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
 
 On `win-arm64`, a tool that is not built for Arm64 (e.g. `pngout`) falls back to its `win-x64` build, which Windows on Arm runs through emulation. Pass `allowEmulation: false` to `GetAsset`, `IsSupported` or `GetOrDownloadAsync` to only get native builds:
 
@@ -70,6 +70,51 @@ string pvalue = await PrebuiltTools.Pvalue.GetOrDownloadAsync();
 // pvalue -h -H -df input.hdr > pixels.f32
 // A run-length encoded picture of 3 x 2 pixels from them, top to bottom:
 // pvalue -r -h -df -y 2 +x 3 pixels.f32 > output.hdr
+```
+
+## PSD
+
+`Magick` (`magick`, ImageMagick 7, Q16 HDRI) and `PsdTools` (`psd-tools`, the psd-tools Python library) read and write PSD and PSB files, and share no code: each one reads what the other writes. `magick` is built with zlib, LittleCMS 2, libpng and libtiff only, to read the source images (PNG, TIFF, PNM, BMP, raw samples). `psd-tools` is an archive with a Python runtime: the Linux runtimes need glibc 2.28.
+
+- `magick` writes RGB, CMYK, grayscale, indexed (`-type Palette`) and bitmap (`-type Bilevel -depth 1`) files, with 8 or 16 bits (a depth above 16 is written with 16 bits), raw or RLE (`-compress RLE`) samples, the image as the composite and as a layer (`-define psd:write-layers=false`: the composite only), the images after the first as layers (`-repage` offsets, `-set label` names), alpha, an ICC profile (`-profile`) and PSB (`PSB:out.psb`). Write with `-endian MSB` after the input images: ImageMagick writes the blend mode of a little-endian image (raw input, `xc:`) backwards. Do not use `-compress Zip`: its composite is rejected by other readers.
+- `magick` reads 32-bit files, and raw and RLE composites (not ZIP: it merges the layers instead). Read with `-define psd:alpha-unblend=off` to get the colors of a composite with alpha as stored: `magick -define psd:alpha-unblend=off in.psd[0] -depth 16 -endian LSB rgb:out.raw`; `in.psd[1]` is the first layer, with its opacity applied to its alpha.
+- `psd-tools dump [--no-layers] <file> <folder>` writes `header.json` and the samples of the composite (`composite.raw`) and of each layer (`layer-<n>.raw`, `layer-<n>-mask.raw`), and the ICC profile (`icc.icc`). `psd-tools write <header.json> <file>` writes a file from such a description: every color mode, 1, 8, 16 and 32 bits, raw, RLE, ZIP and ZIP with prediction, PSB, layers (in the layer info, or in the Lr16 and Lr32 blocks of 16 and 32-bit files, as Photoshop writes them), masks, a palette, an ICC profile, and files without a real composite (`"hasComposite": false`, "Maximize Compatibility" off; `"composite": null` writes a white one).
+- The raw files hold the samples of each pixel, row by row, the channels of a pixel in the order of `channels`: unsigned bytes for 8 bits, unsigned 16-bit little-endian samples for 16, little-endian floats for 32, and one byte per pixel for 1 bit (bitmap), the stored bit: 1 is black. They are the stored samples: CMYK samples are inverted (255 is no ink), indexed ones are indexes into `palette`.
+
+```json
+{
+  "version": 1,
+  "width": 4, "height": 2, "depth": 8,
+  "colorMode": "RGB",
+  "channels": 4,
+  "compression": "RLE",
+  "composite": "composite.raw",
+  "hasComposite": true,
+  "iccProfile": "icc.icc",
+  "palette": null,
+  "transparentIndex": null,
+  "mergedAlpha": true,
+  "layerBlock": "layerInfo",
+  "layers": [
+    {
+      "name": "Layer 1", "top": 0, "left": 1, "bottom": 2, "right": 3,
+      "opacity": 255, "visible": true, "blendMode": "norm", "clipping": 0,
+      "channels": [0, 1, 2, -1], "compression": "RLE", "file": "layer-0.raw",
+      "mask": { "top": 0, "left": 1, "bottom": 1, "right": 3, "defaultColor": 0, "compression": "RAW", "file": "layer-0-mask.raw" }
+    }
+  ]
+}
+```
+
+`version` is 1 for PSD and 2 for PSB; `colorMode` is `BITMAP`, `GRAYSCALE`, `INDEXED`, `RGB`, `CMYK`, `MULTICHANNEL`, `DUOTONE` or `LAB`; `compression` is `RAW`, `RLE`, `ZIP` or `ZIP_WITH_PREDICTION`, for the composite, and for the channels of a layer (one for every channel, or a list); `hasComposite` is the version info resource (null when there is none); `mergedAlpha` is a negative layer count: the first extra channel of the composite is its transparency; the layers are from the bottom one up, the channel -1 is the transparency, and `layerBlock` is where they are: `layerInfo`, `Lr16` or `Lr32`. The other sections of a file are not described, and `write` writes none of them.
+
+```csharp
+string psdTools = await PrebuiltTools.PsdTools.GetOrDownloadAsync();
+
+// The description and samples of a file:
+// psd-tools dump input.psd output-folder
+// A 32-bit file from them:
+// psd-tools write output-folder/header.json output.psd
 ```
 
 ## OpenEXR

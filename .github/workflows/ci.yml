@@ -16,7 +16,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.14.0
+  VERSION: 3.15.0
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
@@ -45,6 +45,14 @@ env:
   ISO_JPEG_VERSION: "1.72" # last release of README.history at ISO_JPEG_COMMIT - scripts/build-iso-jpeg.sh fails when it is not
   RADIANCE_COMMIT: "5b2a2154cc7d97a997d3d9a3929567b75d78174a" # https://github.com/LBNL-ETA/Radiance - master branch; its releases are tagged with the first 8 digits of their commit; pvalue/getinfo/pflip/protate/ra_xyze/ra_rgbe/ra_ppm/ra_bmp
   RADIANCE_VERSION: "6.1a" # src/rt/VERSION at RADIANCE_COMMIT - scripts/build-radiance.sh fails when it is not
+  IMAGEMAGICK_VERSION: "7.1.2-35" # https://github.com/ImageMagick/ImageMagick/tags - magick, the writer of PSD files, built from the tag archive; tags are <version>-<patch level>
+  LIBTIFF_VERSION: "4.7.2" # https://download.osgeo.org/libtiff/ - the TIFF input of magick
+  PSD_TOOLS_VERSION: "1.26.1" # https://pypi.org/project/psd-tools/ - the PSD reader and writer of the psd-tools bundle
+  PSD_TOOLS_PYTHON_VERSION: "3.14.10" # the CPython of the psd-tools bundle: a python-build-standalone build of PYTHON_BUILD_STANDALONE_RELEASE
+  PYTHON_BUILD_STANDALONE_RELEASE: "20261110" # https://github.com/astral-sh/python-build-standalone/releases - the Python runtime of the psd-tools bundle
+  NUMPY_VERSION: "2.5.4" # https://pypi.org/project/numpy/ - a dependency of psd-tools
+  PILLOW_VERSION: "13.0.0" # https://pypi.org/project/pillow/ - a dependency of psd-tools
+  ATTRS_VERSION: "26.1.0" # https://pypi.org/project/attrs/ - a dependency of psd-tools
   OPUS_VERSION: "1.5.2" # https://github.com/xiph/opus/releases - releases only; v1.6.x tags ship no tarball
   LIBVPX_VERSION: "1.17.0" # https://github.com/webmproject/libvpx/tags
   AOM_VERSION: "3.15.1" # https://aomedia.googlesource.com/aom
@@ -60,7 +68,7 @@ env:
   MUPDF_VERSION: "1.28.5" # https://mupdf.com/releases - mutool, built from mupdf-<version>-source.tar.gz with its third-party libraries
   POPPLER_VERSION: "26.10.0" # https://poppler.freedesktop.org/releases.html - pdftoppm/pdftotext/pdffonts/pdfinfo/pdfsig
   FREETYPE_VERSION: "2.15.0" # https://github.com/freetype/freetype/tags - the FreeType of Poppler (scripts/pdf-libs.sh), built from tag VER-<version with dashes>
-  LCMS2_VERSION: "2.19.1" # https://github.com/mm2/Little-CMS/releases - the LittleCMS of Poppler (scripts/pdf-libs.sh)
+  LCMS2_VERSION: "2.19.1" # https://github.com/mm2/Little-CMS/releases - the LittleCMS of Poppler (scripts/pdf-libs.sh) and magick
   NSS_VERSION: "3.132" # https://ftp.mozilla.org/pub/security/nss/releases/ - the signature backend of pdfsig (scripts/pdf-libs.sh)
   NSPR_VERSION: "4.39" # the NSPR bundled with NSS_VERSION: nss-<NSS_VERSION>-with-nspr-<NSPR_VERSION>.tar.gz
   ARLINGTON_COMMIT: "d148fee5a0cb6dcacadf58c09ed842e32847024d" # https://github.com/pdf-association/arlington-pdf-model - master branch; TestGrammar and the TSV files of the model; no release since v0.5 (2021)
@@ -121,6 +129,10 @@ jobs:
       iso-jpeg-windows-test,
       radiance,
       radiance-windows-test,
+      imagemagick,
+      imagemagick-windows-test,
+      psd-tools,
+      psd-tools-windows-test,
       libheif,
       libheif-windows-test,
       hm,
@@ -278,6 +290,8 @@ jobs:
         $versions.IsoJpeg = "${{ env.ISO_JPEG_VERSION }}+" + "${{ env.ISO_JPEG_COMMIT }}".Substring(0, 7)
         # Radiance tags its releases with the first 8 digits of their commit.
         $versions.Radiance = "${{ env.RADIANCE_VERSION }}+" + "${{ env.RADIANCE_COMMIT }}".Substring(0, 8)
+        $versions.ImageMagick = "${{ env.IMAGEMAGICK_VERSION }}"
+        $versions.PsdTools = "${{ env.PSD_TOOLS_VERSION }}"
         $versions.X265 = "${{ env.X265_VERSION }}"
         $versions.Kvazaar = "${{ env.KVAZAAR_VERSION }}"
         $versions.LibDe265 = "${{ env.LIBDE265_VERSION }}"
@@ -1862,6 +1876,216 @@ jobs:
       if: env.REUSE != 'true'
       shell: bash
       run: bash scripts/verify-radiance.sh win-x64 run
+
+  # magick, the command-line tool of ImageMagick 7: the writer of PSD and PSB
+  # files for the tests of PSD codecs, and a reader of them. ImageMagick
+  # publishes dynamically linked builds with dozens of delegates, so every
+  # target is built from the tag archive (scripts/build-imagemagick.sh), with
+  # zlib, LittleCMS 2, libpng and libtiff only, without X11, OpenMP or
+  # threads, every coder and configuration file in the executable.
+  # No Windows arm64 build, as for the other image tools.
+  imagemagick:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-imagemagick-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-imagemagick-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-imagemagick-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e LIBPNG_VERSION -e LCMS2_VERSION -e LIBTIFF_VERSION -e IMAGEMAGICK_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-imagemagick.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-imagemagick.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-imagemagick.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-imagemagick.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; imagemagick-windows-test runs their tests.
+      run: bash scripts/verify-imagemagick.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-imagemagick-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: magick-${{ matrix.rid }}*
+
+  imagemagick-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['imagemagick-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, imagemagick]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['imagemagick-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-imagemagick-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-imagemagick.sh win-x64 run
+
+  # The psd-tools bundle: psd-tools, a PSD and PSB reader and writer in Python
+  # that shares no code with ImageMagick, with the command-line tool of this
+  # repository (scripts/psd-tools-cli.py) and a Python runtime of
+  # python-build-standalone. Nothing is compiled but the Windows launcher
+  # (llvm-mingw): every target downloads its runtime and wheels
+  # (scripts/build-psd-tools.sh). The Linux bundles need glibc 2.28.
+  # It needs magick for its smoke tests: each tool reads what the other writes.
+  # IMAGEMAGICK_VERSION is named here to be part of the build key of this job:
+  # a new magick is checked again.
+  # No Windows arm64 build, as for the image tools.
+  psd-tools:
+    needs: [build-plan, imagemagick]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-psd-tools-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-psd-tools-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-psd-tools-${{ matrix.rid }}
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Build
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/build-psd-tools.sh ${{ matrix.rid }}
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      if: env.REUSE != 'true' && matrix.rid != 'win-x64'
+      with:
+        name: binaries-imagemagick-${{ matrix.rid }}
+        path: .
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself. The Windows bundle is assembled on Linux, so it
+      # cannot be executed here; psd-tools-windows-test runs its smoke tests.
+      run: bash scripts/verify-psd-tools.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-psd-tools-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: psd-tools-${{ matrix.rid }}.tar.gz
+
+  psd-tools-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['psd-tools-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, imagemagick, psd-tools]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['psd-tools-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-imagemagick-win-x64
+        path: .
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-psd-tools-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # With the magick of the run: IMAGEMAGICK_VERSION is part of the build key.
+      run: bash scripts/verify-psd-tools.sh win-x64 run
 
   # qpdf, the PDF structure tool: --check, --json, and every encryption
   # variant. The release has no musl binaries and links libqpdf dynamically,
