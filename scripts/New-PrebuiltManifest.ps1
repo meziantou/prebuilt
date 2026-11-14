@@ -77,6 +77,7 @@ $versionKeys = [ordered]@{
     "ra_bmp"           = "Radiance"
     "magick"           = "ImageMagick"
     "psd-tools"        = "PsdTools"
+    "astcenc"          = "Astcenc"
     "x265"             = "X265"
     "kvazaar"          = "Kvazaar"
     "dec265"           = "LibDe265"

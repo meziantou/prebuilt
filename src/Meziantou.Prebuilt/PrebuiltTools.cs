@@ -185,6 +185,9 @@ public static class PrebuiltTools
     /// <summary>psd-tools, the command-line tool of meziantou/prebuilt for the psd-tools Python library, which shares no code with ImageMagick: <c>dump</c> writes the description of a PSD or PSB file as JSON and the samples of its composite and layers as raw files, as stored; <c>write</c> writes a file from them (every color mode, 1, 8, 16 and 32 bits, raw, RLE, ZIP and ZIP with prediction, layers in the layer info or in Lr16/Lr32 blocks, masks, ICC profile, no real composite). The release file is an archive with a Python runtime: no Python needs to be installed, but the Linux runtimes need glibc 2.28. See the README for the format.</summary>
     public static PrebuiltTool PsdTools { get; } = new("psd-tools");
 
+    /// <summary>astcenc, the ASTC encoder and decoder of Arm, LDR and HDR (<c>-cl</c>, <c>-cs</c>, <c>-ch</c>, <c>-cH</c> to compress; <c>-dl</c>, <c>-ds</c>, <c>-dh</c>, <c>-dH</c> to decompress; <c>-tl</c>... to compress and decompress), every 2D and 3D block size, reading and writing PNG, TGA, BMP, HDR, EXR, KTX and DDS files. It is built for no SIMD instruction set: it writes the same bytes on every runtime identifier.</summary>
+    public static PrebuiltTool Astcenc { get; } = new("astcenc");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -303,6 +306,7 @@ public static class PrebuiltTools
         RaBmp,
         Magick,
         PsdTools,
+        Astcenc,
         Dec265,
         HeifEnc,
         HeifDec,

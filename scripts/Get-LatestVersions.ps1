@@ -463,6 +463,7 @@ $availableLatestVersions = [ordered]@{
     "PILLOW_VERSION" = Get-LatestPyPIVersion -Package "pillow"
     "ATTRS_VERSION" = Get-LatestPyPIVersion -Package "attrs"
     "LIBICONV_VERSION" = Get-LatestLibIconvVersion
+    "ASTCENC_VERSION" = Get-ReleaseTag -Repository "ARM-software/astc-encoder"
 }
 
 $selectedVariableNames =

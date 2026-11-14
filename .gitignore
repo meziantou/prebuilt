@@ -99,6 +99,11 @@
 /psd-tools-verify-*/
 /psd-tools-*-*.tar.gz
 
+# scripts/build-astcenc.sh output
+/astcenc-src/
+/astcenc-deps/
+/astcenc-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/
