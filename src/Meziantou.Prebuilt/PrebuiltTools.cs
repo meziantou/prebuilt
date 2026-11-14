@@ -191,6 +191,15 @@ public static class PrebuiltTools
     /// <summary>basisu, the Basis Universal encoder, transcoder and validator: it writes .basis and KTX2 files (ETC1S with BasisLZ, UASTC LDR 4x4 and the HDR formats with Zstandard supercompression; mipmaps, cube maps, arrays), shows them (<c>-info</c>), checks them (<c>-validate</c>) and transcodes them to BC1 to BC7, ETC1, ETC2, EAC, ASTC, PVRTC1 and PNG files (<c>-unpack</c>). It is built without SSE: it writes the same bytes on every runtime identifier.</summary>
     public static PrebuiltTool Basisu { get; } = new("basisu");
 
+    /// <summary>ktx, the command-line tool of KTX-Software: <c>create</c> (from raw samples with <c>--raw</c>, or PNG, EXR, ...; mip levels, cube maps, arrays, 3D; <c>--encode basis-lz</c> or <c>uastc</c>, <c>--zstd</c>), <c>extract</c>, <c>info</c> (JSON with <c>-f json</c>), <c>validate</c>, <c>transcode</c>, <c>encode</c>, <c>deflate</c>, <c>compare</c>. <c>--testrun</c> writes no version into the files.</summary>
+    public static PrebuiltTool Ktx { get; } = new("ktx");
+
+    /// <summary>toktx, the legacy KTX-Software tool that writes KTX and KTX2 (<c>--t2</c>) files from PNG and Netpbm files, with generated mipmaps (<c>--genmipmap</c>), Basis Universal (<c>--encode etc1s</c> or <c>uastc</c>) and Zstandard (<c>--zcmp</c>).</summary>
+    public static PrebuiltTool Toktx { get; } = new("toktx");
+
+    /// <summary>ktx2check, the legacy KTX-Software validator of KTX2 files: it exits with 0 for a valid file.</summary>
+    public static PrebuiltTool Ktx2Check { get; } = new("ktx2check");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -311,6 +320,9 @@ public static class PrebuiltTools
         PsdTools,
         Astcenc,
         Basisu,
+        Ktx,
+        Toktx,
+        Ktx2Check,
         Dec265,
         HeifEnc,
         HeifDec,

@@ -109,6 +109,13 @@
 /basisu-deps/
 /basisu-*-*
 
+# scripts/build-ktx-software.sh output
+/ktx-software-src/
+/ktx-software-deps/
+/ktx-*-*
+/toktx-*-*
+/ktx2check-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/

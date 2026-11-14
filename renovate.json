@@ -603,6 +603,18 @@
       "depNameTemplate": "BinomialLLC/basis_universal",
       "extractVersionTemplate": "^v(?<major>\\d+)_(?<minor>\\d+)$",
       "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "KTX_SOFTWARE_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "KhronosGroup/KTX-Software",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ]
 }

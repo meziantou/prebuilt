@@ -134,6 +134,9 @@ public sealed class PrebuiltToolTests
         Assert.Equal("psd-tools", PrebuiltTools.PsdTools.Name);
         Assert.Equal("astcenc", PrebuiltTools.Astcenc.Name);
         Assert.Equal("basisu", PrebuiltTools.Basisu.Name);
+        Assert.Equal("ktx", PrebuiltTools.Ktx.Name);
+        Assert.Equal("toktx", PrebuiltTools.Toktx.Name);
+        Assert.Equal("ktx2check", PrebuiltTools.Ktx2Check.Name);
         Assert.Equal("x265", PrebuiltTools.X265.Name);
         Assert.Equal("kvazaar", PrebuiltTools.Kvazaar.Name);
         Assert.Equal("dec265", PrebuiltTools.Dec265.Name);
