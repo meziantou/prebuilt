@@ -289,6 +289,17 @@ function Get-LatestMuPdfVersion {
     return Select-LatestVersion -Names $names -Pattern "^(?<version>\d+\.\d+\.\d+)$" -Description "MuPDF"
 }
 
+# Radiance releases are tagged with the first 8 digits of their commit.
+function Get-LatestRadianceCommit {
+    $tag = Get-ReleaseTag -Repository "LBNL-ETA/Radiance"
+    $refs = & git ls-remote https://github.com/LBNL-ETA/Radiance.git "refs/tags/$tag"
+    if ($LASTEXITCODE -ne 0 -or -not $refs) {
+        throw "Unable to resolve the Radiance release tag $tag."
+    }
+
+    return ($refs -split "\s+")[0]
+}
+
 function Get-LatestIsoJpegCommit {
     $refs = & git ls-remote https://github.com/thorfdbg/libjpeg.git master
     if ($LASTEXITCODE -ne 0 -or -not $refs) {
@@ -362,6 +373,7 @@ $availableLatestVersions = [ordered]@{
     "OPENEXR_VERSION" = Get-ReleaseTag -Repository "AcademySoftwareFoundation/openexr" -TrimV
     "IMATH_VERSION" = Get-OpenExrImathVersion
     "ISO_JPEG_COMMIT" = Get-LatestIsoJpegCommit
+    "RADIANCE_COMMIT" = Get-LatestRadianceCommit
     "OPUS_VERSION" = Get-ReleaseTag -Repository "xiph/opus" -TrimV
     "LIBVPX_VERSION" = Get-LatestTag -Repository "webmproject/libvpx"
     "AOM_VERSION" = Get-LatestAomVersion

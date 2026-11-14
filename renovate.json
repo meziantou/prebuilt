@@ -220,6 +220,18 @@
         "/^\\.github/workflows/ci\\.yml$/"
       ],
       "matchStrings": [
+        "RADIANCE_COMMIT: \"(?<currentDigest>.*?)\""
+      ],
+      "datasourceTemplate": "git-refs",
+      "depNameTemplate": "https://github.com/LBNL-ETA/Radiance.git",
+      "currentValueTemplate": "master"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
         "OPUS_VERSION: \"(?<currentValue>.*?)\""
       ],
       "datasourceTemplate": "github-releases",

@@ -149,6 +149,30 @@ public static class PrebuiltTools
     /// <summary>iso-jpeg, the <c>jpeg</c> tool of the ISO JPEG reference codec (thorfdbg/libjpeg): a JPEG encoder and decoder that shares no code with libjpeg-turbo, with arithmetic coding, 12-bit samples, and the progressive and hierarchical processes. It exits with 0 when a conversion fails: delete the output file first, and check afterwards that it exists and is not empty.</summary>
     public static PrebuiltTool IsoJpeg { get; } = new("iso-jpeg");
 
+    /// <summary>pvalue, the Radiance tool that dumps the pixels of a Radiance picture (.hdr, RGBE or XYZE) as text or binary values (<c>-df</c>: little-endian floats), or writes a picture from them with <c>-r</c> (run-length encoded, or flat with <c>-u</c>; <c>-pXYZ</c> for XYZE), in any of the 8 scan line orders.</summary>
+    public static PrebuiltTool Pvalue { get; } = new("pvalue");
+
+    /// <summary>getinfo, the Radiance tool that prints the header of a Radiance picture, or its resolution string with <c>-d</c>, and adds header lines with <c>-a</c>.</summary>
+    public static PrebuiltTool RadianceGetInfo { get; } = new("getinfo");
+
+    /// <summary>pflip, the Radiance tool that flips a Radiance picture horizontally (<c>-h</c>) or vertically (<c>-v</c>). Without <c>-c</c>, it changes the scan line order and the resolution string, and the image stays the same.</summary>
+    public static PrebuiltTool Pflip { get; } = new("pflip");
+
+    /// <summary>protate, the Radiance tool that rotates a Radiance picture by 90 degrees. Without <c>-c</c>, it changes the scan line order and the resolution string (<c>+X</c>/<c>-X</c> first), and the image stays the same.</summary>
+    public static PrebuiltTool Protate { get; } = new("protate");
+
+    /// <summary>ra_xyze, the Radiance tool that converts a Radiance picture from RGBE to XYZE (flat, or run-length encoded with <c>-c</c>), or back to RGBE with <c>-r</c>.</summary>
+    public static PrebuiltTool RaXyze { get; } = new("ra_xyze");
+
+    /// <summary>ra_rgbe, the Radiance tool that writes a Radiance picture with flat scan lines, or run-length encoded ones with <c>-r</c>.</summary>
+    public static PrebuiltTool RaRgbe { get; } = new("ra_rgbe");
+
+    /// <summary>ra_ppm, the Radiance tool that converts a Radiance picture to a PPM file (8 or 16 bits), or a PPM file to a Radiance picture with <c>-r</c>.</summary>
+    public static PrebuiltTool RaPpm { get; } = new("ra_ppm");
+
+    /// <summary>ra_bmp, the Radiance tool that converts a Radiance picture to a BMP file, or a BMP file to a Radiance picture with <c>-r</c>.</summary>
+    public static PrebuiltTool RaBmp { get; } = new("ra_bmp");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -255,6 +279,14 @@ public static class PrebuiltTools
         ExrFromRaw,
         ExrToRaw,
         IsoJpeg,
+        Pvalue,
+        RadianceGetInfo,
+        Pflip,
+        Protate,
+        RaXyze,
+        RaRgbe,
+        RaPpm,
+        RaBmp,
         Dec265,
         HeifEnc,
         HeifDec,
