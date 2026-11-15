@@ -258,6 +258,40 @@ function Get-LatestTemurinVersion {
     throw "No recent Temurin $current release has a JDK for every target."
 }
 
+# The Adobe DNG SDK has no feed, and the page that links it renders on the
+# client: the next versions after DNG_SDK_VERSION whose zip exists on
+# download.adobe.com (dng_sdk_1_7_1.zip; dng_sdk_1_6.zip for 1.6).
+function Get-LatestDngSdkVersion {
+    $current = [regex]::Match($workflowContent, 'DNG_SDK_VERSION: "(\d+(?:\.\d+)+)"').Groups[1].Value
+    if (-not $current) {
+        throw "DNG_SDK_VERSION is not in the workflow."
+    }
+
+    $latest = $current
+    while ($true) {
+        $parts = @($latest.Split(".") | ForEach-Object { [int]$_ })
+        $major = $parts[0]
+        $minor = $parts[1]
+        $patch = if ($parts.Count -gt 2) { $parts[2] } else { 0 }
+        $found = $null
+        foreach ($candidate in "$($major + 1).0", "$major.$($minor + 1)", "$major.$($minor + 1).1", "$major.$minor.$($patch + 1)") {
+            try {
+                Invoke-WebRequest -Method Head -Uri "https://download.adobe.com/pub/adobe/dng/dng_sdk_$($candidate -replace '\.', '_').zip" | Out-Null
+                $found = $candidate
+                break
+            }
+            catch {
+            }
+        }
+
+        if (-not $found) {
+            return $latest
+        }
+
+        $latest = $found
+    }
+}
+
 # PDFium has no releases: the chromium/<N> branch of the latest release of
 # bblanchon/pdfium-binaries, which builds it for every target.
 function Get-LatestPdfiumVersion {
@@ -474,6 +508,8 @@ $availableLatestVersions = [ordered]@{
     "LIBXML2_VERSION" = Get-LatestGitLabTag -ProjectPath "GNOME/libxml2" -Registry "https://gitlab.gnome.org" -Pattern "^v(?<version>\d+\.\d+\.\d+)$"
     "OPENCV_VERSION" = Get-LatestTag -Repository "opencv/opencv" -Pattern "^(?<version>4\.\d+\.\d+)$"
     "OPENIMAGEIO_VERSION" = Get-ReleaseTag -Repository "AcademySoftwareFoundation/OpenImageIO" -TrimV
+    "DNG_SDK_VERSION" = Get-LatestDngSdkVersion
+    "EXPAT_VERSION" = (Get-ReleaseTag -Repository "libexpat/libexpat") -replace '^R_', '' -replace '_', '.'
 }
 
 $selectedVariableNames =

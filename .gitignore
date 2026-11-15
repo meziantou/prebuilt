@@ -158,6 +158,11 @@
 /oiiotool-*-*
 /iinfo-*-*
 
+# scripts/build-dng-sdk.sh output
+/dng-sdk-src/
+/dng-sdk-deps/
+/dng_validate-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/

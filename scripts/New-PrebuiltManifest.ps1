@@ -101,6 +101,7 @@ $versionKeys = [ordered]@{
     "opencv-oracle"    = "OpenCV"
     "oiiotool"         = "OpenImageIO"
     "iinfo"            = "OpenImageIO"
+    "dng_validate"     = "DngSdk"
     "x265"             = "X265"
     "kvazaar"          = "Kvazaar"
     "dec265"           = "LibDe265"

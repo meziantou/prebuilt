@@ -257,6 +257,9 @@ public static class PrebuiltTools
     /// <summary>iinfo, the OpenImageIO tool that prints the size, format, channels and metadata of images (<c>-v</c>), their statistics (<c>--stats</c>) and the hash of their pixels (<c>--hash</c>).</summary>
     public static PrebuiltTool Iinfo { get; } = new("iinfo");
 
+    /// <summary>dng_validate, the tool of the Adobe DNG SDK that validates DNG files (<c>-v</c> prints their tags) and writes their stage 1 (the raw samples, as stored), stage 2 (linearized) and stage 3 (demosaiced) images (<c>-1</c>, <c>-2</c>, <c>-3</c>), the rendered image (<c>-tif</c>, <c>-16</c> for 16 bits) and DNG files (<c>-dng</c>; <c>-losslessJXL</c> for DNG 1.7 with JPEG XL).</summary>
+    public static PrebuiltTool DngValidate { get; } = new("dng_validate");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -399,6 +402,7 @@ public static class PrebuiltTools
         OpenCvOracle,
         OiioTool,
         Iinfo,
+        DngValidate,
         Dec265,
         HeifEnc,
         HeifDec,
