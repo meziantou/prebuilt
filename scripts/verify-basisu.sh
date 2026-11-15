@@ -171,7 +171,10 @@ case "$MODE" in
   run|all)
     msg "version"
     version="$("$BIN" -version | tr -d '\r' | sed -n 1p)"
-    expect "basisu -version" "$version" "Basis Universal LDR/HDR GPU Texture Supercompression System v$BASISU_VERSION.0"
+    # The Windows build names its architecture.
+    suffix=""
+    [ "$TARGET" = win-x64 ] && suffix=" (x64)"
+    expect "basisu -version" "$version" "Basis Universal LDR/HDR GPU Texture Supercompression System v$BASISU_VERSION.0$suffix"
     features="$("$BIN" -version | tr -d '\r' | sed -n 3p)"
     expect "basisu -version: features" "$features" "No SSE, Multithreading: 1, Zstandard support: 1, OpenCL: 0"
     tests

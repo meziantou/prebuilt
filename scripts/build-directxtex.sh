@@ -69,8 +69,9 @@ fi
 fetch DirectXTex "https://github.com/microsoft/DirectXTex/archive/refs/tags/$DIRECTXTEX_VERSION.tar.gz" \
       "DirectXTex-$DIRECTXTEX_VERSION.tar.gz" "DirectXTex-$DIRECTXTEX_VERSION"
 SOURCE="$SRCDIR/DirectXTex-$DIRECTXTEX_VERSION"
-# The tools print the version of the library, DIRECTX_TEX_VERSION.
-grep -q "^#define DIRECTX_TEX_VERSION $DIRECTXTEX_LIBRARY_VERSION\$" "$SOURCE/DirectXTex/DirectXTex.h" \
+# The tools print the version of the library, DIRECTX_TEX_VERSION. The
+# release archive has CRLF line endings.
+tr -d '\r' < "$SOURCE/DirectXTex/DirectXTex.h" | grep -q "^#define DIRECTX_TEX_VERSION $DIRECTXTEX_LIBRARY_VERSION\$" \
   || { echo "DIRECTX_TEX_VERSION of DirectXTex $DIRECTXTEX_VERSION is not $DIRECTXTEX_LIBRARY_VERSION" >&2; exit 1; }
 
 # Empty shaders, under the names CompileShaders.cmd gives them (/Vn).

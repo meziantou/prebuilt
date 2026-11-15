@@ -242,6 +242,7 @@ psd_tools_tests() {
   PT="../$BUNDLE/psd-tools$EXE"
   PY="../$BUNDLE/$PYTHON_REL"
   M="../magick-$TARGET$EXE"
+  chmod +x "$M" 2>/dev/null || true
   [ -f "$M" ] || fail "missing magick-$TARGET$EXE (scripts/build-imagemagick.sh): the tests read and write files with it"
   write_samples .
   S="-size 4x2"

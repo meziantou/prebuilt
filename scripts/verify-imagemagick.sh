@@ -157,10 +157,10 @@ assert_features() {
   contains "$first" "Version: ImageMagick $IMAGEMAGICK_VERSION Q16-HDRI " || fail "magick -version: $first"
   ok "$first"
   delegates="$(printf '%s\n' "$version" | sed -n 's/^Delegates (built-in): *//p' | sed 's/ *$//')"
-  # A Windows build lists ps: it looks for a Ghostscript DLL to read
-  # PostScript or PDF, and links no library for it.
+  # A Windows build lists gslib and ps: it looks for a Ghostscript DLL to
+  # read PostScript or PDF, and links no library for it.
   if [ "$TARGET" = win-x64 ]; then
-    expect "delegates" "$delegates" "lcms png ps tiff zlib"
+    expect "delegates" "$delegates" "gslib lcms png ps tiff zlib"
   else
     expect "delegates" "$delegates" "lcms png tiff zlib"
   fi
