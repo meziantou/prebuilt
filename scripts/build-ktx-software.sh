@@ -59,6 +59,21 @@ case "$TARGET" in
   linux-*) AR_ARGS="-DCMAKE_CXX_COMPILER_AR=$(command -v ar) -DCMAKE_CXX_COMPILER_RANLIB=$(command -v ranlib)" ;;
 esac
 
+# The fmt of the repository uses malloc and free without <cstdlib>, which the
+# libc++ of llvm-mingw does not include from the other headers.
+CXX_FLAGS_ARGS=""
+LINK_FLAGS="$EXE_LDFLAGS"
+if [ "$TARGET" = win-x64 ]; then
+  CXX_FLAGS_ARGS="-DCMAKE_CXX_FLAGS=-include cstdlib"
+  # ktx links -lPathcch, and MinGW has libpathcch.a: the Linux machine that
+  # cross-compiles win-x64 has a case-sensitive file system.
+  pathcch="$(find "$LLVM_MINGW_ROOT/$MINGW_TRIPLE/lib" -name libpathcch.a | sed -n 1p)"
+  [ -n "$pathcch" ] || { echo "no libpathcch.a in $LLVM_MINGW_ROOT" >&2; exit 1; }
+  mkdir -p "$WORKDIR/build-ktx-software-libs"
+  cp "$pathcch" "$WORKDIR/build-ktx-software-libs/libPathcch.a"
+  LINK_FLAGS="$LINK_FLAGS -L$WORKDIR/build-ktx-software-libs"
+fi
+
 BUILD="$WORKDIR/build-ktx-software"
 msg "configuring KTX-Software $KTX_SOFTWARE_VERSION for $TARGET"
 rm -rf "$BUILD"
@@ -68,8 +83,8 @@ cmake -S "$SOURCE" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release $CMAKE_CROSS_
   -DKTX_FEATURE_DOC=OFF -DKTX_FEATURE_JNI=OFF -DKTX_FEATURE_PY=OFF -DKTX_FEATURE_LOADTEST_APPS=OFF \
   -DKTX_FEATURE_VK_UPLOAD=OFF -DKTX_FEATURE_GL_UPLOAD=OFF -DKTX_FEATURE_ETC_UNPACK=ON \
   -DBASISU_SUPPORT_SSE=OFF -DBASISU_SUPPORT_OPENCL=OFF -DASTCENC_ISA_NONE=ON \
-  -DCMAKE_OSX_ARCHITECTURES=arm64 \
-  "-DCMAKE_EXE_LINKER_FLAGS=$EXE_LDFLAGS"
+  -DCMAKE_OSX_ARCHITECTURES=arm64 ${CXX_FLAGS_ARGS:+"$CXX_FLAGS_ARGS"} \
+  "-DCMAKE_EXE_LINKER_FLAGS=$LINK_FLAGS"
 
 msg "building $TOOLS"
 # shellcheck disable=SC2086

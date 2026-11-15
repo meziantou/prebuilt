@@ -41,6 +41,13 @@ fetch astcenc "https://github.com/ARM-software/astc-encoder/archive/refs/tags/$A
       "astc-encoder-$ASTCENC_VERSION.tar.gz" "astc-encoder-$ASTCENC_VERSION"
 SOURCE="$SRCDIR/astc-encoder-$ASTCENC_VERSION"
 
+# The MinGW headers are lowercase, and the Linux machine that cross-compiles
+# win-x64 has a case-sensitive file system.
+sed 's/<Processthreadsapi.h>/<processthreadsapi.h>/' "$SOURCE/Source/astcenccli_platform_dependents.cpp" \
+  > "$SOURCE/Source/astcenccli_platform_dependents.cpp.tmp"
+mv "$SOURCE/Source/astcenccli_platform_dependents.cpp.tmp" "$SOURCE/Source/astcenccli_platform_dependents.cpp"
+grep -q 'Processthreadsapi' "$SOURCE/Source/astcenccli_platform_dependents.cpp" && { echo "the include of Processthreadsapi.h is not patched" >&2; exit 1; }
+
 # astcenc archives its objects with CMAKE_CXX_COMPILER_AR, which CMake sets for
 # clang from llvm-ar only: Alpine has no llvm-ar, the binutils ar does.
 AR_ARGS=""
