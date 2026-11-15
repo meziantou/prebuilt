@@ -650,6 +650,44 @@
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "microsoft/DirectX-Headers",
       "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "ICCDEV_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "InternationalColorConsortium/iccDEV",
+      "extractVersionTemplate": "^v(?<version>\\d+\\.\\d+\\.\\d+\\.\\d+)$",
+      "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "NLOHMANN_JSON_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "nlohmann/json",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "LIBXML2_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "gitlab-tags",
+      "registryUrlTemplate": "https://gitlab.gnome.org",
+      "depNameTemplate": "GNOME/libxml2",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ]
 }

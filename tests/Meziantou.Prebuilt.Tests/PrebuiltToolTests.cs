@@ -145,6 +145,14 @@ public sealed class PrebuiltToolTests
         Assert.Equal("texconv", PrebuiltTools.Texconv.Name);
         Assert.Equal("texdiag", PrebuiltTools.Texdiag.Name);
         Assert.Equal("texassemble", PrebuiltTools.Texassemble.Name);
+        Assert.Equal("iccFromXml", PrebuiltTools.IccFromXml.Name);
+        Assert.Equal("iccToXml", PrebuiltTools.IccToXml.Name);
+        Assert.Equal("iccFromJson", PrebuiltTools.IccFromJson.Name);
+        Assert.Equal("iccToJson", PrebuiltTools.IccToJson.Name);
+        Assert.Equal("iccDumpProfile", PrebuiltTools.IccDumpProfile.Name);
+        Assert.Equal("iccRoundTrip", PrebuiltTools.IccRoundTrip.Name);
+        Assert.Equal("iccApplyNamedCmm", PrebuiltTools.IccApplyNamedCmm.Name);
+        Assert.Equal("iccApplyToLink", PrebuiltTools.IccApplyToLink.Name);
         Assert.Equal("x265", PrebuiltTools.X265.Name);
         Assert.Equal("kvazaar", PrebuiltTools.Kvazaar.Name);
         Assert.Equal("dec265", PrebuiltTools.Dec265.Name);

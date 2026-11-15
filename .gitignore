@@ -135,6 +135,18 @@
 /texdiag-*-*
 /texassemble-*-*
 
+# scripts/build-iccdev.sh output
+/iccdev-src/
+/iccdev-deps/
+/iccFromXml-*-*
+/iccToXml-*-*
+/iccFromJson-*-*
+/iccToJson-*-*
+/iccDumpProfile-*-*
+/iccRoundTrip-*-*
+/iccApplyNamedCmm-*-*
+/iccApplyToLink-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/

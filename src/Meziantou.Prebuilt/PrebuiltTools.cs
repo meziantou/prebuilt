@@ -224,6 +224,30 @@ public static class PrebuiltTools
     /// <summary>texassemble, the DirectXTex tool that assembles cube maps (<c>cube</c>), arrays (<c>array</c>), volume textures and cube arrays from images (<c>-dx10</c>: a DX10 header). Windows only.</summary>
     public static PrebuiltTool Texassemble { get; } = new("texassemble");
 
+    /// <summary>iccFromXml, the iccDEV (DemoIccMAX) tool that writes an ICC profile (version 2 to 5, iccMAX) from its XML description.</summary>
+    public static PrebuiltTool IccFromXml { get; } = new("iccFromXml");
+
+    /// <summary>iccToXml, the iccDEV tool that writes the XML description of an ICC profile; iccFromXml writes the same bytes again from it.</summary>
+    public static PrebuiltTool IccToXml { get; } = new("iccToXml");
+
+    /// <summary>iccFromJson, the iccDEV tool that writes an ICC profile from its JSON description.</summary>
+    public static PrebuiltTool IccFromJson { get; } = new("iccFromJson");
+
+    /// <summary>iccToJson, the iccDEV tool that writes the JSON description of an ICC profile.</summary>
+    public static PrebuiltTool IccToJson { get; } = new("iccToJson");
+
+    /// <summary>iccDumpProfile, the iccDEV tool that prints the header and tags of an ICC profile, and validates it with <c>-v</c>.</summary>
+    public static PrebuiltTool IccDumpProfile { get; } = new("iccDumpProfile");
+
+    /// <summary>iccRoundTrip, the iccDEV tool that reports the round-trip accuracy of an ICC profile.</summary>
+    public static PrebuiltTool IccRoundTrip { get; } = new("iccRoundTrip");
+
+    /// <summary>iccApplyNamedCmm, the iccDEV tool that applies a chain of ICC profiles (D2Bx/B2Dx, A2Bx/B2Ax, matrix/TRC, named colors with tints) to the values of a text file, with any encoding (floats, 8 or 16 bits, ...).</summary>
+    public static PrebuiltTool IccApplyNamedCmm { get; } = new("iccApplyNamedCmm");
+
+    /// <summary>iccApplyToLink, the iccDEV tool that writes a device link profile or a 3D LUT (.cube) from a chain of ICC profiles.</summary>
+    public static PrebuiltTool IccApplyToLink { get; } = new("iccApplyToLink");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -355,6 +379,14 @@ public static class PrebuiltTools
         Texconv,
         Texdiag,
         Texassemble,
+        IccFromXml,
+        IccToXml,
+        IccFromJson,
+        IccToJson,
+        IccDumpProfile,
+        IccRoundTrip,
+        IccApplyNamedCmm,
+        IccApplyToLink,
         Dec265,
         HeifEnc,
         HeifDec,
