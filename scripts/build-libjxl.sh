@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Builds statically linked cjxl/djxl/jxlinfo/jxl_from_tree from the libjxl sources.
+# Builds statically linked cjxl/djxl/jxlinfo/jxl_from_tree, and the metrics
+# ssimulacra2 and butteraugli_main, from the libjxl sources.
 #
 #   bash scripts/build-libjxl.sh <target>
 #
@@ -8,7 +9,8 @@
 #
 # Every target is built from source: the libjxl release has no macOS and no
 # Linux arm64 binaries, and none of its archives contains jxl_from_tree, which
-# is a developer tool (JPEGXL_ENABLE_DEVTOOLS).
+# is a developer tool (JPEGXL_ENABLE_DEVTOOLS), as ssimulacra2 and
+# butteraugli_main are.
 #
 # libjxl, highway, brotli and zlib are the versions ffmpeg is built with (see
 # scripts/build-ffmpeg.sh), configured the same way, so that djxl decodes with
@@ -40,7 +42,7 @@ PREFIX="$WORKDIR/libjxl-deps"
 SRCDIR="$WORKDIR/libjxl-src"
 STAMPDIR="$PREFIX/.stamps"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-TOOLS="cjxl djxl jxlinfo jxl_from_tree"
+TOOLS="cjxl djxl jxlinfo jxl_from_tree ssimulacra2 butteraugli_main"
 
 mkdir -p "$PREFIX" "$SRCDIR" "$STAMPDIR"
 

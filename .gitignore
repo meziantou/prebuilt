@@ -20,6 +20,8 @@
 /djxl-*-*
 /jxlinfo-*-*
 /jxl_from_tree-*-*
+/ssimulacra2-*-*
+/butteraugli_main-*-*
 
 # jxl-oxide job output
 /jxl-oxide-build/
@@ -85,6 +87,81 @@
 /ra_rgbe-*-*
 /ra_ppm-*-*
 /ra_bmp-*-*
+
+# scripts/build-imagemagick.sh output
+/imagemagick-deps/
+/imagemagick-src/
+/magick-*-*
+
+# scripts/build-psd-tools.sh output
+/psd-tools-src/
+/psd-tools-bundle-*/
+/psd-tools-verify-*/
+/psd-tools-*-*.tar.gz
+
+# scripts/build-astcenc.sh output
+/astcenc-src/
+/astcenc-deps/
+/astcenc-*-*
+
+# scripts/build-basisu.sh output
+/basisu-src/
+/basisu-deps/
+/basisu-*-*
+
+# scripts/build-ktx-software.sh output
+/ktx-software-src/
+/ktx-software-deps/
+/ktx-*-*
+/toktx-*-*
+/ktx2check-*-*
+
+# scripts/build-libraw.sh output
+/libraw-src/
+/libraw-deps/
+/dcraw_emu-*-*
+/raw-identify-*-*
+/unprocessed_raw-*-*
+
+# scripts/build-hm-scm.sh output
+/hm-scm-src/
+/TAppEncoderSCM-*-*
+/TAppDecoderSCM-*-*
+
+# scripts/build-directxtex.sh output
+/directxtex-src/
+/directxtex-deps/
+/texconv-*-*
+/texdiag-*-*
+/texassemble-*-*
+
+# scripts/build-iccdev.sh output
+/iccdev-src/
+/iccdev-deps/
+/iccFromXml-*-*
+/iccToXml-*-*
+/iccFromJson-*-*
+/iccToJson-*-*
+/iccDumpProfile-*-*
+/iccRoundTrip-*-*
+/iccApplyNamedCmm-*-*
+/iccApplyToLink-*-*
+
+# scripts/build-opencv.sh output
+/opencv-src/
+/opencv-deps/
+/opencv-oracle-*-*
+
+# scripts/build-openimageio.sh output
+/openimageio-src/
+/openimageio-deps/
+/oiiotool-*-*
+/iinfo-*-*
+
+# scripts/build-dng-sdk.sh output
+/dng-sdk-src/
+/dng-sdk-deps/
+/dng_validate-*-*
 
 # scripts/build-libheif.sh output
 /libheif-deps/

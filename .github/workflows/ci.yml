@@ -16,7 +16,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.14.0
+  VERSION: 3.15.0
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
@@ -29,7 +29,7 @@ env:
   ZLIB_VERSION: "1.3.2" # https://github.com/madler/zlib/tags
   BROTLI_VERSION: "1.2.0" # https://github.com/google/brotli/tags
   HWY_VERSION: "1.4.0" # https://github.com/google/highway/tags - tags have no leading v
-  JXL_VERSION: "0.13.0" # https://github.com/libjxl/libjxl/releases - the libjxl of ffmpeg and the released cjxl/djxl/jxlinfo/jxl_from_tree tools
+  JXL_VERSION: "0.13.0" # https://github.com/libjxl/libjxl/releases - the libjxl of ffmpeg and the released cjxl/djxl/jxlinfo/jxl_from_tree/ssimulacra2/butteraugli_main tools
   LIBPNG_VERSION: "1.6.59" # https://github.com/pnggroup/libpng/tags - PNG and APNG support of cjxl/djxl, PNG glyphs and PNG output of the HarfBuzz tools; 1.6.x, the 1.7 tags are betas
   JXL_OXIDE_VERSION: "0.12.6" # https://crates.io/crates/jxl-oxide-cli
   RUST_TOOLCHAIN: "1.99.0" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
@@ -45,6 +45,34 @@ env:
   ISO_JPEG_VERSION: "1.72" # last release of README.history at ISO_JPEG_COMMIT - scripts/build-iso-jpeg.sh fails when it is not
   RADIANCE_COMMIT: "5b2a2154cc7d97a997d3d9a3929567b75d78174a" # https://github.com/LBNL-ETA/Radiance - master branch; its releases are tagged with the first 8 digits of their commit; pvalue/getinfo/pflip/protate/ra_xyze/ra_rgbe/ra_ppm/ra_bmp
   RADIANCE_VERSION: "6.1a" # src/rt/VERSION at RADIANCE_COMMIT - scripts/build-radiance.sh fails when it is not
+  IMAGEMAGICK_VERSION: "7.1.2-35" # https://github.com/ImageMagick/ImageMagick/tags - magick, the writer of PSD files, built from the tag archive; tags are <version>-<patch level>
+  LIBTIFF_VERSION: "4.7.2" # https://download.osgeo.org/libtiff/ - the TIFF input of magick
+  PSD_TOOLS_VERSION: "1.26.1" # https://pypi.org/project/psd-tools/ - the PSD reader and writer of the psd-tools bundle
+  PSD_TOOLS_PYTHON_VERSION: "3.14.10" # the CPython of the psd-tools bundle: a python-build-standalone build of PYTHON_BUILD_STANDALONE_RELEASE
+  PYTHON_BUILD_STANDALONE_RELEASE: "20261110" # https://github.com/astral-sh/python-build-standalone/releases - the Python runtime of the psd-tools bundle
+  NUMPY_VERSION: "2.5.4" # https://pypi.org/project/numpy/ - a dependency of psd-tools
+  PILLOW_VERSION: "13.0.0" # https://pypi.org/project/pillow/ - a dependency of psd-tools
+  ATTRS_VERSION: "26.1.0" # https://pypi.org/project/attrs/ - a dependency of psd-tools
+  ASTCENC_VERSION: "5.7.1" # https://github.com/ARM-software/astc-encoder/releases - astcenc, the ASTC encoder and decoder of Arm, built from the release tag
+  BASISU_VERSION: "2.50" # https://github.com/BinomialLLC/basis_universal/releases - basisu, built from tag v<major>_<minor>
+  KTX_SOFTWARE_VERSION: "4.4.2" # https://github.com/KhronosGroup/KTX-Software/releases - ktx/toktx/ktx2check, built from tag v<version> (cloned: the version comes from git describe)
+  LIBRAW_VERSION: "0.22.3" # https://www.libraw.org/download - dcraw_emu/raw-identify/unprocessed_raw, built from LibRaw-<version>.tar.gz with zlib, libjpeg-turbo and LittleCMS 2
+  HM_SCM_VERSION: "16.21+8.8" # https://vcgit.hhi.fraunhofer.de/jvet/HM/-/tags - TAppEncoderSCM/TAppDecoderSCM, built from tag HM-<HM version>+SCM-<SCM version>, the last HM release with the screen content coding extensions
+  DIRECTXTEX_VERSION: "may2026" # https://github.com/microsoft/DirectXTex/releases - texconv/texdiag/texassemble, built from the release tag (win-x64 only)
+  DIRECTXTEX_LIBRARY_VERSION: "211" # DIRECTX_TEX_VERSION of DirectXTex/DirectXTex.h at DIRECTXTEX_VERSION, the version the tools print - scripts/build-directxtex.sh fails when it is not
+  DIRECTXMATH_VERSION: "jun2026" # https://github.com/microsoft/DirectXMath/releases - the DirectXMath of the MinGW build of DirectXTex
+  DIRECTX_HEADERS_VERSION: "1.620.2" # https://github.com/microsoft/DirectX-Headers/releases - the DirectX-Headers of the MinGW build of DirectXTex; tags have a leading v
+  ICCDEV_VERSION: "2.4.2.5" # https://github.com/InternationalColorConsortium/iccDEV/releases - iccFromXml/iccToXml/iccApplyNamedCmm/..., the iccMAX tools of iccDEV (formerly DemoIccMAX), built from tag v<version>
+  ICCDEV_LIBRARY_VERSION: "2.3.2.5" # ICCPROFLIBVER of IccProfLib/IccProfLibVer.h at ICCDEV_VERSION, the version the tools print - scripts/build-iccdev.sh fails when it is not
+  LIBXML2_VERSION: "2.15.4" # https://download.gnome.org/sources/libxml2/ - the XML parser of the iccDEV XML tools
+  NLOHMANN_JSON_VERSION: "3.12.0" # https://github.com/nlohmann/json/releases - the JSON library of the iccDEV JSON tools; tags have a leading v
+  OPENCV_VERSION: "4.14.0" # https://github.com/opencv/opencv/releases - the OpenCV of opencv-oracle (scripts/opencv-oracle.cpp), built from the release tag; 4.x: the module names of OpenCV 5 differ
+  OPENIMAGEIO_VERSION: "3.2.2.0" # https://github.com/AcademySoftwareFoundation/OpenImageIO/releases - oiiotool/iinfo, built from tag v<version> with LibRaw; its own build clones the libraries it requires at the versions it pins
+  LIBDEFLATE_VERSION: "1.26" # https://github.com/ebiggers/libdeflate/releases - the libdeflate of the OpenEXR of OpenImageIO: the one OpenImageIO pins does not build with a current clang
+  LIBDEFLATE_COMMIT: "92e6a0db9fa848d742f9eb286c92afc60f2c3dda" # the commit of tag v<LIBDEFLATE_VERSION>, which the local build of OpenImageIO checks
+  DNG_SDK_VERSION: "1.7.1" # https://helpx.adobe.com/camera-raw/digital-negative.html - dng_validate, built from dng_sdk_<major>_<minor>[_<patch>].zip of download.adobe.com with its XMP Toolkit, libjpeg and libjxl, expat and zlib
+  DNG_SDK_SHA256: "5366d9abd0e623858573bfaf0291b5e352d704f51b322753a22f82af3ae6e0c2" # the SHA-256 of the zip of DNG_SDK_VERSION: Adobe publishes no checksum
+  EXPAT_VERSION: "2.10.0" # https://github.com/libexpat/libexpat/releases - the XML parser of the XMP Toolkit of the DNG SDK
   OPUS_VERSION: "1.5.2" # https://github.com/xiph/opus/releases - releases only; v1.6.x tags ship no tarball
   LIBVPX_VERSION: "1.17.0" # https://github.com/webmproject/libvpx/tags
   AOM_VERSION: "3.15.1" # https://aomedia.googlesource.com/aom
@@ -60,7 +88,7 @@ env:
   MUPDF_VERSION: "1.28.5" # https://mupdf.com/releases - mutool, built from mupdf-<version>-source.tar.gz with its third-party libraries
   POPPLER_VERSION: "26.10.0" # https://poppler.freedesktop.org/releases.html - pdftoppm/pdftotext/pdffonts/pdfinfo/pdfsig
   FREETYPE_VERSION: "2.15.0" # https://github.com/freetype/freetype/tags - the FreeType of Poppler (scripts/pdf-libs.sh), built from tag VER-<version with dashes>
-  LCMS2_VERSION: "2.19.1" # https://github.com/mm2/Little-CMS/releases - the LittleCMS of Poppler (scripts/pdf-libs.sh)
+  LCMS2_VERSION: "2.19.1" # https://github.com/mm2/Little-CMS/releases - the LittleCMS of Poppler (scripts/pdf-libs.sh) and magick
   NSS_VERSION: "3.132" # https://ftp.mozilla.org/pub/security/nss/releases/ - the signature backend of pdfsig (scripts/pdf-libs.sh)
   NSPR_VERSION: "4.39" # the NSPR bundled with NSS_VERSION: nss-<NSS_VERSION>-with-nspr-<NSPR_VERSION>.tar.gz
   ARLINGTON_COMMIT: "d148fee5a0cb6dcacadf58c09ed842e32847024d" # https://github.com/pdf-association/arlington-pdf-model - master branch; TestGrammar and the TSV files of the model; no release since v0.5 (2021)
@@ -121,6 +149,30 @@ jobs:
       iso-jpeg-windows-test,
       radiance,
       radiance-windows-test,
+      imagemagick,
+      imagemagick-windows-test,
+      psd-tools,
+      psd-tools-windows-test,
+      astcenc,
+      astcenc-windows-test,
+      basisu,
+      basisu-windows-test,
+      ktx-software,
+      ktx-software-windows-test,
+      libraw,
+      libraw-windows-test,
+      hm-scm,
+      hm-scm-windows-test,
+      directxtex,
+      directxtex-windows-test,
+      iccdev,
+      iccdev-windows-test,
+      opencv,
+      opencv-windows-test,
+      openimageio,
+      openimageio-windows-test,
+      dng-sdk,
+      dng-sdk-windows-test,
       libheif,
       libheif-windows-test,
       hm,
@@ -278,6 +330,19 @@ jobs:
         $versions.IsoJpeg = "${{ env.ISO_JPEG_VERSION }}+" + "${{ env.ISO_JPEG_COMMIT }}".Substring(0, 7)
         # Radiance tags its releases with the first 8 digits of their commit.
         $versions.Radiance = "${{ env.RADIANCE_VERSION }}+" + "${{ env.RADIANCE_COMMIT }}".Substring(0, 8)
+        $versions.ImageMagick = "${{ env.IMAGEMAGICK_VERSION }}"
+        $versions.PsdTools = "${{ env.PSD_TOOLS_VERSION }}"
+        $versions.Astcenc = "${{ env.ASTCENC_VERSION }}"
+        $versions.Basisu = "${{ env.BASISU_VERSION }}"
+        $versions.KtxSoftware = "${{ env.KTX_SOFTWARE_VERSION }}"
+        $versions.LibRaw = "${{ env.LIBRAW_VERSION }}"
+        # The tag is HM-<HM version>+SCM-<SCM version>.
+        $versions.HmScm = "${{ env.HM_SCM_VERSION }}"
+        $versions.DirectXTex = "${{ env.DIRECTXTEX_VERSION }}"
+        $versions.IccDev = "${{ env.ICCDEV_VERSION }}"
+        $versions.OpenCV = "${{ env.OPENCV_VERSION }}"
+        $versions.OpenImageIO = "${{ env.OPENIMAGEIO_VERSION }}"
+        $versions.DngSdk = "${{ env.DNG_SDK_VERSION }}"
         $versions.X265 = "${{ env.X265_VERSION }}"
         $versions.Kvazaar = "${{ env.KVAZAAR_VERSION }}"
         $versions.LibDe265 = "${{ env.LIBDE265_VERSION }}"
@@ -831,7 +896,8 @@ jobs:
            avifenc-${{ matrix.rid }}*
            avifdec-${{ matrix.rid }}*
 
-  # cjxl, djxl, jxlinfo and jxl_from_tree. Every target is built from the
+  # cjxl, djxl, jxlinfo and jxl_from_tree, and the metrics ssimulacra2 and
+  # butteraugli_main. Every target is built from the
   # libjxl sources (scripts/build-libjxl.sh): the libjxl release has no macOS
   # and no Linux arm64 binaries, and none of its archives has jxl_from_tree.
   # libjxl, highway, brotli and zlib are the versions ffmpeg is built with.
@@ -929,6 +995,8 @@ jobs:
            djxl-${{ matrix.rid }}*
            jxlinfo-${{ matrix.rid }}*
            jxl_from_tree-${{ matrix.rid }}*
+           ssimulacra2-${{ matrix.rid }}*
+           butteraugli_main-${{ matrix.rid }}*
 
   libjxl-windows-test:
     runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['libjxl-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
@@ -1863,6 +1931,216 @@ jobs:
       shell: bash
       run: bash scripts/verify-radiance.sh win-x64 run
 
+  # magick, the command-line tool of ImageMagick 7: the writer of PSD and PSB
+  # files for the tests of PSD codecs, and a reader of them. ImageMagick
+  # publishes dynamically linked builds with dozens of delegates, so every
+  # target is built from the tag archive (scripts/build-imagemagick.sh), with
+  # zlib, LittleCMS 2, libpng and libtiff only, without X11, OpenMP or
+  # threads, every coder and configuration file in the executable.
+  # No Windows arm64 build, as for the other image tools.
+  imagemagick:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-imagemagick-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-imagemagick-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-imagemagick-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e LIBPNG_VERSION -e LCMS2_VERSION -e LIBTIFF_VERSION -e IMAGEMAGICK_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja \
+              curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-imagemagick.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-imagemagick.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-imagemagick.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-imagemagick.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; imagemagick-windows-test runs their tests.
+      run: bash scripts/verify-imagemagick.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-imagemagick-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: magick-${{ matrix.rid }}*
+
+  imagemagick-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['imagemagick-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, imagemagick]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['imagemagick-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-imagemagick-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-imagemagick.sh win-x64 run
+
+  # The psd-tools bundle: psd-tools, a PSD and PSB reader and writer in Python
+  # that shares no code with ImageMagick, with the command-line tool of this
+  # repository (scripts/psd-tools-cli.py) and a Python runtime of
+  # python-build-standalone. Nothing is compiled but the Windows launcher
+  # (llvm-mingw): every target downloads its runtime and wheels
+  # (scripts/build-psd-tools.sh). The Linux bundles need glibc 2.28.
+  # It needs magick for its smoke tests: each tool reads what the other writes.
+  # IMAGEMAGICK_VERSION is named here to be part of the build key of this job:
+  # a new magick is checked again.
+  # No Windows arm64 build, as for the image tools.
+  psd-tools:
+    needs: [build-plan, imagemagick]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-psd-tools-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-psd-tools-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-psd-tools-${{ matrix.rid }}
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Build
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/build-psd-tools.sh ${{ matrix.rid }}
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      if: env.REUSE != 'true' && matrix.rid != 'win-x64'
+      with:
+        name: binaries-imagemagick-${{ matrix.rid }}
+        path: .
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself. The Windows bundle is assembled on Linux, so it
+      # cannot be executed here; psd-tools-windows-test runs its smoke tests.
+      run: bash scripts/verify-psd-tools.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-psd-tools-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: psd-tools-${{ matrix.rid }}.tar.gz
+
+  psd-tools-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['psd-tools-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, imagemagick, psd-tools]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['psd-tools-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-imagemagick-win-x64
+        path: .
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-psd-tools-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # With the magick of the run: IMAGEMAGICK_VERSION is part of the build key.
+      run: bash scripts/verify-psd-tools.sh win-x64 run
+
   # qpdf, the PDF structure tool: --check, --json, and every encryption
   # variant. The release has no musl binaries and links libqpdf dynamically,
   # so every target is built from the release tarball (scripts/build-qpdf.sh),
@@ -2494,6 +2772,1142 @@ jobs:
       if: env.REUSE != 'true'
       shell: bash
       run: bash scripts/verify-pdfium.sh linux-arm64 run
+
+  # astcenc, the ASTC (Adaptive Scalable Texture Compression) encoder and
+  # decoder of Arm, LDR and HDR: a reference for ASTC codecs. Arm publishes
+  # dynamically linked builds of the SIMD variants: every target builds the
+  # reference C++ code (ASTCENC_ISA_NONE) from the release tag
+  # (scripts/build-astcenc.sh), which writes the same bytes everywhere. It has no
+  # dependency.
+  # No Windows arm64 build, as for the other image tools.
+  astcenc:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-astcenc-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-astcenc-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-astcenc-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ASTCENC_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-astcenc.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-astcenc.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-astcenc.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-astcenc.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; astcenc-windows-test runs their tests.
+      run: bash scripts/verify-astcenc.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-astcenc-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           astcenc-${{ matrix.rid }}*
+
+  astcenc-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['astcenc-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, astcenc]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['astcenc-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-astcenc-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-astcenc.sh win-x64 run
+
+  # basisu, the Basis Universal encoder, transcoder and validator: .basis and
+  # KTX2 files with ETC1S, UASTC LDR and HDR, Zstandard supercompression, and
+  # their transcodes to BC1-BC7, ETC, EAC, ASTC and PVRTC. The release has no
+  # static builds: every target builds it from the release tag
+  # (scripts/build-basisu.sh), without SSE, so that it writes the same bytes
+  # everywhere. It has no dependency (its zstd is in its sources).
+  # No Windows arm64 build, as for the other image tools.
+  basisu:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-basisu-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-basisu-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-basisu-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e BASISU_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-basisu.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-basisu.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-basisu.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-basisu.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; basisu-windows-test runs their tests.
+      run: bash scripts/verify-basisu.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-basisu-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           basisu-${{ matrix.rid }}*
+
+  basisu-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['basisu-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, basisu]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['basisu-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-basisu-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-basisu.sh win-x64 run
+
+  # ktx, toktx and ktx2check, the tools of KTX-Software, the reference
+  # implementation of KTX 2: KTX2 files with Basis Universal (ETC1S, UASTC) and
+  # Zstandard supercompression, mipmaps, cube maps and arrays, and their
+  # validation. The release has installers and dynamically linked tools: every
+  # target builds them from the release tag (scripts/build-ktx-software.sh)
+  # with the libraries of the repository, the encoders built for no SIMD
+  # instruction set, so that they write the same bytes everywhere.
+  # No Windows arm64 build, as for the other image tools.
+  ktx-software:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-ktx-software-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-ktx-software-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-ktx-software-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e KTX_SOFTWARE_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja git curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-ktx-software.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-ktx-software.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-ktx-software.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-ktx-software.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; ktx-software-windows-test runs their tests.
+      run: bash scripts/verify-ktx-software.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-ktx-software-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           ktx-${{ matrix.rid }}*
+           toktx-${{ matrix.rid }}*
+           ktx2check-${{ matrix.rid }}*
+
+  ktx-software-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['ktx-software-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, ktx-software]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['ktx-software-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-ktx-software-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-ktx-software.sh win-x64 run
+
+  # dcraw_emu, raw-identify and unprocessed_raw, the sample programs of LibRaw:
+  # a reference for camera raw and DNG decoders (the CFA samples, and the
+  # rendered image). LibRaw publishes Windows and macOS binaries only: every
+  # target builds them from the release tarball (scripts/build-libraw.sh), with
+  # zlib, libjpeg-turbo and LittleCMS 2 (scripts/pdf-libs.sh), without OpenMP.
+  # No Windows arm64 build, as for the other image tools.
+  libraw:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-libraw-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-libraw-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-libraw-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e LIBJPEG_TURBO_VERSION -e LCMS2_VERSION -e LIBRAW_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-libraw.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-libraw.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-libraw.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-libraw.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; libraw-windows-test runs their tests.
+      run: bash scripts/verify-libraw.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-libraw-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           dcraw_emu-${{ matrix.rid }}*
+           raw-identify-${{ matrix.rid }}*
+           unprocessed_raw-${{ matrix.rid }}*
+
+  libraw-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['libraw-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, libraw]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['libraw-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-libraw-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-libraw.sh win-x64 run
+
+  # TAppEncoderSCM and TAppDecoderSCM, the encoder and the decoder of HM-SCM,
+  # the HEVC reference software with the screen content coding extensions
+  # (palette mode, intra block copy, adaptive color transform, adaptive motion
+  # vector resolution), which HM itself does not have. Built as HM is
+  # (scripts/build-hm-scm.sh). The multilayer extensions (SHVC, MV-HEVC) are the
+  # SHM and HTM software, which are not built.
+  # No Windows arm64 build, as for the other image tools.
+  hm-scm:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-hm-scm-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-hm-scm-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-hm-scm-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e HM_SCM_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-hm-scm.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-hm-scm.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-hm-scm.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-hm-scm.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; hm-scm-windows-test runs their tests.
+      run: bash scripts/verify-hm-scm.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-hm-scm-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           TAppEncoderSCM-${{ matrix.rid }}*
+           TAppDecoderSCM-${{ matrix.rid }}*
+
+  hm-scm-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['hm-scm-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, hm-scm]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['hm-scm-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-hm-scm-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-hm-scm.sh win-x64 run
+
+  # texconv, texdiag and texassemble, the tools of DirectXTex: DDS files with
+  # BC1 to BC7 (BC6H included), DX10 headers, cube maps, arrays and mipmaps.
+  # They read and write images with WIC: they are Windows tools only. The
+  # release binaries need the Visual C++ runtime: they are cross-compiled with
+  # llvm-mingw (scripts/build-directxtex.sh), statically, with the CPU
+  # encoders only (the GPU encoders need fxc.exe of the Windows SDK).
+  directxtex:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: win-x64
+            os: ubuntu-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-directxtex-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-directxtex-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-directxtex-${{ matrix.rid }}
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-directxtex.sh win-x64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; directxtex-windows-test runs their tests.
+      run: bash scripts/verify-directxtex.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-directxtex-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           texconv-${{ matrix.rid }}*
+           texdiag-${{ matrix.rid }}*
+           texassemble-${{ matrix.rid }}*
+
+  directxtex-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['directxtex-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, directxtex]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['directxtex-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-directxtex-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-directxtex.sh win-x64 run
+
+  # The command-line tools of iccDEV (formerly DemoIccMAX), the reference
+  # implementation of iccMAX (ICC.2, version 5 profiles): iccMAX profiles to and
+  # from XML and JSON, validation, and the application of profiles (named
+  # colors, D2Bx/B2Dx). The release has dynamically linked tools: every target
+  # builds them from the release tag (scripts/build-iccdev.sh) with libxml2,
+  # nlohmann_json and zlib, without the image tools, the GUI and the AVX2 code.
+  # No Windows arm64 build, as for the other image tools.
+  iccdev:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-iccdev-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-iccdev-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-iccdev-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e LIBXML2_VERSION -e NLOHMANN_JSON_VERSION -e ICCDEV_VERSION -e ICCDEV_LIBRARY_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja curl bash perl pkgconf linux-headers tar xz
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-iccdev.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-iccdev.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-iccdev.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-iccdev.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; iccdev-windows-test runs their tests.
+      run: bash scripts/verify-iccdev.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-iccdev-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           iccFromXml-${{ matrix.rid }}*
+           iccToXml-${{ matrix.rid }}*
+           iccFromJson-${{ matrix.rid }}*
+           iccToJson-${{ matrix.rid }}*
+           iccDumpProfile-${{ matrix.rid }}*
+           iccRoundTrip-${{ matrix.rid }}*
+           iccApplyNamedCmm-${{ matrix.rid }}*
+           iccApplyToLink-${{ matrix.rid }}*
+
+  iccdev-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['iccdev-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, iccdev]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['iccdev-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-iccdev-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-iccdev.sh win-x64 run
+
+  # opencv-oracle, a program of this repository (scripts/opencv-oracle.cpp)
+  # built with OpenCV: it runs one OpenCV function (Hough lines, Harris, FAST
+  # and Shi-Tomasi corners, findHomography, inpaint) on an image or points and
+  # prints its result as JSON, an oracle for image processing code. OpenCV is
+  # built from the release tag (scripts/build-opencv.sh) with the core, imgproc,
+  # calib3d, features2d, flann, photo and imgcodecs modules only, statically,
+  # with PNG and without the parallel framework or any optional library.
+  # No Windows arm64 build, as for the other image tools.
+  opencv:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-opencv-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-opencv-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-opencv-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e OPENCV_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-opencv.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-opencv.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-opencv.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-opencv.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; opencv-windows-test runs their tests.
+      run: bash scripts/verify-opencv.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-opencv-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           opencv-oracle-${{ matrix.rid }}*
+
+  opencv-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['opencv-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, opencv]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['opencv-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-opencv-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-opencv.sh win-x64 run
+
+  # oiiotool and iinfo, the tools of OpenImageIO: a second reader of PSD, DPX,
+  # Cineon and DDS files, and of camera raw and DNG files through LibRaw.
+  # OpenImageIO publishes no binaries: every target builds them from the
+  # release tag (scripts/build-openimageio.sh), with the libraries OpenImageIO
+  # requires built by its own build at the versions it pins (OpenEXR, Imath,
+  # OpenColorIO, libtiff, ...), LibRaw, libpng, libjpeg-turbo, zlib and
+  # LittleCMS 2, and no other optional library.
+  # No Windows arm64 build, as for the other image tools.
+  openimageio:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-openimageio-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-openimageio-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-openimageio-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e LIBJPEG_TURBO_VERSION -e LIBPNG_VERSION -e LCMS2_VERSION -e LIBTIFF_VERSION -e LIBRAW_VERSION -e OPENIMAGEIO_VERSION -e LIBDEFLATE_VERSION -e LIBDEFLATE_COMMIT \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja git curl bash perl pkgconf linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-openimageio.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf git curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-openimageio.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-openimageio.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-openimageio.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; openimageio-windows-test runs their tests.
+      run: bash scripts/verify-openimageio.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-openimageio-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           oiiotool-${{ matrix.rid }}*
+           iinfo-${{ matrix.rid }}*
+
+  openimageio-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['openimageio-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, openimageio]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['openimageio-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-openimageio-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-openimageio.sh win-x64 run
+
+  # dng_validate, the tool of the Adobe DNG SDK: the reference validator and
+  # renderer of DNG files (stage 1, 2 and 3 images, the rendered image), which
+  # also writes DNG files (lossless JPEG XL, DNG 1.7). Adobe publishes the
+  # SDK with Xcode and Visual Studio projects only: every target builds it
+  # with the CMake build of scripts/dng-sdk-CMakeLists.txt
+  # (scripts/build-dng-sdk.sh), with the libjpeg, libjxl and XMP Toolkit of
+  # the SDK, expat and zlib.
+  # No Windows arm64 build, as for the other image tools.
+  dng-sdk:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-dng-sdk-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-dng-sdk-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-dng-sdk-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e DNG_SDK_VERSION -e DNG_SDK_SHA256 -e EXPAT_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev cmake ninja-build ninja-is-really-ninja curl bash perl pkgconf linux-headers tar xz unzip
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-dng-sdk.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build pkgconf curl xz-utils file unzip
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-dng-sdk.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-dng-sdk.sh asserts with otool -L.
+      run: |
+        brew install pkgconf cmake ninja
+        bash scripts/build-dng-sdk.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; dng-sdk-windows-test runs their tests.
+      run: bash scripts/verify-dng-sdk.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-dng-sdk-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+           dng_validate-${{ matrix.rid }}*
+
+  dng-sdk-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['dng-sdk-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, dng-sdk]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['dng-sdk-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-dng-sdk-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-dng-sdk.sh win-x64 run
 
   # dec265 (libde265) and heif-enc, heif-dec and heif-info (libheif), for HEVC
   # only: x265 encodes, for 8, 10 and 12 bits, and libde265 decodes. Every

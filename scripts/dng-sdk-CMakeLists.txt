@@ -1,0 +1,161 @@
+# The CMake build of dng_validate, the command-line tool of the Adobe DNG SDK,
+# which publishes Xcode and Visual Studio projects only. scripts/build-dng-sdk.sh
+# copies this file to the root of the SDK (the folder with dng_sdk/, libjpeg/,
+# libjxl/ and xmp/) as CMakeLists.txt, and gives it the expat sources
+# (EXPAT_SOURCE_DIR).
+#
+# It builds, statically, what the projects of the SDK build for dng_validate,
+# with the same definitions (dngsdkFlags.xcconfig, dngsdkValidateFlags.xcconfig,
+# xmp.xcconfig and their Visual Studio equivalents):
+# - libjpeg: the IJG library of the SDK (libjpeg/), the library sources of
+#   its makefile;
+# - XMPCore: the XMP Toolkit core without the C++ DOM model
+#   (ENABLE_CPP_DOM_MODEL=0) and without XMPDocOps (AdobePrivate=0), with
+#   zuid, as
+#   xmp/toolkit/XMPCore/build/CMakeListsCommon.txt lists them. XMPFiles is not
+#   built: dng_validate is built with qDNGXMPFiles=0, which only drops the
+#   reading of XMP from other file formats;
+# - libjxl: the libjxl of the SDK (libjxl/libjxl, with its highway, brotli
+#   and skcms), with its own CMake build;
+# - dng_validate: every source of dng_sdk/source.
+
+cmake_minimum_required(VERSION 3.16)
+project(dng_validate C CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if(NOT EXPAT_SOURCE_DIR)
+  message(FATAL_ERROR "EXPAT_SOURCE_DIR must be the folder of the expat sources (with lib/xmlparse.c)")
+endif()
+
+if(WIN32)
+  set(DNG_PLATFORM_DEFINITIONS qWinOS=1 qMacOS=0 WIN_ENV=1 WIN32 _WINDOWS=1 _CRT_SECURE_NO_DEPRECATE)
+  set(XMP_RESOURCE win)
+elseif(APPLE)
+  set(DNG_PLATFORM_DEFINITIONS qMacOS=1 qWinOS=0 Macintosh=1 MAC_ENV=1)
+  set(XMP_RESOURCE mac)
+else()
+  set(DNG_PLATFORM_DEFINITIONS qLinux=1 qMacOS=0 qWinOS=0 UNIX_ENV=1)
+  set(XMP_RESOURCE linux)
+endif()
+# AdobePrivate=0: the public XMP Toolkit, without XMPDocOps (which XMP_Environment.h
+# turns on by default, and which needs Boost).
+set(XMP_DEFINITIONS ENABLE_CPP_DOM_MODEL=0 XML_STATIC=1 XMP_StaticBuild=1 XMP_64=1 AdobePrivate=0)
+
+# libjpeg ---------------------------------------------------------------------
+
+set(LIBJPEG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/libjpeg)
+set(LIBJPEG_SOURCES jaricom jcapimin jcapistd jcarith jccoefct jccolor jcdctmgr jchuff jcinit jcmainct jcmarker
+    jcmaster jcomapi jcparam jcprepct jcsample jctrans jdapimin jdapistd jdarith jdatadst jdatasrc jdcoefct
+    jdcolor jddctmgr jdhuff jdinput jdmainct jdmarker jdmaster jdmerge jdpostct jdsample jdtrans jerror
+    jfdctflt jfdctfst jfdctint jidctflt jidctfst jidctint jquant1 jquant2 jutils jmemmgr jmemnobs)
+list(TRANSFORM LIBJPEG_SOURCES PREPEND ${LIBJPEG_DIR}/)
+list(TRANSFORM LIBJPEG_SOURCES APPEND .c)
+add_library(dng_libjpeg STATIC ${LIBJPEG_SOURCES})
+target_include_directories(dng_libjpeg PUBLIC ${LIBJPEG_DIR})
+
+# expat -----------------------------------------------------------------------
+
+# The expat of EXPAT_SOURCE_DIR, with its own CMake build: the expat_config.h
+# of the XMP Toolkit is for an older expat.
+set(EXPAT_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(EXPAT_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(EXPAT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(EXPAT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(EXPAT_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(EXPAT_BUILD_FUZZERS OFF CACHE BOOL "" FORCE)
+set(EXPAT_BUILD_PKGCONFIG OFF CACHE BOOL "" FORCE)
+set(EXPAT_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+add_subdirectory(${EXPAT_SOURCE_DIR} expat EXCLUDE_FROM_ALL)
+
+# XMPCore ---------------------------------------------------------------------
+
+set(XMP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/xmp/toolkit)
+set(XMPCORE_SOURCE ${XMP_ROOT}/XMPCore/source)
+file(GLOB XMPCORE_WRAPPERS ${XMPCORE_SOURCE}/WXMP*.cpp)
+file(GLOB XMPCORE_CLASSES ${XMPCORE_SOURCE}/XMP*.cpp)
+list(REMOVE_ITEM XMPCORE_CLASSES ${XMPCORE_SOURCE}/XMPCore_Impl.cpp)
+# XMPDocOps is not built (AdobePrivate=0).
+list(FILTER XMPCORE_CLASSES EXCLUDE REGEX "/XMPDocOps")
+list(FILTER XMPCORE_WRAPPERS EXCLUDE REGEX "/WXMPDocOps")
+file(GLOB ZUID_SOURCES ${XMP_ROOT}/third-party/zuid/sources/*.cpp)
+add_library(dng_xmpcore STATIC
+  ${XMPCORE_WRAPPERS} ${XMPCORE_CLASSES} ${ZUID_SOURCES}
+  ${XMPCORE_SOURCE}/CoreObjectFactoryImpl.cpp
+  ${XMPCORE_SOURCE}/ExpatAdapter.cpp
+  ${XMPCORE_SOURCE}/ParseRDF.cpp
+  ${XMPCORE_SOURCE}/XMPCore_Impl.cpp
+  ${XMP_ROOT}/source/UnicodeConversions.cpp
+  ${XMP_ROOT}/source/XML_Node.cpp
+  ${XMP_ROOT}/source/XMP_LibUtils.cpp)
+target_compile_definitions(dng_xmpcore PRIVATE ${DNG_PLATFORM_DEFINITIONS} ${XMP_DEFINITIONS}
+  BUILDING_XMPCORE_LIB=1 XMP_COMPONENT_INT_NAMESPACE=AdobeXMPCore_Int)
+# ExpatAdapter.cpp includes "third-party/expat/lib/expat.h": a forwarding
+# header to the expat of EXPAT_SOURCE_DIR.
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/expat-include/third-party/expat/lib/expat.h
+  "#include \"${EXPAT_SOURCE_DIR}/lib/expat.h\"\n")
+target_include_directories(dng_xmpcore PRIVATE
+  ${XMP_ROOT} ${XMP_ROOT}/public/include ${XMP_ROOT}/third-party/zuid/interfaces
+  ${CMAKE_CURRENT_BINARY_DIR}/expat-include)
+target_link_libraries(dng_xmpcore PRIVATE expat)
+
+# libjxl ----------------------------------------------------------------------
+
+set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_TOOLS OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_DEVTOOLS OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_BENCHMARK OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_JNI OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_DOXYGEN OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_MANPAGES OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_SJPEG OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_OPENEXR OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_PLUGINS OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_VIEWERS OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_FUZZERS OFF CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_TRANSCODE_JPEG ON CACHE BOOL "" FORCE)
+set(JPEGXL_ENABLE_SKCMS ON CACHE BOOL "" FORCE)
+set(JPEGXL_BUNDLE_SKCMS ON CACHE BOOL "" FORCE)
+set(JPEGXL_FORCE_SYSTEM_BROTLI OFF CACHE BOOL "" FORCE)
+set(JPEGXL_FORCE_SYSTEM_HWY OFF CACHE BOOL "" FORCE)
+set(JPEGXL_FORCE_SYSTEM_LCMS2 OFF CACHE BOOL "" FORCE)
+set(JPEGXL_STATIC OFF CACHE BOOL "" FORCE)
+set(JPEGXL_WARNINGS_AS_ERRORS OFF CACHE BOOL "" FORCE)
+set(CMAKE_DISABLE_FIND_PACKAGE_GIF ON CACHE BOOL "" FORCE)
+set(CMAKE_DISABLE_FIND_PACKAGE_JPEG ON CACHE BOOL "" FORCE)
+set(CMAKE_DISABLE_FIND_PACKAGE_PNG ON CACHE BOOL "" FORCE)
+set(CMAKE_DISABLE_FIND_PACKAGE_GTest ON CACHE BOOL "" FORCE)
+# The skcms of this libjxl uses an x86 builtin that clang has removed: its
+# portable code, on every target.
+add_compile_definitions(SKCMS_PORTABLE)
+add_subdirectory(libjxl/libjxl EXCLUDE_FROM_ALL)
+
+# dng_validate ----------------------------------------------------------------
+
+file(GLOB DNG_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/dng_sdk/source/*.cpp)
+add_executable(dng_validate ${DNG_SOURCES})
+if(DNG_INCLUDE_SHIMS)
+  target_include_directories(dng_validate BEFORE PRIVATE ${DNG_INCLUDE_SHIMS})
+  target_include_directories(dng_xmpcore BEFORE PRIVATE ${DNG_INCLUDE_SHIMS})
+endif()
+target_compile_definitions(dng_validate PRIVATE ${DNG_PLATFORM_DEFINITIONS} ${XMP_DEFINITIONS}
+  qDNGValidate=1 qDNGValidateTarget=1 qDNGUseLibJPEG=1 qDNGUseStdInt=1 qDNGXMPFiles=0 qDNGXMPDocOps=0
+  BIB_MULTI_THREAD=1 JXL_STATIC_DEFINE JXL_THREADS_STATIC_DEFINE)
+target_include_directories(dng_validate PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/dng_sdk/source ${XMP_ROOT}/public/include)
+# zlib: the deflate compression of DNG files (ZLIB_ROOT, a static library).
+set(ZLIB_USE_STATIC_LIBS ON)
+find_package(ZLIB REQUIRED)
+target_link_libraries(dng_validate PRIVATE dng_xmpcore dng_libjpeg jxl-static jxl_threads-static ZLIB::ZLIB)
+if(APPLE)
+  # The text encoding and date functions of XMPCore.
+  target_link_libraries(dng_validate PRIVATE "-framework CoreFoundation" "-framework CoreServices")
+elseif(WIN32)
+  # MinGW: the pthreads of winpthreads (scripts/build-dng-sdk.sh).
+  target_link_libraries(dng_validate PRIVATE ws2_32 pthread)
+elseif(NOT APPLE)
+  target_link_libraries(dng_validate PRIVATE pthread)
+endif()

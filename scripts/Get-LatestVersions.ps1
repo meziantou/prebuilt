@@ -258,6 +258,40 @@ function Get-LatestTemurinVersion {
     throw "No recent Temurin $current release has a JDK for every target."
 }
 
+# The Adobe DNG SDK has no feed, and the page that links it renders on the
+# client: the next versions after DNG_SDK_VERSION whose zip exists on
+# download.adobe.com (dng_sdk_1_7_1.zip; dng_sdk_1_6.zip for 1.6).
+function Get-LatestDngSdkVersion {
+    $current = [regex]::Match($workflowContent, 'DNG_SDK_VERSION: "(\d+(?:\.\d+)+)"').Groups[1].Value
+    if (-not $current) {
+        throw "DNG_SDK_VERSION is not in the workflow."
+    }
+
+    $latest = $current
+    while ($true) {
+        $parts = @($latest.Split(".") | ForEach-Object { [int]$_ })
+        $major = $parts[0]
+        $minor = $parts[1]
+        $patch = if ($parts.Count -gt 2) { $parts[2] } else { 0 }
+        $found = $null
+        foreach ($candidate in "$($major + 1).0", "$major.$($minor + 1)", "$major.$($minor + 1).1", "$major.$minor.$($patch + 1)") {
+            try {
+                Invoke-WebRequest -Method Head -Uri "https://download.adobe.com/pub/adobe/dng/dng_sdk_$($candidate -replace '\.', '_').zip" | Out-Null
+                $found = $candidate
+                break
+            }
+            catch {
+            }
+        }
+
+        if (-not $found) {
+            return $latest
+        }
+
+        $latest = $found
+    }
+}
+
 # PDFium has no releases: the chromium/<N> branch of the latest release of
 # bblanchon/pdfium-binaries, which builds it for every target.
 function Get-LatestPdfiumVersion {
@@ -298,6 +332,57 @@ function Get-LatestRadianceCommit {
     }
 
     return ($refs -split "\s+")[0]
+}
+
+# ImageMagick tags its releases <version>-<patch level>: 7.1.2-35.
+function Get-LatestImageMagickVersion {
+    $tags = Invoke-GitHubApi -Uri "https://api.github.com/repos/ImageMagick/ImageMagick/tags?per_page=100"
+    $versions =
+        foreach ($tag in $tags) {
+            if ($tag.name -match "^(?<version>\d+\.\d+\.\d+)-(?<patch>\d+)$") {
+                [PSCustomObject]@{
+                    Version = [version]"$($Matches["version"]).$($Matches["patch"])"
+                    Text = $tag.name
+                }
+            }
+        }
+
+    if (-not $versions) {
+        throw "Unable to determine the latest ImageMagick version."
+    }
+
+    return ($versions | Sort-Object Version -Descending | Select-Object -First 1).Text
+}
+
+function Get-LatestPyPIVersion {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Package
+    )
+
+    $response = Invoke-RestMethod -Method Get -Uri "https://pypi.org/pypi/$Package/json" -Headers @{ "User-Agent" = "prebuilt-version-updater" }
+    $version = "$($response.info.version)".Trim()
+    if ([string]::IsNullOrWhiteSpace($version)) {
+        throw "Unable to get the latest version of the PyPI package '$Package'."
+    }
+
+    return $version
+}
+
+# The latest python-build-standalone release, and the version of the CPython
+# of the same minor version as PSD_TOOLS_PYTHON_VERSION it has.
+function Get-LatestPythonBuildStandalone {
+    $release = Invoke-GitHubApi -Uri "https://api.github.com/repos/astral-sh/python-build-standalone/releases/latest"
+    $tag = "$($release.tag_name)".Trim()
+    $current = [regex]::Match($workflowContent, '(?m)^\s*PSD_TOOLS_PYTHON_VERSION:\s*"(?<major>\d+)\.(?<minor>\d+)\.')
+    if (-not $current.Success) {
+        throw "No PSD_TOOLS_PYTHON_VERSION in the workflow."
+    }
+
+    $minor = "$($current.Groups["major"].Value).$($current.Groups["minor"].Value)"
+    $names = $release.assets | ForEach-Object { $_.name }
+    $python = Select-LatestVersion -Names $names -Pattern "^cpython-(?<version>$([regex]::Escape($minor))\.\d+)\+$tag-aarch64-apple-darwin-install_only_stripped\.tar\.gz$" -Description "python-build-standalone $tag"
+    return [PSCustomObject]@{ Release = $tag; Python = $python }
 }
 
 function Get-LatestIsoJpegCommit {
@@ -403,7 +488,28 @@ $availableLatestVersions = [ordered]@{
     "STB_COMMIT" = Get-LatestStbCommit
     "ZBAR_VERSION" = Get-ReleaseTag -Repository "mchehab/zbar"
     "GRAPHICSMAGICK_VERSION" = Get-LatestGraphicsMagickVersion
+    "LIBTIFF_VERSION" = Get-LatestGitLabTag -ProjectPath "libtiff/libtiff" -Pattern "^v(?<version>\d+\.\d+\.\d+)$"
+    "IMAGEMAGICK_VERSION" = Get-LatestImageMagickVersion
+    "PSD_TOOLS_VERSION" = Get-LatestPyPIVersion -Package "psd-tools"
+    "PYTHON_BUILD_STANDALONE_RELEASE" = (Get-LatestPythonBuildStandalone).Release
+    "PSD_TOOLS_PYTHON_VERSION" = (Get-LatestPythonBuildStandalone).Python
+    "NUMPY_VERSION" = Get-LatestPyPIVersion -Package "numpy"
+    "PILLOW_VERSION" = Get-LatestPyPIVersion -Package "pillow"
+    "ATTRS_VERSION" = Get-LatestPyPIVersion -Package "attrs"
     "LIBICONV_VERSION" = Get-LatestLibIconvVersion
+    "ASTCENC_VERSION" = Get-ReleaseTag -Repository "ARM-software/astc-encoder"
+    "BASISU_VERSION" = (Get-ReleaseTag -Repository "BinomialLLC/basis_universal").TrimStart("v").Replace("_", ".")
+    "KTX_SOFTWARE_VERSION" = Get-ReleaseTag -Repository "KhronosGroup/KTX-Software" -TrimV
+    "LIBRAW_VERSION" = Get-LatestTag -Repository "LibRaw/LibRaw" -Pattern "^(?<version>\d+\.\d+\.\d+)$"
+    "DIRECTXMATH_VERSION" = Get-ReleaseTag -Repository "microsoft/DirectXMath"
+    "DIRECTX_HEADERS_VERSION" = Get-ReleaseTag -Repository "microsoft/DirectX-Headers" -TrimV
+    "ICCDEV_VERSION" = Get-LatestTag -Repository "InternationalColorConsortium/iccDEV" -Pattern "^v(?<version>\d+\.\d+\.\d+\.\d+)$"
+    "NLOHMANN_JSON_VERSION" = Get-ReleaseTag -Repository "nlohmann/json" -TrimV
+    "LIBXML2_VERSION" = Get-LatestGitLabTag -ProjectPath "GNOME/libxml2" -Registry "https://gitlab.gnome.org" -Pattern "^v(?<version>\d+\.\d+\.\d+)$"
+    "OPENCV_VERSION" = Get-LatestTag -Repository "opencv/opencv" -Pattern "^(?<version>4\.\d+\.\d+)$"
+    "OPENIMAGEIO_VERSION" = Get-ReleaseTag -Repository "AcademySoftwareFoundation/OpenImageIO" -TrimV
+    "DNG_SDK_VERSION" = Get-LatestDngSdkVersion
+    "EXPAT_VERSION" = (Get-ReleaseTag -Repository "libexpat/libexpat") -replace '^R_', '' -replace '_', '.'
 }
 
 $selectedVariableNames =

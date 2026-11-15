@@ -62,6 +62,12 @@ public static class PrebuiltTools
     /// <summary>jxl_from_tree, the libjxl developer tool that writes a JPEG XL file from the textual description of a modular tree.</summary>
     public static PrebuiltTool JxlFromTree { get; } = new("jxl_from_tree");
 
+    /// <summary>ssimulacra2, the libjxl developer tool that prints the SSIMULACRA 2 score of a distorted image against an original (100: the same image; PNG, PPM, PFM, JPEG XL, ... files).</summary>
+    public static PrebuiltTool Ssimulacra2 { get; } = new("ssimulacra2");
+
+    /// <summary>butteraugli_main, the libjxl developer tool that prints the Butteraugli distance of a distorted image against a reference (the maximum, then the p-norm with <c>--pnorm</c>; 0: the same image), and writes a distance map with <c>--distmap</c>.</summary>
+    public static PrebuiltTool Butteraugli { get; } = new("butteraugli_main");
+
     /// <summary>jxl-oxide, a JPEG XL decoder that does not share any code with libjxl.</summary>
     public static PrebuiltTool JxlOxide { get; } = new("jxl-oxide");
 
@@ -173,6 +179,87 @@ public static class PrebuiltTools
     /// <summary>ra_bmp, the Radiance tool that converts a Radiance picture to a BMP file, or a BMP file to a Radiance picture with <c>-r</c>.</summary>
     public static PrebuiltTool RaBmp { get; } = new("ra_bmp");
 
+    /// <summary>magick, the command-line tool of ImageMagick 7 (Q16, HDRI), built with zlib, LittleCMS 2, libpng and libtiff only: the writer of PSD and PSB files (RGB, CMYK, grayscale, indexed and bitmap, 8 or 16 bits, raw or RLE, with layers, alpha and an ICC profile) and a reader of them (also 32 bits), and of PNG, TIFF, PNM, BMP and raw samples. Write PSD files with <c>-endian MSB</c> after the input images, and read them with <c>-define psd:alpha-unblend=off</c> to get the colors of a composite with alpha as stored.</summary>
+    public static PrebuiltTool Magick { get; } = new("magick");
+
+    /// <summary>psd-tools, the command-line tool of meziantou/prebuilt for the psd-tools Python library, which shares no code with ImageMagick: <c>dump</c> writes the description of a PSD or PSB file as JSON and the samples of its composite and layers as raw files, as stored; <c>write</c> writes a file from them (every color mode, 1, 8, 16 and 32 bits, raw, RLE, ZIP and ZIP with prediction, layers in the layer info or in Lr16/Lr32 blocks, masks, ICC profile, no real composite). The release file is an archive with a Python runtime: no Python needs to be installed, but the Linux runtimes need glibc 2.28. See the README for the format.</summary>
+    public static PrebuiltTool PsdTools { get; } = new("psd-tools");
+
+    /// <summary>astcenc, the ASTC encoder and decoder of Arm, LDR and HDR (<c>-cl</c>, <c>-cs</c>, <c>-ch</c>, <c>-cH</c> to compress; <c>-dl</c>, <c>-ds</c>, <c>-dh</c>, <c>-dH</c> to decompress; <c>-tl</c>... to compress and decompress), every 2D and 3D block size, reading and writing PNG, TGA, BMP, HDR, EXR, KTX and DDS files. It is built for no SIMD instruction set: it writes the same bytes on every runtime identifier.</summary>
+    public static PrebuiltTool Astcenc { get; } = new("astcenc");
+
+    /// <summary>basisu, the Basis Universal encoder, transcoder and validator: it writes .basis and KTX2 files (ETC1S with BasisLZ, UASTC LDR 4x4 and the HDR formats with Zstandard supercompression; mipmaps, cube maps, arrays), shows them (<c>-info</c>), checks them (<c>-validate</c>) and transcodes them to BC1 to BC7, ETC1, ETC2, EAC, ASTC, PVRTC1 and PNG files (<c>-unpack</c>). It is built without SSE: it writes the same bytes on every runtime identifier.</summary>
+    public static PrebuiltTool Basisu { get; } = new("basisu");
+
+    /// <summary>ktx, the command-line tool of KTX-Software: <c>create</c> (from raw samples with <c>--raw</c>, or PNG, EXR, ...; mip levels, cube maps, arrays, 3D; <c>--encode basis-lz</c> or <c>uastc</c>, <c>--zstd</c>), <c>extract</c>, <c>info</c> (JSON with <c>-f json</c>), <c>validate</c>, <c>transcode</c>, <c>encode</c>, <c>deflate</c>, <c>compare</c>. <c>--testrun</c> writes no version into the files.</summary>
+    public static PrebuiltTool Ktx { get; } = new("ktx");
+
+    /// <summary>toktx, the legacy KTX-Software tool that writes KTX and KTX2 (<c>--t2</c>) files from PNG and Netpbm files, with generated mipmaps (<c>--genmipmap</c>), Basis Universal (<c>--encode etc1s</c> or <c>uastc</c>) and Zstandard (<c>--zcmp</c>).</summary>
+    public static PrebuiltTool Toktx { get; } = new("toktx");
+
+    /// <summary>ktx2check, the legacy KTX-Software validator of KTX2 files: it exits with 0 for a valid file.</summary>
+    public static PrebuiltTool Ktx2Check { get; } = new("ktx2check");
+
+    /// <summary>dcraw_emu, the LibRaw sample that renders camera raw and DNG files as dcraw does: PPM or TIFF (<c>-T</c>) files, 8 or linear 16 bits (<c>-4</c>), any output color space (<c>-o</c>), white balance (<c>-w</c>, <c>-r</c>), half size (<c>-h</c>), demosaicing quality (<c>-q</c>). Built with zlib (deflate DNG), libjpeg-turbo (lossy DNG) and LittleCMS 2.</summary>
+    public static PrebuiltTool DcrawEmu { get; } = new("dcraw_emu");
+
+    /// <summary>raw-identify, the LibRaw sample that names the camera of a raw or DNG file, and prints its sizes, filter pattern, color matrices and metadata with <c>-v</c>.</summary>
+    public static PrebuiltTool RawIdentify { get; } = new("raw-identify");
+
+    /// <summary>unprocessed_raw, the LibRaw sample that writes the CFA samples of a raw or DNG file, as stored, to a 16-bit PGM file (<c>-T</c>: TIFF).</summary>
+    public static PrebuiltTool UnprocessedRaw { get; } = new("unprocessed_raw");
+
+    /// <summary>TAppEncoderSCM, the encoder of HM-SCM, the HEVC reference software with the screen content coding extensions (profile <c>main-SCC</c>: <c>--PaletteMode</c>, <c>--IntraBlockCopyEnabled</c>, <c>--ColourTransform</c>, <c>--MotionVectorResolutionControlIdc</c>), built with high bit depth support.</summary>
+    public static PrebuiltTool HmScmEncoder { get; } = new("TAppEncoderSCM");
+
+    /// <summary>TAppDecoderSCM, the decoder of HM-SCM: HEVC version 1, range and screen content coding extensions.</summary>
+    public static PrebuiltTool HmScmDecoder { get; } = new("TAppDecoderSCM");
+
+    /// <summary>texconv, the DirectXTex tool that converts images to DDS files (BC1 to BC7, BC6H, every DXGI format; <c>-m</c> mip levels, <c>-dx10</c> header) and DDS files to images (<c>-ft</c>). Windows only; built with the CPU encoders only: it never uses the GPU, and writes the same bytes on every machine.</summary>
+    public static PrebuiltTool Texconv { get; } = new("texconv");
+
+    /// <summary>texdiag, the DirectXTex tool that describes (<c>info</c>), analyzes, compares and dumps DDS files. Windows only.</summary>
+    public static PrebuiltTool Texdiag { get; } = new("texdiag");
+
+    /// <summary>texassemble, the DirectXTex tool that assembles cube maps (<c>cube</c>), arrays (<c>array</c>), volume textures and cube arrays from images (<c>-dx10</c>: a DX10 header). Windows only.</summary>
+    public static PrebuiltTool Texassemble { get; } = new("texassemble");
+
+    /// <summary>iccFromXml, the iccDEV (DemoIccMAX) tool that writes an ICC profile (version 2 to 5, iccMAX) from its XML description.</summary>
+    public static PrebuiltTool IccFromXml { get; } = new("iccFromXml");
+
+    /// <summary>iccToXml, the iccDEV tool that writes the XML description of an ICC profile; iccFromXml writes the same bytes again from it.</summary>
+    public static PrebuiltTool IccToXml { get; } = new("iccToXml");
+
+    /// <summary>iccFromJson, the iccDEV tool that writes an ICC profile from its JSON description.</summary>
+    public static PrebuiltTool IccFromJson { get; } = new("iccFromJson");
+
+    /// <summary>iccToJson, the iccDEV tool that writes the JSON description of an ICC profile.</summary>
+    public static PrebuiltTool IccToJson { get; } = new("iccToJson");
+
+    /// <summary>iccDumpProfile, the iccDEV tool that prints the header and tags of an ICC profile, and validates it with <c>-v</c>.</summary>
+    public static PrebuiltTool IccDumpProfile { get; } = new("iccDumpProfile");
+
+    /// <summary>iccRoundTrip, the iccDEV tool that reports the round-trip accuracy of an ICC profile.</summary>
+    public static PrebuiltTool IccRoundTrip { get; } = new("iccRoundTrip");
+
+    /// <summary>iccApplyNamedCmm, the iccDEV tool that applies a chain of ICC profiles (D2Bx/B2Dx, A2Bx/B2Ax, matrix/TRC, named colors with tints) to the values of a text file, with any encoding (floats, 8 or 16 bits, ...).</summary>
+    public static PrebuiltTool IccApplyNamedCmm { get; } = new("iccApplyNamedCmm");
+
+    /// <summary>iccApplyToLink, the iccDEV tool that writes a device link profile or a 3D LUT (.cube) from a chain of ICC profiles.</summary>
+    public static PrebuiltTool IccApplyToLink { get; } = new("iccApplyToLink");
+
+    /// <summary>opencv-oracle, a program of meziantou/prebuilt built with OpenCV that runs one OpenCV function on a PNG file or raw samples and prints its result as JSON: <c>hough-lines</c>, <c>hough-lines-p</c>, <c>harris</c> (and its response as raw floats), <c>good-features</c>, <c>fast</c>, <c>homography</c> (DLT, RANSAC, LMEDS, RHO, with a seed) and <c>inpaint</c> (Telea, Navier-Stokes). See the README for the commands.</summary>
+    public static PrebuiltTool OpenCvOracle { get; } = new("opencv-oracle");
+
+    /// <summary>oiiotool, the OpenImageIO tool that reads, converts and processes images: it reads PSD, DPX, Cineon, DDS, HDR, TIFF, PNG, OpenEXR, camera raw and DNG (LibRaw; <c>-iconfig raw:Demosaic none</c> for the CFA samples), BMP, TGA, PNM, ... and writes DPX, HDR, TIFF, PNG, OpenEXR, ...; <c>-v --info --dumpdata</c> prints every pixel. Its PNM writer writes the rows bottom-up.</summary>
+    public static PrebuiltTool OiioTool { get; } = new("oiiotool");
+
+    /// <summary>iinfo, the OpenImageIO tool that prints the size, format, channels and metadata of images (<c>-v</c>), their statistics (<c>--stats</c>) and the hash of their pixels (<c>--hash</c>).</summary>
+    public static PrebuiltTool Iinfo { get; } = new("iinfo");
+
+    /// <summary>dng_validate, the tool of the Adobe DNG SDK that validates DNG files (<c>-v</c> prints their tags) and writes their stage 1 (the raw samples, as stored), stage 2 (linearized) and stage 3 (demosaiced) images (<c>-1</c>, <c>-2</c>, <c>-3</c>), the rendered image (<c>-tif</c>, <c>-16</c> for 16 bits) and DNG files (<c>-dng</c>; <c>-losslessJXL</c> for DNG 1.7 with JPEG XL).</summary>
+    public static PrebuiltTool DngValidate { get; } = new("dng_validate");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -250,6 +337,8 @@ public static class PrebuiltTools
         Djxl,
         Jxlinfo,
         JxlFromTree,
+        Ssimulacra2,
+        Butteraugli,
         JxlOxide,
         HbShape,
         HbInfo,
@@ -287,6 +376,33 @@ public static class PrebuiltTools
         RaRgbe,
         RaPpm,
         RaBmp,
+        Magick,
+        PsdTools,
+        Astcenc,
+        Basisu,
+        Ktx,
+        Toktx,
+        Ktx2Check,
+        DcrawEmu,
+        RawIdentify,
+        UnprocessedRaw,
+        HmScmEncoder,
+        HmScmDecoder,
+        Texconv,
+        Texdiag,
+        Texassemble,
+        IccFromXml,
+        IccToXml,
+        IccFromJson,
+        IccToJson,
+        IccDumpProfile,
+        IccRoundTrip,
+        IccApplyNamedCmm,
+        IccApplyToLink,
+        OpenCvOracle,
+        OiioTool,
+        Iinfo,
+        DngValidate,
         Dec265,
         HeifEnc,
         HeifDec,
