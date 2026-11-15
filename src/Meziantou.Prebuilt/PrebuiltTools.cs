@@ -209,6 +209,12 @@ public static class PrebuiltTools
     /// <summary>unprocessed_raw, the LibRaw sample that writes the CFA samples of a raw or DNG file, as stored, to a 16-bit PGM file (<c>-T</c>: TIFF).</summary>
     public static PrebuiltTool UnprocessedRaw { get; } = new("unprocessed_raw");
 
+    /// <summary>TAppEncoderSCM, the encoder of HM-SCM, the HEVC reference software with the screen content coding extensions (profile <c>main-SCC</c>: <c>--PaletteMode</c>, <c>--IntraBlockCopyEnabled</c>, <c>--ColourTransform</c>, <c>--MotionVectorResolutionControlIdc</c>), built with high bit depth support.</summary>
+    public static PrebuiltTool HmScmEncoder { get; } = new("TAppEncoderSCM");
+
+    /// <summary>TAppDecoderSCM, the decoder of HM-SCM: HEVC version 1, range and screen content coding extensions.</summary>
+    public static PrebuiltTool HmScmDecoder { get; } = new("TAppDecoderSCM");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -335,6 +341,8 @@ public static class PrebuiltTools
         DcrawEmu,
         RawIdentify,
         UnprocessedRaw,
+        HmScmEncoder,
+        HmScmDecoder,
         Dec265,
         HeifEnc,
         HeifDec,

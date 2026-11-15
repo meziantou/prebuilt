@@ -123,6 +123,11 @@
 /raw-identify-*-*
 /unprocessed_raw-*-*
 
+# scripts/build-hm-scm.sh output
+/hm-scm-src/
+/TAppEncoderSCM-*-*
+/TAppDecoderSCM-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/
