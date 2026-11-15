@@ -47,7 +47,7 @@ assert_linkage() {
         # DLLs that ship with Windows; ucrtbase and the api-ms-win-crt-* stubs
         # are the UCRT, a Windows component since Windows 10.
         case "$dll" in
-          kernel32.dll|ntdll.dll|user32.dll|gdi32.dll|advapi32.dll|shell32.dll|ole32.dll|oleaut32.dll|ws2_32.dll|bcrypt.dll|shlwapi.dll|windowscodecs.dll|ucrtbase.dll|api-ms-win-*) ;;
+          kernel32.dll|ntdll.dll|user32.dll|gdi32.dll|advapi32.dll|shell32.dll|ole32.dll|oleaut32.dll|ws2_32.dll|bcrypt.dll|shlwapi.dll|windowscodecs.dll|version.dll|ucrtbase.dll|api-ms-win-*) ;;
           *) bad="$bad $dll" ;;
         esac
       done

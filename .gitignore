@@ -128,6 +128,13 @@
 /TAppEncoderSCM-*-*
 /TAppDecoderSCM-*-*
 
+# scripts/build-directxtex.sh output
+/directxtex-src/
+/directxtex-deps/
+/texconv-*-*
+/texdiag-*-*
+/texassemble-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/

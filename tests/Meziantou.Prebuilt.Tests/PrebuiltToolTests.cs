@@ -142,6 +142,9 @@ public sealed class PrebuiltToolTests
         Assert.Equal("unprocessed_raw", PrebuiltTools.UnprocessedRaw.Name);
         Assert.Equal("TAppEncoderSCM", PrebuiltTools.HmScmEncoder.Name);
         Assert.Equal("TAppDecoderSCM", PrebuiltTools.HmScmDecoder.Name);
+        Assert.Equal("texconv", PrebuiltTools.Texconv.Name);
+        Assert.Equal("texdiag", PrebuiltTools.Texdiag.Name);
+        Assert.Equal("texassemble", PrebuiltTools.Texassemble.Name);
         Assert.Equal("x265", PrebuiltTools.X265.Name);
         Assert.Equal("kvazaar", PrebuiltTools.Kvazaar.Name);
         Assert.Equal("dec265", PrebuiltTools.Dec265.Name);

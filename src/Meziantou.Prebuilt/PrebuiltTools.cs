@@ -215,6 +215,15 @@ public static class PrebuiltTools
     /// <summary>TAppDecoderSCM, the decoder of HM-SCM: HEVC version 1, range and screen content coding extensions.</summary>
     public static PrebuiltTool HmScmDecoder { get; } = new("TAppDecoderSCM");
 
+    /// <summary>texconv, the DirectXTex tool that converts images to DDS files (BC1 to BC7, BC6H, every DXGI format; <c>-m</c> mip levels, <c>-dx10</c> header) and DDS files to images (<c>-ft</c>). Windows only; built with the CPU encoders only: it never uses the GPU, and writes the same bytes on every machine.</summary>
+    public static PrebuiltTool Texconv { get; } = new("texconv");
+
+    /// <summary>texdiag, the DirectXTex tool that describes (<c>info</c>), analyzes, compares and dumps DDS files. Windows only.</summary>
+    public static PrebuiltTool Texdiag { get; } = new("texdiag");
+
+    /// <summary>texassemble, the DirectXTex tool that assembles cube maps (<c>cube</c>), arrays (<c>array</c>), volume textures and cube arrays from images (<c>-dx10</c>: a DX10 header). Windows only.</summary>
+    public static PrebuiltTool Texassemble { get; } = new("texassemble");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -343,6 +352,9 @@ public static class PrebuiltTools
         UnprocessedRaw,
         HmScmEncoder,
         HmScmDecoder,
+        Texconv,
+        Texdiag,
+        Texassemble,
         Dec265,
         HeifEnc,
         HeifDec,

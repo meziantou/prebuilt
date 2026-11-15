@@ -626,6 +626,30 @@
       ],
       "datasourceTemplate": "github-tags",
       "depNameTemplate": "LibRaw/LibRaw"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "DIRECTXMATH_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "microsoft/DirectXMath",
+      "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "DIRECTX_HEADERS_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "microsoft/DirectX-Headers",
+      "extractVersionTemplate": "^v(?<version>.*)$"
     }
   ]
 }

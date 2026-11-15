@@ -467,6 +467,8 @@ $availableLatestVersions = [ordered]@{
     "BASISU_VERSION" = (Get-ReleaseTag -Repository "BinomialLLC/basis_universal").TrimStart("v").Replace("_", ".")
     "KTX_SOFTWARE_VERSION" = Get-ReleaseTag -Repository "KhronosGroup/KTX-Software" -TrimV
     "LIBRAW_VERSION" = Get-LatestTag -Repository "LibRaw/LibRaw" -Pattern "^(?<version>\d+\.\d+\.\d+)$"
+    "DIRECTXMATH_VERSION" = Get-ReleaseTag -Repository "microsoft/DirectXMath"
+    "DIRECTX_HEADERS_VERSION" = Get-ReleaseTag -Repository "microsoft/DirectX-Headers" -TrimV
 }
 
 $selectedVariableNames =

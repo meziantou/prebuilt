@@ -84,6 +84,8 @@ foreach ($job in "zxing-cpp", "zbar") {
 }
 # psd-tools is tested with the PSD files magick writes, and the other way around.
 $units["psd-tools-windows-test"] = @{ job = "psd-tools-windows-test"; rid = "win-x64"; inputs = @("binaries-psd-tools-win-x64", "binaries-imagemagick-win-x64") }
+$units["binaries-directxtex-win-x64"] = @{ job = "directxtex"; rid = "win-x64" }
+$units["directxtex-windows-test"] = @{ job = "directxtex-windows-test"; rid = "win-x64"; inputs = @("binaries-directxtex-win-x64") }
 # pdfium builds linux-arm64 on an x64 machine: this job runs it.
 $units["pdfium-linux-arm64-test"] = @{ job = "pdfium-linux-arm64-test"; rid = "linux-arm64"; inputs = @("binaries-pdfium-linux-arm64") }
 $units["ffmpeg-windows-test"] = @{ job = "ffmpeg-windows-test"; rid = "win-x64"; inputs = @("binaries-ffmpeg-windows") }
