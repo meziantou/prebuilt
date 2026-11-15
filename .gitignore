@@ -116,6 +116,13 @@
 /toktx-*-*
 /ktx2check-*-*
 
+# scripts/build-libraw.sh output
+/libraw-src/
+/libraw-deps/
+/dcraw_emu-*-*
+/raw-identify-*-*
+/unprocessed_raw-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/

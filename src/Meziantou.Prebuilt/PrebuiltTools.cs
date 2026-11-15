@@ -200,6 +200,15 @@ public static class PrebuiltTools
     /// <summary>ktx2check, the legacy KTX-Software validator of KTX2 files: it exits with 0 for a valid file.</summary>
     public static PrebuiltTool Ktx2Check { get; } = new("ktx2check");
 
+    /// <summary>dcraw_emu, the LibRaw sample that renders camera raw and DNG files as dcraw does: PPM or TIFF (<c>-T</c>) files, 8 or linear 16 bits (<c>-4</c>), any output color space (<c>-o</c>), white balance (<c>-w</c>, <c>-r</c>), half size (<c>-h</c>), demosaicing quality (<c>-q</c>). Built with zlib (deflate DNG), libjpeg-turbo (lossy DNG) and LittleCMS 2.</summary>
+    public static PrebuiltTool DcrawEmu { get; } = new("dcraw_emu");
+
+    /// <summary>raw-identify, the LibRaw sample that names the camera of a raw or DNG file, and prints its sizes, filter pattern, color matrices and metadata with <c>-v</c>.</summary>
+    public static PrebuiltTool RawIdentify { get; } = new("raw-identify");
+
+    /// <summary>unprocessed_raw, the LibRaw sample that writes the CFA samples of a raw or DNG file, as stored, to a 16-bit PGM file (<c>-T</c>: TIFF).</summary>
+    public static PrebuiltTool UnprocessedRaw { get; } = new("unprocessed_raw");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -323,6 +332,9 @@ public static class PrebuiltTools
         Ktx,
         Toktx,
         Ktx2Check,
+        DcrawEmu,
+        RawIdentify,
+        UnprocessedRaw,
         Dec265,
         HeifEnc,
         HeifDec,

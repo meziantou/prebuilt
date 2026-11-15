@@ -615,6 +615,17 @@
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "KhronosGroup/KTX-Software",
       "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "LIBRAW_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "LibRaw/LibRaw"
     }
   ]
 }
