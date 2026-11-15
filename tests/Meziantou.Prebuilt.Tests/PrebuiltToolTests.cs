@@ -154,6 +154,8 @@ public sealed class PrebuiltToolTests
         Assert.Equal("iccApplyNamedCmm", PrebuiltTools.IccApplyNamedCmm.Name);
         Assert.Equal("iccApplyToLink", PrebuiltTools.IccApplyToLink.Name);
         Assert.Equal("opencv-oracle", PrebuiltTools.OpenCvOracle.Name);
+        Assert.Equal("oiiotool", PrebuiltTools.OiioTool.Name);
+        Assert.Equal("iinfo", PrebuiltTools.Iinfo.Name);
         Assert.Equal("x265", PrebuiltTools.X265.Name);
         Assert.Equal("kvazaar", PrebuiltTools.Kvazaar.Name);
         Assert.Equal("dec265", PrebuiltTools.Dec265.Name);

@@ -251,6 +251,12 @@ public static class PrebuiltTools
     /// <summary>opencv-oracle, a program of meziantou/prebuilt built with OpenCV that runs one OpenCV function on a PNG file or raw samples and prints its result as JSON: <c>hough-lines</c>, <c>hough-lines-p</c>, <c>harris</c> (and its response as raw floats), <c>good-features</c>, <c>fast</c>, <c>homography</c> (DLT, RANSAC, LMEDS, RHO, with a seed) and <c>inpaint</c> (Telea, Navier-Stokes). See the README for the commands.</summary>
     public static PrebuiltTool OpenCvOracle { get; } = new("opencv-oracle");
 
+    /// <summary>oiiotool, the OpenImageIO tool that reads, converts and processes images: it reads PSD, DPX, Cineon, DDS, HDR, TIFF, PNG, OpenEXR, camera raw and DNG (LibRaw; <c>-iconfig raw:Demosaic none</c> for the CFA samples), BMP, TGA, PNM, ... and writes DPX, HDR, TIFF, PNG, OpenEXR, ...; <c>-v --info --dumpdata</c> prints every pixel. Its PNM writer writes the rows bottom-up.</summary>
+    public static PrebuiltTool OiioTool { get; } = new("oiiotool");
+
+    /// <summary>iinfo, the OpenImageIO tool that prints the size, format, channels and metadata of images (<c>-v</c>), their statistics (<c>--stats</c>) and the hash of their pixels (<c>--hash</c>).</summary>
+    public static PrebuiltTool Iinfo { get; } = new("iinfo");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -391,6 +397,8 @@ public static class PrebuiltTools
         IccApplyNamedCmm,
         IccApplyToLink,
         OpenCvOracle,
+        OiioTool,
+        Iinfo,
         Dec265,
         HeifEnc,
         HeifDec,

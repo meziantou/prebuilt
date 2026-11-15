@@ -152,6 +152,12 @@
 /opencv-deps/
 /opencv-oracle-*-*
 
+# scripts/build-openimageio.sh output
+/openimageio-src/
+/openimageio-deps/
+/oiiotool-*-*
+/iinfo-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/

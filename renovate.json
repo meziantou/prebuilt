@@ -688,6 +688,19 @@
       "registryUrlTemplate": "https://gitlab.gnome.org",
       "depNameTemplate": "GNOME/libxml2",
       "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "OPENIMAGEIO_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "AcademySoftwareFoundation/OpenImageIO",
+      "extractVersionTemplate": "^v(?<version>.*)$",
+      "versioningTemplate": "loose"
     }
   ]
 }
