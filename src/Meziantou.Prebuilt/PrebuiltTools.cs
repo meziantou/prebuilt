@@ -317,6 +317,12 @@ public static class PrebuiltTools
     /// <summary>zbarimg, the image scanner of ZBar (EAN/UPC with their add-ons, DataBar, Code 128, Code 93, Code 39, Codabar, Interleaved 2 of 5, QR Code, SQ Code; not Micro QR or rMQR), built with GraphicsMagick for PNG, BMP, GIF, PCX, PNM and TGA files (no JPEG or TIFF). It exits with 4 when it finds no barcode. ZBar is available under the GNU Lesser General Public License, version 2.1 or later.</summary>
     public static PrebuiltTool ZBarImg { get; } = new("zbarimg");
 
+    /// <summary>7zz, the console 7-Zip: the official binaries of the 7-Zip release. On Linux and macOS, it packs and unpacks 7z, xz, bzip2, gzip, zip, tar and wim, and unpacks many more formats, RAR 4 and RAR 5 among them. On <c>win-x64</c>, it is <c>7za.exe</c>, the standalone console 7-Zip of the 7-Zip Extra package, which packs and unpacks 7z, xz, bzip2, gzip, zip and tar only, and unpacks lzma, cab and zstd: it has no RAR codec. 7-Zip has no version option: run without arguments, it prints its banner (<c>7-Zip (z) 26.06 (x64) : Copyright ...</c>, <c>7-Zip (a)</c> on Windows) and its usage. Pass <c>-p&lt;password&gt;</c> to never be asked for a password on the console. 7-Zip is available under the GNU Lesser General Public License, version 2.1 or later, with the unRAR license restriction for its RAR code and the BSD 3-Clause and 2-Clause licenses for some code.</summary>
+    public static PrebuiltTool SevenZip { get; } = new("7zz");
+
+    /// <summary>unrar, the freeware RAR extractor of RARLAB (RAR 1.5 to RAR 5 archives, with their encryption, volumes and recovery records), built from the official unrarsrc sources. It has no version option: run without arguments, it prints its banner (<c>UNRAR 7.23 freeware</c>, <c>UNRAR 7.23 x64 freeware</c> on Windows) and its usage. Pass <c>-p-</c>, or <c>-p&lt;password&gt;</c>, to never be asked for a password on the console. rar, the archiver, is proprietary and not available. unrar is available under the freeware unRAR license, which allows its distribution.</summary>
+    public static PrebuiltTool Unrar { get; } = new("unrar");
+
     /// <summary>Gets all the tools.</summary>
     public static IReadOnlyList<PrebuiltTool> All { get; } =
     [
@@ -422,6 +428,8 @@ public static class PrebuiltTools
         Zint,
         ZXingReader,
         ZBarImg,
+        SevenZip,
+        Unrar,
     ];
 
     private static string? GetCurrentRuntimeIdentifier()

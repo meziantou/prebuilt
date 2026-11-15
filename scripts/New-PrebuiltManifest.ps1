@@ -123,6 +123,8 @@ $versionKeys = [ordered]@{
     "zint"             = "Zint"
     "ZXingReader"      = "ZXingCpp"
     "zbarimg"          = "ZBar"
+    "7zz"              = "SevenZip"
+    "unrar"            = "Unrar"
 }
 
 $versionsPath = Join-Path $BinariesPath "versions.json"
