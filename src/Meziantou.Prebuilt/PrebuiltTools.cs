@@ -248,6 +248,9 @@ public static class PrebuiltTools
     /// <summary>iccApplyToLink, the iccDEV tool that writes a device link profile or a 3D LUT (.cube) from a chain of ICC profiles.</summary>
     public static PrebuiltTool IccApplyToLink { get; } = new("iccApplyToLink");
 
+    /// <summary>opencv-oracle, a program of meziantou/prebuilt built with OpenCV that runs one OpenCV function on a PNG file or raw samples and prints its result as JSON: <c>hough-lines</c>, <c>hough-lines-p</c>, <c>harris</c> (and its response as raw floats), <c>good-features</c>, <c>fast</c>, <c>homography</c> (DLT, RANSAC, LMEDS, RHO, with a seed) and <c>inpaint</c> (Telea, Navier-Stokes). See the README for the commands.</summary>
+    public static PrebuiltTool OpenCvOracle { get; } = new("opencv-oracle");
+
     /// <summary>dec265, the libde265 HEVC decoder, built without SDL and videogfx.</summary>
     public static PrebuiltTool Dec265 { get; } = new("dec265");
 
@@ -387,6 +390,7 @@ public static class PrebuiltTools
         IccRoundTrip,
         IccApplyNamedCmm,
         IccApplyToLink,
+        OpenCvOracle,
         Dec265,
         HeifEnc,
         HeifDec,

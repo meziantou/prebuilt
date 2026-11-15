@@ -147,6 +147,11 @@
 /iccApplyNamedCmm-*-*
 /iccApplyToLink-*-*
 
+# scripts/build-opencv.sh output
+/opencv-src/
+/opencv-deps/
+/opencv-oracle-*-*
+
 # scripts/build-libheif.sh output
 /libheif-deps/
 /libheif-src/

@@ -98,6 +98,7 @@ $versionKeys = [ordered]@{
     "iccRoundTrip"     = "IccDev"
     "iccApplyNamedCmm" = "IccDev"
     "iccApplyToLink"   = "IccDev"
+    "opencv-oracle"    = "OpenCV"
     "x265"             = "X265"
     "kvazaar"          = "Kvazaar"
     "dec265"           = "LibDe265"

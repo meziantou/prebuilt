@@ -472,6 +472,7 @@ $availableLatestVersions = [ordered]@{
     "ICCDEV_VERSION" = Get-LatestTag -Repository "InternationalColorConsortium/iccDEV" -Pattern "^v(?<version>\d+\.\d+\.\d+\.\d+)$"
     "NLOHMANN_JSON_VERSION" = Get-ReleaseTag -Repository "nlohmann/json" -TrimV
     "LIBXML2_VERSION" = Get-LatestGitLabTag -ProjectPath "GNOME/libxml2" -Registry "https://gitlab.gnome.org" -Pattern "^v(?<version>\d+\.\d+\.\d+)$"
+    "OPENCV_VERSION" = Get-LatestTag -Repository "opencv/opencv" -Pattern "^(?<version>4\.\d+\.\d+)$"
 }
 
 $selectedVariableNames =
