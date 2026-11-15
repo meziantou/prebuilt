@@ -374,7 +374,14 @@ psd_tools_tests() {
   msg "the same bytes on every runtime identifier"
   expect "rgb16-ZIP_WITH_PREDICTION.psd" "$(sha256_of rgb16-ZIP_WITH_PREDICTION.psd)" "$PIN_RGB16_ZIPP"
   expect "layers8.psd" "$(sha256_of layers8.psd)" "$PIN_LAYERS8"
-  expect "layers32.psd" "$(sha256_of layers32.psd)" "$PIN_LAYERS32"
+  # The ZIP data depends on the zlib of the Python: zlib on Linux and macOS,
+  # zlib-ng on Windows (the MSVC build of python-build-standalone), which
+  # compresses the layers of layers32.psd to other bytes (the same pixels).
+  if [ "$TARGET" = win-x64 ]; then
+    expect "layers32.psd (zlib-ng)" "$(sha256_of layers32.psd)" "$PIN_LAYERS32_ZLIB_NG"
+  else
+    expect "layers32.psd" "$(sha256_of layers32.psd)" "$PIN_LAYERS32"
+  fi
 
   # -------------------------------------------------------------------------
 
@@ -468,6 +475,7 @@ psd_tools_tests() {
 PIN_RGB16_ZIPP="ae58095929cb4915fc84bfa55071f07301b00a100bbc2f66b332f4b38d5cdc7d"
 PIN_LAYERS8="1d2fa407d31194c28b622af20d4d11bfaf2c06726c887908b670ac95a7cad44f"
 PIN_LAYERS32="eb78bca91fe6ac9c825ad7e2db1134aa47de2160dbb8efdadcc397989a5946c5"
+PIN_LAYERS32_ZLIB_NG="68b4ec7f4424e3d67cdce90b066a3562c10866cb1f2902ccbeb680e073826555"
 
 # ---------------------------------------------------------------------------
 

@@ -370,7 +370,7 @@ metrics_test() {
   "$CJXL" still.ppm distance2.jxl --distance=2 > tool.log 2>&1 || { cat tool.log >&2; fail "cjxl --distance=2 failed"; }
   "$DJXL" distance2.jxl distance2.ppm > tool.log 2>&1 || { cat tool.log >&2; fail "djxl failed"; }
   in_range "ssimulacra2, distance 2" "$("$SSIMULACRA2" still.ppm distance2.ppm | tr -d '\r')" 0 99.9
-  max="$("$BUTTERAUGLI" still.ppm distance2.ppm --pnorm 3 | tr -d '\r' | head -n 1)"
+  max="$("$BUTTERAUGLI" still.ppm distance2.ppm --pnorm 3 | tr -d '\r' | sed -n 1p)"
   in_range "butteraugli_main, distance 2: maximum distance" "$max" 0.01 10
   # PNG input, and a distance map.
   "$BUTTERAUGLI" still.ppm distance2.ppm --distmap distmap.ppm > tool.log 2>&1 || { cat tool.log >&2; fail "butteraugli_main --distmap failed"; }

@@ -210,9 +210,9 @@ esac
 case "$MODE" in
   run|all)
     msg "version"
-    expect "texconv --version" "$("./texconv-$TARGET$EXE" --version | tr -d '\r' | head -n 1)" "texconv version $DIRECTXTEX_LIBRARY_VERSION (library)"
+    expect "texconv --version" "$("./texconv-$TARGET$EXE" --version | tr -d '\r' | sed -n 1p)" "texconv version $DIRECTXTEX_LIBRARY_VERSION (library)"
     for tool in texdiag texassemble; do
-      banner="$("./$tool-$TARGET$EXE" 2>&1 | tr -d '\r' | head -n 1 || true)"
+      banner="$("./$tool-$TARGET$EXE" 2>&1 | tr -d '\r' | sed -n 1p || true)"
       contains "$banner" "[DirectXTex] Version $DIRECTXTEX_LIBRARY_VERSION" || fail "$tool: $banner"
       ok "$tool: $banner"
     done

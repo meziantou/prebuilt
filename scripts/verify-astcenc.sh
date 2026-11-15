@@ -154,7 +154,7 @@ esac
 case "$MODE" in
   run|all)
     msg "version"
-    version="$("$BIN" -version | tr -d '\r' | head -n 1)"
+    version="$("$BIN" -version | tr -d '\r' | sed -n 1p)"
     expect "astcenc -version" "$version" "astcenc v$ASTCENC_VERSION, 64-bit none"
     tests
     ;;
