@@ -10,7 +10,9 @@ and several of them wait for a macOS runner to do it. This script runs first,
 on ubuntu, and gives every unit below a build key: the SHA-256 of everything its
 output depends on.
 
-- the block of its job in ci.yml;
+- the block of its job in ci.yml, without its needs: and if:, which only
+  decide when the job runs (the CI logic around a unit can change without
+  rebuilding it);
 - the scripts that block runs, and the files these scripts use through
   $SCRIPT_DIR, recursively;
 - the value of every top-level env variable of ci.yml any of these mention:
@@ -222,7 +224,8 @@ function Get-JobInputs([string]$Job) {
         return $jobInputs[$Job]
     }
 
-    $block = Get-JobBlock $Job
+    $block = (Get-JobBlock $Job) -split "`n" | Where-Object { $_ -notmatch '^    (needs|if):' }
+    $block = $block -join "`n"
 
     # Only the job references scripts by their path: in the scripts, a
     # "scripts/..." is a comment pointing at another script, whereas

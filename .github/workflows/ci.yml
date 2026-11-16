@@ -11,6 +11,12 @@ on:
         type: boolean
         default: false
 
+# A new push to a pull request cancels the run of the previous one; the runs
+# of main all finish, as each one creates a release.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 defaults:
   run:
     shell: pwsh
