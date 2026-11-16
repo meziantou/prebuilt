@@ -24,7 +24,7 @@ var cache = new PrebuiltToolCache(cacheDirectory: "/tmp/tools", httpClient: myHt
 string cwebp = await cache.GetOrDownloadAsync(PrebuiltTools.Cwebp, runtimeIdentifier: "linux-arm64");
 ```
 
-Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `Ssimulacra2`, `Butteraugli`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `ExrHeader`, `ExrInfo`, `ExrMakeTiled`, `ExrMetrics`, `ExrStdAttr`, `ExrCheck`, `ExrMultiPart`, `ExrMultiView`, `ExrEnvMap`, `ExrMakePreview`, `ExrManifest`, `Exr2Aces`, `ExrFromRaw`, `ExrToRaw`, `IsoJpeg`, `Pvalue`, `RadianceGetInfo`, `Pflip`, `Protate`, `RaXyze`, `RaRgbe`, `RaPpm`, `RaBmp`, `Magick`, `PsdTools`, `Astcenc`, `Basisu`, `Ktx`, `Toktx`, `Ktx2Check`, `DcrawEmu`, `RawIdentify`, `UnprocessedRaw`, `HmScmEncoder`, `HmScmDecoder`, `Texconv`, `Texdiag`, `Texassemble`, `IccFromXml`, `IccToXml`, `IccFromJson`, `IccToJson`, `IccDumpProfile`, `IccRoundTrip`, `IccApplyNamedCmm`, `IccApplyToLink`, `OpenCvOracle`, `OiioTool`, `Iinfo`, `DngValidate`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`, `Zint`, `ZXingReader`, `ZBarImg`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
+Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `Ssimulacra2`, `Butteraugli`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `ExrHeader`, `ExrInfo`, `ExrMakeTiled`, `ExrMetrics`, `ExrStdAttr`, `ExrCheck`, `ExrMultiPart`, `ExrMultiView`, `ExrEnvMap`, `ExrMakePreview`, `ExrManifest`, `Exr2Aces`, `ExrFromRaw`, `ExrToRaw`, `IsoJpeg`, `Pvalue`, `RadianceGetInfo`, `Pflip`, `Protate`, `RaXyze`, `RaRgbe`, `RaPpm`, `RaBmp`, `Magick`, `PsdTools`, `Astcenc`, `Basisu`, `Ktx`, `Toktx`, `Ktx2Check`, `DcrawEmu`, `RawIdentify`, `UnprocessedRaw`, `HmScmEncoder`, `HmScmDecoder`, `Texconv`, `Texdiag`, `Texassemble`, `IccFromXml`, `IccToXml`, `IccFromJson`, `IccToJson`, `IccDumpProfile`, `IccRoundTrip`, `IccApplyNamedCmm`, `IccApplyToLink`, `OpenCvOracle`, `OiioTool`, `Iinfo`, `DngValidate`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`, `Zint`, `ZXingReader`, `ZBarImg`, `SevenZip`, `Unrar`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
 
 On `win-arm64`, a tool that is not built for Arm64 (e.g. `pngout`) falls back to its `win-x64` build, which Windows on Arm runs through emulation. Pass `allowEmulation: false` to `GetAsset`, `IsSupported` or `GetOrDownloadAsync` to only get native builds:
 
@@ -222,6 +222,32 @@ using (var process = Process.Start(new ProcessStartInfo(reader, ["-1", "qr.png"]
 - `zint --dump` prints one line per row of modules, in hexadecimal, 4 modules per digit with the first one in the high bit, in groups of 2 digits, the last group with the digits the row needs only: `FE 5B F8` is the 21 modules `111111100101101111111`.
 - `ZXingReader` prints the version, error correction level and mask of a QR Code, Micro QR or rMQR symbol, and `-symbol` the module matrix it sampled. It reports UPC-A as EAN-13 unless `-formats UPC-A`, and exits with 0 when it cannot load an image.
 - `ZBarImg` reads EAN/UPC (with `-Sean2.enable` and `-Sean5.enable` for the add-ons, reported as separate `EAN-2` and `EAN-5` symbols), DataBar, Code 128, Code 93, Code 39, Codabar, Interleaved 2 of 5 and QR Code, not Micro QR or rMQR. It reads PNG, BMP, GIF, PCX, PNM and TGA files, and exits with 4 when it finds no barcode. ZBar is available under the GNU Lesser General Public License, version 2.1 or later; its sources are the ZBar release of the version of the tool.
+
+## Archive tools
+
+`SevenZip` (`7zz`) writes and reads 7z, xz, bzip2, gzip, zip and tar files, and `Unrar` (`unrar`) extracts RAR 4 and RAR 5 archives:
+
+```csharp
+string sevenZip = await PrebuiltTools.SevenZip.GetOrDownloadAsync();
+string unrar = await PrebuiltTools.Unrar.GetOrDownloadAsync();
+
+// 7zz a -t7z -m0=LZMA2 -mx=9 archive.7z <files>; -p<password> never asks for a password
+using (var process = Process.Start(sevenZip, ["a", "-t7z", "-m0=LZMA2", "-mx=9", "-bd", "archive.7z", "file.txt"]))
+{
+    await process.WaitForExitAsync();
+}
+
+// unrar x -o+ -p- archive.rar output/: the trailing separator makes output/ the destination folder
+using (var process = Process.Start(unrar, ["x", "-o+", "-p-", "archive.rar", "output/"]))
+{
+    await process.WaitForExitAsync();
+}
+```
+
+- Neither tool has a version option: run without arguments, `7zz` prints `7-Zip (z) 26.06 (x64) : Copyright ...` (`7-Zip (a) 26.06 (x64)` on Windows) and `unrar` prints `UNRAR 7.23 freeware` (`UNRAR 7.23 x64 freeware` on Windows), before their usage. Both exit with 0.
+- On `win-x64`, `SevenZip` is `7za.exe`, the standalone console 7-Zip of the 7-Zip Extra package: it packs and unpacks 7z, xz, bzip2, gzip, zip and tar, and unpacks lzma, cab and zstd only. It has no RAR codec; use `Unrar`.
+- Without `-p`, both tools ask for the password of an encrypted archive on the console: pass `-p<password>` (or `-p-` to `unrar`) so that they fail instead.
+- 7-Zip is available under the GNU Lesser General Public License, version 2.1 or later, with the unRAR license restriction for its RAR code and the BSD 3-Clause and 2-Clause licenses for some code; unrar under the freeware unRAR license. `rar`, the RAR archiver, is proprietary and not available.
 
 ## Tools with their files
 

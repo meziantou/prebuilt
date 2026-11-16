@@ -178,6 +178,8 @@ public sealed class PrebuiltToolTests
         Assert.Equal("zint", PrebuiltTools.Zint.Name);
         Assert.Equal("ZXingReader", PrebuiltTools.ZXingReader.Name);
         Assert.Equal("zbarimg", PrebuiltTools.ZBarImg.Name);
+        Assert.Equal("7zz", PrebuiltTools.SevenZip.Name);
+        Assert.Equal("unrar", PrebuiltTools.Unrar.Name);
     }
 
     public static bool IsManifestEmbedded => PrebuiltManifest.IsEmbedded;

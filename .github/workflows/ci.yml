@@ -16,7 +16,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.15.0
+  VERSION: 3.16.0
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
@@ -104,6 +104,14 @@ env:
   ZBAR_VERSION: "0.23.95" # https://github.com/mchehab/zbar/releases - zbarimg, built from https://linuxtv.org/downloads/zbar/zbar-<version>.tar.gz
   GRAPHICSMAGICK_VERSION: "1.3.49" # https://sourceforge.net/projects/graphicsmagick/files/graphicsmagick/ - the image reader of zbarimg
   LIBICONV_VERSION: "1.19" # https://ftp.gnu.org/pub/gnu/libiconv/ - the iconv of zbarimg on Windows
+  SEVENZIP_VERSION: "26.06" # https://github.com/ip7z/7zip/releases - 7zz, the official binaries of the release (7za.exe of 7z<ver>-extra.7z on Windows); the SHA-256 pins below are the digests GitHub lists for the release files
+  SEVENZIP_LINUX_X64_SHA256: "2b539cf067b2ad48e1baa5093dbaa8818b73542d1222a0ffde9dc5f2922ea62e" # 7z<ver>-linux-x64.tar.xz of SEVENZIP_VERSION
+  SEVENZIP_LINUX_ARM64_SHA256: "edcc408aacce77da5223728f2eceb5e9f6dc713b8a9df934ad21e2a7f7560627" # 7z<ver>-linux-arm64.tar.xz of SEVENZIP_VERSION
+  SEVENZIP_MAC_SHA256: "b6f17920b4240940461dac8ef4009891881ac44d2a5ead625ede2ec8472185dd" # 7z<ver>-mac.tar.xz of SEVENZIP_VERSION
+  SEVENZIP_EXTRA_SHA256: "396c180f12d2247c24b0b1fcd482c6fc2a2700f61211ffede1061dd971f5e104" # 7z<ver>-extra.7z of SEVENZIP_VERSION
+  UNRAR_VERSION: "7.23" # https://www.rarlab.com/rar_add.htm - the version unrar prints (RARVER_MAJOR.RARVER_MINOR of version.hpp), a stable release, not a beta - scripts/build-unrar.sh fails when the tarball is not
+  UNRAR_SOURCE_VERSION: "7.2.7" # the unrarsrc-<version>.tar.gz of UNRAR_VERSION: RARLAB numbers its tarballs with a counter of its own
+  UNRAR_SHA256: "01d903a7dcf413cb2925696d7796e48e38d471f79bfe7ef3ad2aebf6c12dbefd" # the SHA-256 of unrarsrc-<UNRAR_SOURCE_VERSION>.tar.gz: RARLAB publishes no checksum
 
 jobs:
   create-release:
@@ -195,7 +203,11 @@ jobs:
       zxing-cpp,
       zxing-cpp-windows-test,
       zbar,
-      zbar-windows-test
+      zbar-windows-test,
+      sevenzip,
+      sevenzip-windows-test,
+      unrar,
+      unrar-windows-test
     ]
     permissions:
       contents: write
@@ -359,6 +371,9 @@ jobs:
         $versions.Zint = "${{ env.ZINT_VERSION }}"
         $versions.ZXingCpp = "${{ env.ZXING_CPP_VERSION }}"
         $versions.ZBar = "${{ env.ZBAR_VERSION }}"
+        $versions.SevenZip = "${{ env.SEVENZIP_VERSION }}"
+        # The version unrar prints, not the one of the unrarsrc tarball.
+        $versions.Unrar = "${{ env.UNRAR_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
@@ -4566,6 +4581,189 @@ jobs:
       shell: bash
       # With the zint of the run: ZINT_VERSION is part of the build key.
       run: bash scripts/verify-zbar.sh win-x64 run
+
+  # 7zz, the console 7-Zip: the official binaries of the 7-Zip release, pinned
+  # by SHA-256 (scripts/download-7zip.sh). Linux: 7zzs, the statically linked
+  # 7zz of the release. macOS: 7zz, which links only system dylibs. Windows:
+  # 7za.exe of the "extra" package, the standalone console 7-Zip (7z.exe needs
+  # 7z.dll), which packs and unpacks 7z, xz, zip, gzip, bzip2 and tar, but has
+  # no RAR codec. It is extracted on Linux with the 7zz of the same release, so
+  # it cannot be executed there: sevenzip-windows-test runs its smoke tests.
+  # No Windows arm64 build, as for the image tools.
+  sevenzip:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-sevenzip-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-sevenzip-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-sevenzip-${{ matrix.rid }}
+    - name: Download the 7-Zip release
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/download-7zip.sh ${{ matrix.rid }}
+    - name: Install the MinGW objdump
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends binutils-mingw-w64-x86-64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself. The Windows binary cannot be executed here;
+      # sevenzip-windows-test runs its smoke tests.
+      run: bash scripts/verify-7zip.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-sevenzip-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: 7zz-${{ matrix.rid }}*
+
+  sevenzip-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['sevenzip-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, sevenzip]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['sevenzip-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-sevenzip-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-7zip.sh win-x64 run
+
+  # unrar, the freeware RAR extractor of RARLAB, which publishes a Windows
+  # installer only: every target is built from the official unrarsrc tarball
+  # with its makefile (scripts/build-unrar.sh), statically linked. rar, the
+  # archiver, is proprietary and not shipped. The smoke tests extract the RAR 4
+  # and RAR 5 samples of scripts/rar-samples.sh, test files of libarchive.
+  # No Windows arm64 build, as for the image tools.
+  unrar:
+    needs: [build-plan]
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-latest
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+          - rid: win-x64
+            os: ubuntu-latest
+          - rid: osx-arm64
+            os: macos-latest
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-unrar-{0}', matrix.rid)] && 'ubuntu-latest' || matrix.os }}
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)[format('binaries-unrar-{0}', matrix.rid)] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Download the binaries of the previous release
+      if: env.REUSE == 'true'
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: ./scripts/Get-ReleaseFiles.ps1 -Tag "${{ needs.build-plan.outputs.release }}" -Artifact binaries-unrar-${{ matrix.rid }}
+    - name: Build (Alpine, fully static against musl)
+      if: env.REUSE != 'true' && startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e UNRAR_VERSION -e UNRAR_SOURCE_VERSION -e UNRAR_SHA256 \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang libstdc++-dev curl bash linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-unrar.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential curl xz-utils file
+    - name: Install llvm-mingw
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: env.REUSE != 'true' && matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-unrar.sh win-x64
+    - name: Build (macOS)
+      if: env.REUSE != 'true' && matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-unrar.sh asserts with otool -L.
+      run: bash scripts/build-unrar.sh osx-arm64
+    - name: Verify and smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binary
+      # runs outside of Alpine. The Windows binary is cross-compiled, so it
+      # cannot be executed here; unrar-windows-test runs its smoke tests.
+      run: bash scripts/verify-unrar.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-unrar-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: unrar-${{ matrix.rid }}*
+
+  unrar-windows-test:
+    runs-on: ${{ fromJSON(needs.build-plan.outputs.reuse)['unrar-windows-test'] && 'ubuntu-latest' || 'windows-latest' }}
+    needs: [build-plan, unrar]
+    env:
+      REUSE: ${{ fromJSON(needs.build-plan.outputs.reuse)['unrar-windows-test'] }}
+    steps:
+    - if: env.REUSE != 'true'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - if: env.REUSE != 'true'
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-unrar-win-x64
+        path: .
+    - name: Smoke test
+      if: env.REUSE != 'true'
+      shell: bash
+      run: bash scripts/verify-unrar.sh win-x64 run
 
   ffmpeg-linux:
     needs: [build-plan]
