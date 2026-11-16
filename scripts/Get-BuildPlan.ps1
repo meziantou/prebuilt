@@ -10,7 +10,9 @@ and several of them wait for a macOS runner to do it. This script runs first,
 on ubuntu, and gives every unit below a build key: the SHA-256 of everything its
 output depends on.
 
-- the block of its job in ci.yml;
+- the block of its job in ci.yml, without its needs: and if:, which only
+  decide when the job runs (the CI logic around a unit can change without
+  rebuilding it);
 - the scripts that block runs, and the files these scripts use through
   $SCRIPT_DIR, recursively;
 - the value of every top-level env variable of ci.yml any of these mention:
@@ -18,14 +20,17 @@ output depends on.
 
 The latest release records the key of every unit in build-keys.json
 (scripts/Merge-ReleaseArtifacts.ps1). A build unit whose key did not change is
-reused: its job runs on ubuntu-latest and downloads its files from that release
-(scripts/Get-ReleaseFiles.ps1) instead of building them. A test unit is reused
-when its key did not change and every binary it tests was reused; its job is
-then an empty one on ubuntu-latest.
+reused: its job, or its leg of a matrix job, does not run, and the
+reuse-artifacts job uploads the files of that release under the name of its
+artifact (scripts/Get-ReleaseFiles.ps1). A test unit is reused when its key did
+not change and every binary it tests was reused: it does not run.
 
 Outputs, in $GITHUB_OUTPUT:
-- reuse: {"<unit>": true|false, ...}, read by the jobs as
-  fromJSON(needs.build-plan.outputs.reuse)['<unit>'];
+- build: {"<job>": true|false, ...}, whether a job has a unit to build or test,
+  the condition of the job: fromJSON(needs.build-plan.outputs.build)['<job>'];
+- matrix: {"<job>": [{"rid": ..., "os": ...}, ...], ...}, the matrix of each
+  matrix job, its units to build or test only;
+- reused: ["<unit>", ...], the reused build units, for reuse-artifacts;
 - release: the tag of the release the reused files come from.
 
 -OutputPath gets the key of every unit, for create-release to record.
@@ -35,7 +40,8 @@ nothing. Any problem with the release (none yet, no build-keys.json, a network
 error) also reuses nothing, with a warning: this script never fails a run
 because of the release.
 
-Runner images are not part of the key, on purpose: a new macos-latest does not
+The runner label of a unit is part of its key (its matrix entry, or its job
+block), but runner images are not, on purpose: a new macos-latest does not
 rebuild anything until a tool changes, or a run asks for a rebuild.
 #>
 [CmdletBinding()]
@@ -55,11 +61,65 @@ $keyFormat = "v1"
 # Unit -> its job in ci.yml and the runtime identifier it is built or tested
 # for. A build unit is named after the artifact its job uploads; a test unit
 # lists the build units whose binaries it tests (inputs).
+#
+# The units of a matrix job also have their matrix entry (matrix): the matrix of
+# the job is the entries of the units this run builds (the matrix output), so
+# that a reused unit starts no job at all. The entry is part of the key: a new
+# runner rebuilds the unit. Linux and Windows binaries are built in Alpine and
+# with llvm-mingw on ubuntu, unless an override below says otherwise.
 $units = [ordered]@{}
 $rids = "linux-x64", "linux-arm64", "win-x64", "osx-arm64"
+$defaultRunners = @{
+    "linux-x64"   = "ubuntu-latest"
+    "linux-arm64" = "ubuntu-24.04-arm"
+    "win-x64"     = "ubuntu-latest"
+    "osx-arm64"   = "macos-latest"
+}
+function New-MatrixEntry([string]$Rid) {
+    return [ordered]@{ rid = $Rid; os = $defaultRunners[$Rid] }
+}
+
 foreach ($job in "libavif", "libjxl", "jxl-oxide", "woff2", "harfbuzz", "openjpeg", "openjph", "openexr", "iso-jpeg", "radiance", "imagemagick", "psd-tools", "astcenc", "basisu", "ktx-software", "libraw", "hm-scm", "iccdev", "opencv", "openimageio", "dng-sdk", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf", "pdfium", "zint", "zxing-cpp", "zbar", "sevenzip", "unrar") {
     foreach ($rid in $rids) {
-        $units["binaries-$job-$rid"] = @{ job = $job; rid = $rid }
+        $units["binaries-$job-$rid"] = @{ job = $job; rid = $rid; matrix = New-MatrixEntry $rid }
+    }
+}
+# libavif repackages the Windows and macOS binaries of its release.
+$units["binaries-libavif-win-x64"].matrix.os = "windows-latest"
+$units["binaries-libavif-win-x64"].matrix.archive = "windows-artifacts.zip"
+$units["binaries-libavif-osx-arm64"].matrix.archive = "macOS-artifacts.zip"
+$units["binaries-jxl-oxide-win-x64"].matrix.os = "windows-latest"
+# pdfium cross-compiles linux-arm64 on x64 (pdfium-linux-arm64-test runs it)
+# and builds win-x64 with the toolchain of Chromium on Windows.
+$units["binaries-pdfium-linux-arm64"].matrix.os = "ubuntu-latest"
+$units["binaries-pdfium-win-x64"].matrix.os = "windows-latest"
+
+# libwebp repackages the binaries of its release, on the runner of each target.
+$libwebpArchives = @{
+    "linux-x64"   = "linux-x86-64.tar.gz"
+    "linux-arm64" = "linux-aarch64.tar.gz"
+    "win-x64"     = "windows-x64.zip"
+    "osx-arm64"   = "mac-arm64.tar.gz"
+}
+foreach ($rid in $rids) {
+    $entry = New-MatrixEntry $rid
+    $entry.archive = $libwebpArchives[$rid]
+    $units["binaries-libwebp-$rid"] = @{ job = "libwebp"; rid = $rid; matrix = $entry }
+}
+$units["binaries-libwebp-win-x64"].matrix.os = "windows-latest"
+
+# zopfli is built from source; oxipng and pngout repackage the binaries of
+# their releases. One job per target, named as its artifact.
+$singleTargetArtifacts = [ordered]@{
+    "linux-x64"   = "linux"
+    "linux-arm64" = "linux-arm64"
+    "win-x64"     = "windows"
+    "osx-arm64"   = "osx-arm64"
+}
+foreach ($tool in "zopfli", "oxipng", "pngout") {
+    foreach ($rid in $singleTargetArtifacts.Keys) {
+        $job = "$tool-$($singleTargetArtifacts[$rid])"
+        $units["binaries-$job"] = @{ job = $job; rid = $rid }
     }
 }
 
@@ -84,18 +144,21 @@ foreach ($job in "zxing-cpp", "zbar") {
 }
 # psd-tools is tested with the PSD files magick writes, and the other way around.
 $units["psd-tools-windows-test"] = @{ job = "psd-tools-windows-test"; rid = "win-x64"; inputs = @("binaries-psd-tools-win-x64", "binaries-imagemagick-win-x64") }
-$units["binaries-directxtex-win-x64"] = @{ job = "directxtex"; rid = "win-x64" }
+$units["binaries-directxtex-win-x64"] = @{ job = "directxtex"; rid = "win-x64"; matrix = New-MatrixEntry "win-x64" }
 $units["directxtex-windows-test"] = @{ job = "directxtex-windows-test"; rid = "win-x64"; inputs = @("binaries-directxtex-win-x64") }
 # pdfium builds linux-arm64 on an x64 machine: this job runs it.
 $units["pdfium-linux-arm64-test"] = @{ job = "pdfium-linux-arm64-test"; rid = "linux-arm64"; inputs = @("binaries-pdfium-linux-arm64") }
 $units["ffmpeg-windows-test"] = @{ job = "ffmpeg-windows-test"; rid = "win-x64"; inputs = @("binaries-ffmpeg-windows") }
 $units["ffmpeg-windows-arm64-test"] = @{ job = "ffmpeg-windows-arm64-test"; rid = "win-arm64"; inputs = @("binaries-ffmpeg-windows-arm64") }
 foreach ($rid in $rids) {
-    $units["hevc-test-$rid"] = @{ job = "hevc-test"; rid = $rid; inputs = @($ffmpegArtifacts[$rid], "binaries-libheif-$rid", "binaries-hm-$rid") }
+    $entry = New-MatrixEntry $rid
+    $entry.ffmpeg = $ffmpegArtifacts[$rid]
+    $units["hevc-test-$rid"] = @{ job = "hevc-test"; rid = $rid; inputs = @($ffmpegArtifacts[$rid], "binaries-libheif-$rid", "binaries-hm-$rid"); matrix = $entry }
 }
+$units["hevc-test-win-x64"].matrix.os = "windows-latest"
 
 # The scripts of the reuse itself change no binary.
-$excludedFiles = "Get-BuildPlan.ps1", "Get-ReleaseFiles.ps1", "Merge-ReleaseArtifacts.ps1"
+$excludedFiles = "Get-BuildPlan.ps1", "Get-ReleaseFiles.ps1", "Merge-ReleaseArtifacts.ps1", "upload-reused-artifacts.mjs"
 # VERSION is the release version, bumped by every release; the word is also in
 # comments of the ffmpeg scripts. FORCE_REBUILD would make a forced build
 # record a key the next run never matches.
@@ -161,7 +224,8 @@ function Get-JobInputs([string]$Job) {
         return $jobInputs[$Job]
     }
 
-    $block = Get-JobBlock $Job
+    $block = (Get-JobBlock $Job) -split "`n" | Where-Object { $_ -notmatch '^    (needs|if):' }
+    $block = $block -join "`n"
 
     # Only the job references scripts by their path: in the scripts, a
     # "scripts/..." is a comment pointing at another script, whereas
@@ -210,10 +274,15 @@ function Get-Sha256Hex([string]$Text) {
     return [Convert]::ToHexString($hash).ToLowerInvariant()
 }
 
-function Get-UnitKey([string]$Job, [string]$Rid) {
+function Get-UnitKey([string]$Unit) {
+    $Job = $units[$Unit].job
+    $Rid = $units[$Unit].rid
     $inputs = Get-JobInputs $Job
     $builder = [System.Text.StringBuilder]::new()
     [void]$builder.Append("$keyFormat`nrid=$Rid`n")
+    if ($units[$Unit].ContainsKey("matrix")) {
+        [void]$builder.Append("matrix=$(ConvertTo-Json $units[$Unit].matrix -Compress)`n")
+    }
     foreach ($name in $inputs.variables.Keys) {
         if (-not $ridOnly.ContainsKey($name) -or $Rid -match $ridOnly[$name]) {
             [void]$builder.Append("$name=$($inputs.variables[$name])`n")
@@ -231,7 +300,7 @@ function Get-UnitKey([string]$Job, [string]$Rid) {
 
 $keys = [ordered]@{}
 foreach ($unit in $units.Keys) {
-    $keys[$unit] = Get-UnitKey $units[$unit].job $units[$unit].rid
+    $keys[$unit] = Get-UnitKey $unit
 }
 
 foreach ($job in $jobInputs.Keys | Sort-Object) {
@@ -346,11 +415,43 @@ foreach ($unit in $units.Keys) {
 }
 ConvertTo-Json $keyFile -Depth 5 | Set-Content -LiteralPath $OutputPath -Encoding utf8NoBOM
 
-$reuseJson = ConvertTo-Json $reuse -Compress
-if ($env:GITHUB_OUTPUT) {
-    Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "reuse=$reuseJson"
-    Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "release=$release"
-} else {
-    Write-Host "reuse=$reuseJson"
-    Write-Host "release=$release"
+# build: job -> whether it has a unit to build or test. matrix: matrix job ->
+# the entries of these units. reused: the reused build units, whose files the
+# reuse-artifacts job uploads.
+$build = [ordered]@{}
+$matrix = [ordered]@{}
+foreach ($unit in $units.Keys) {
+    $job = $units[$unit].job
+    if (-not $build.Contains($job)) {
+        $build[$job] = $false
+    }
+    if ($units[$unit].ContainsKey("matrix") -and -not $matrix.Contains($job)) {
+        $matrix[$job] = [System.Collections.Generic.List[object]]::new()
+    }
+    if (-not $reuse[$unit]) {
+        $build[$job] = $true
+        if ($units[$unit].ContainsKey("matrix")) {
+            $matrix[$job].Add($units[$unit].matrix)
+        }
+    }
+}
+$reused = [System.Collections.Generic.List[string]]::new()
+foreach ($unit in $units.Keys) {
+    if ($reuse[$unit] -and -not $units[$unit].ContainsKey("inputs")) {
+        $reused.Add($unit)
+    }
+}
+
+$outputs = [ordered]@{
+    build   = ConvertTo-Json $build -Compress
+    matrix  = ConvertTo-Json $matrix -Compress -Depth 5
+    reused  = ConvertTo-Json -InputObject $reused.ToArray() -Compress
+    release = $release
+}
+foreach ($name in $outputs.Keys) {
+    if ($env:GITHUB_OUTPUT) {
+        Add-Content -LiteralPath $env:GITHUB_OUTPUT -Value "$name=$($outputs[$name])"
+    } else {
+        Write-Host "$name=$($outputs[$name])"
+    }
 }
