@@ -298,12 +298,12 @@ jobs:
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: dotnet nuget push ./artifacts/*.nupkg --api-key ${{ steps.nuget-login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
 
-  # Gives every build and test of the tools built from source a key, the hash
-  # of everything it depends on, and compares it with the key the latest
-  # release recorded (scripts/Get-BuildPlan.ps1). The units whose key did not
-  # change do not run: a job runs only when it has a unit to build or test
-  # (build), and a matrix job gets the matrix entries of these units only
-  # (matrix; the runner of each target is in scripts/Get-BuildPlan.ps1).
+  # Gives every build and test of the tools (the repackaged releases too) a
+  # key, the hash of everything it depends on, and compares it with the key
+  # the latest release recorded (scripts/Get-BuildPlan.ps1). The units whose
+  # key did not change do not run: a job runs only when it has a unit to build
+  # or test (build), and a matrix job gets the matrix entries of these units
+  # only (matrix; the runner of each target is in scripts/Get-BuildPlan.ps1).
   # reuse-artifacts uploads the files of the reused builds from that release.
   # So a run that changes one tool starts the jobs of that tool only.
   #
@@ -423,6 +423,8 @@ jobs:
         path: 'versions.json'
 
   zopfli-linux:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['zopfli-linux'] }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -440,6 +442,8 @@ jobs:
         path: zopfli-linux-x64
 
   zopfli-linux-arm64:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['zopfli-linux-arm64'] }}
     runs-on: ubuntu-24.04-arm
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -457,6 +461,8 @@ jobs:
         path: zopfli-linux-arm64
 
   zopfli-windows:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['zopfli-windows'] }}
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -485,6 +491,8 @@ jobs:
         path: zopfli-win-x64.exe
 
   zopfli-osx-arm64:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['zopfli-osx-arm64'] }}
     runs-on: macos-latest
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -502,6 +510,8 @@ jobs:
         path: zopfli-osx-arm64
 
   oxipng-windows:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['oxipng-windows'] }}
     runs-on: ubuntu-latest
     steps:
     - run: |
@@ -539,6 +549,8 @@ jobs:
         path: 'oxipng-win-x64.exe'
 
   oxipng-linux:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['oxipng-linux'] }}
     runs-on: ubuntu-latest
     steps:
     - run: |
@@ -574,6 +586,8 @@ jobs:
         path: 'oxipng-linux-x64'
 
   oxipng-linux-arm64:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['oxipng-linux-arm64'] }}
     runs-on: ubuntu-latest
     steps:
     - run: |
@@ -609,6 +623,8 @@ jobs:
         path: 'oxipng-linux-arm64'
 
   oxipng-osx-arm64:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['oxipng-osx-arm64'] }}
     runs-on: ubuntu-latest
     steps:
     - run: |
@@ -650,6 +666,8 @@ jobs:
   # cache miss, with a Wayback Machine snapshot of the same bytes as a fallback.
   # Get-VerifiedFile.ps1 checks the hash whichever of the three the file comes from.
   pngout-windows:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['pngout-windows'] }}
     runs-on: ubuntu-latest
     env:
       PNGOUT_SHA256: 843f0be42e86680c1663c4ef58eb0677ace15fc29ab23897c83f4b7e5af3ef36
@@ -676,6 +694,8 @@ jobs:
         path: pngout-win-x64.exe
 
   pngout-linux:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['pngout-linux'] }}
     runs-on: ubuntu-latest
     env:
       PNGOUT_SHA256: ac38bba6f0de29033de866538c3afa64341319b695bbe388efbc5fd9e830e928
@@ -702,6 +722,8 @@ jobs:
         path: pngout-linux-x64
 
   pngout-linux-arm64:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['pngout-linux-arm64'] }}
     runs-on: ubuntu-latest
     env:
       PNGOUT_SHA256: ac38bba6f0de29033de866538c3afa64341319b695bbe388efbc5fd9e830e928
@@ -728,6 +750,8 @@ jobs:
         path: pngout-linux-arm64
 
   pngout-osx-arm64:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['pngout-osx-arm64'] }}
     runs-on: ubuntu-latest
     env:
       PNGOUT_SHA256: 2e3eb79345206040ae3a0d0d0ecfe9ad01d92fe5002b8a1676a65632a56840e1
@@ -763,21 +787,11 @@ jobs:
   # Only cwebp, dwebp, webpmux and anim_dump are shipped; the other tools of the
   # archive are skipped. Google publishes no Windows arm64 build.
   libwebp:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['libwebp'] }}
     strategy:
       matrix:
-        include:
-          - rid: linux-x64
-            os: ubuntu-latest
-            archive: linux-x86-64.tar.gz
-          - rid: linux-arm64
-            os: ubuntu-24.04-arm
-            archive: linux-aarch64.tar.gz
-          - rid: win-x64
-            os: windows-latest
-            archive: windows-x64.zip
-          - rid: osx-arm64
-            os: macos-latest
-            archive: mac-arm64.tar.gz
+        include: ${{ fromJSON(needs.build-plan.outputs.matrix)['libwebp'] }}
     runs-on: ${{ matrix.os }}
     steps:
     - run: |

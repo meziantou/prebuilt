@@ -92,6 +92,35 @@ $units["binaries-jxl-oxide-win-x64"].matrix.os = "windows-latest"
 $units["binaries-pdfium-linux-arm64"].matrix.os = "ubuntu-latest"
 $units["binaries-pdfium-win-x64"].matrix.os = "windows-latest"
 
+# libwebp repackages the binaries of its release, on the runner of each target.
+$libwebpArchives = @{
+    "linux-x64"   = "linux-x86-64.tar.gz"
+    "linux-arm64" = "linux-aarch64.tar.gz"
+    "win-x64"     = "windows-x64.zip"
+    "osx-arm64"   = "mac-arm64.tar.gz"
+}
+foreach ($rid in $rids) {
+    $entry = New-MatrixEntry $rid
+    $entry.archive = $libwebpArchives[$rid]
+    $units["binaries-libwebp-$rid"] = @{ job = "libwebp"; rid = $rid; matrix = $entry }
+}
+$units["binaries-libwebp-win-x64"].matrix.os = "windows-latest"
+
+# zopfli is built from source; oxipng and pngout repackage the binaries of
+# their releases. One job per target, named as its artifact.
+$singleTargetArtifacts = [ordered]@{
+    "linux-x64"   = "linux"
+    "linux-arm64" = "linux-arm64"
+    "win-x64"     = "windows"
+    "osx-arm64"   = "osx-arm64"
+}
+foreach ($tool in "zopfli", "oxipng", "pngout") {
+    foreach ($rid in $singleTargetArtifacts.Keys) {
+        $job = "$tool-$($singleTargetArtifacts[$rid])"
+        $units["binaries-$job"] = @{ job = $job; rid = $rid }
+    }
+}
+
 $ffmpegArtifacts = [ordered]@{
     "linux-x64"   = "binaries-ffmpeg-linux"
     "linux-arm64" = "binaries-ffmpeg-linux-arm64"
