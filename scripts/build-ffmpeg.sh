@@ -458,12 +458,14 @@ FFMPEG_REF="n$FFMPEG_VERSION"
 fetch FFmpeg "https://github.com/FFmpeg/FFmpeg/archive/refs/tags/$FFMPEG_REF.tar.gz" \
       "ffmpeg-$FFMPEG_VERSION.tar.gz" "FFmpeg-$FFMPEG_REF"
 
-# Only the ffmpeg.org release tarballs carry a VERSION file; the GitHub tag
+# Only the ffmpeg.org release tarballs carry a version file; the GitHub tag
 # archive does not, so ffbuild/version.sh falls back to `git describe`. The
 # sources are extracted inside this repository's checkout, so that describes
-# *this* repo and `ffmpeg -version` reports its commit hash. Left outside the
-# fetch guard so it also fixes an already extracted tree.
+# *this* repo and `ffmpeg -version` reports its commit hash. FFmpeg 9.1 renamed
+# the file from VERSION to FF_VERSION; both are written so either release line
+# builds. Left outside the fetch guard so it also fixes an already extracted tree.
 printf '%s\n' "$FFMPEG_VERSION" > "$SRCDIR/FFmpeg-$FFMPEG_REF/VERSION"
+printf '%s\n' "$FFMPEG_VERSION" > "$SRCDIR/FFmpeg-$FFMPEG_REF/FF_VERSION"
 
 msg "configuring ffmpeg $FFMPEG_REF for $TARGET"
 
