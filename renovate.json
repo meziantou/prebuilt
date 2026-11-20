@@ -38,7 +38,7 @@
       ],
       "datasourceTemplate": "github-tags",
       "depNameTemplate": "FFmpeg/FFmpeg",
-      "extractVersionTemplate": "^n(?<version>\\d+\\.\\d+\\.\\d+)$"
+      "extractVersionTemplate": "^n(?<version>\\d+\\.\\d+(?:\\.\\d+)?)$"
     },
     {
       "customType": "regex",

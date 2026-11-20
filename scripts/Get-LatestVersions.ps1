@@ -440,7 +440,7 @@ if ([string]::IsNullOrEmpty($workflowContent)) {
 $availableLatestVersions = [ordered]@{
     "ZOPFLI_VERSION" = Get-ZopfliVersion
     "OXIPNG_VERSION" = Get-ReleaseTag -Repository "shssoichiro/oxipng" -TrimV
-    "FFMPEG_VERSION" = Get-LatestTag -Repository "FFmpeg/FFmpeg" -Pattern "^n(?<version>\d+\.\d+\.\d+)$"
+    "FFMPEG_VERSION" = Get-LatestTag -Repository "FFmpeg/FFmpeg" -Pattern "^n(?<version>\d+\.\d+(?:\.\d+)?)$"
     "LLVM_MINGW_VERSION" = Get-ReleaseTag -Repository "mstorsjo/llvm-mingw"
     "ZLIB_VERSION" = Get-LatestTag -Repository "madler/zlib"
     "BROTLI_VERSION" = Get-LatestTag -Repository "google/brotli"
