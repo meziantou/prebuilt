@@ -36,6 +36,22 @@ public sealed class PrebuiltToolCacheTests
     }
 
     [Fact]
+    public void Constructor_DefaultHttpClientFollowsRedirects()
+    {
+        // GitHub release download URLs always redirect (302) to the storage that serves the files
+        Assert.Same(Meziantou.NET.Sdk.SharedHttpClient.InstanceWithAutoRedirect, new PrebuiltToolCache("relative-cache").HttpClient);
+        Assert.Same(Meziantou.NET.Sdk.SharedHttpClient.InstanceWithAutoRedirect, PrebuiltToolCache.Default.HttpClient);
+    }
+
+    [Fact]
+    public void Constructor_UsesProvidedHttpClient()
+    {
+        using var httpClient = new HttpClient();
+
+        Assert.Same(httpClient, new PrebuiltToolCache("relative-cache", httpClient).HttpClient);
+    }
+
+    [Fact]
     public void DefaultCacheDirectory_IsInLocalApplicationData()
     {
         var expected = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData, Environment.SpecialFolderOption.DoNotVerify), "Meziantou.Prebuilt");

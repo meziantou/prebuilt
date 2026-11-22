@@ -22,7 +22,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.17.3
+  VERSION: 3.17.4
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version

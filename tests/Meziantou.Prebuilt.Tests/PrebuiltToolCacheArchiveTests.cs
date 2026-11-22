@@ -123,7 +123,7 @@ public sealed class PrebuiltToolCacheArchiveTests
 
         Assert.All(paths, path => Assert.Equal(cache1.GetPath(asset), path));
         Assert.Equal(1, handler.RequestCount);
-        Assert.Equal(4, directory.GetFiles().Length);
+        Assert.HasCount(4, directory.GetFiles());
     }
 
     [Fact]

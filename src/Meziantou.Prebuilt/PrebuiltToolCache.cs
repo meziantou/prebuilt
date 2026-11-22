@@ -25,11 +25,14 @@ public sealed class PrebuiltToolCache
 
     /// <summary>Initializes a new instance of the <see cref="PrebuiltToolCache"/> class.</summary>
     /// <param name="cacheDirectory">The folder to store the tools in. Defaults to <see cref="DefaultCacheDirectory"/>.</param>
-    /// <param name="httpClient">The client used to download the tools. Defaults to a shared instance.</param>
+    /// <param name="httpClient">
+    /// The client used to download the tools. It must follow the redirection responses: the GitHub release download URLs
+    /// redirect to the storage that serves the files. Defaults to a shared instance that follows them.
+    /// </param>
     public PrebuiltToolCache(string? cacheDirectory = null, HttpClient? httpClient = null)
     {
         CacheDirectory = Path.GetFullPath(cacheDirectory ?? DefaultCacheDirectory);
-        _httpClient = httpClient ?? SharedHttpClient.Instance;
+        _httpClient = httpClient ?? SharedHttpClient.InstanceWithAutoRedirect;
     }
 
     // Declared before Default: static initializers run in textual order
@@ -38,6 +41,8 @@ public sealed class PrebuiltToolCache
 
     /// <summary>Gets a cache stored in <see cref="DefaultCacheDirectory"/>.</summary>
     public static PrebuiltToolCache Default { get; } = new();
+
+    internal HttpClient HttpClient => _httpClient;
 
     /// <summary>Gets the full path of the cache folder.</summary>
     public string CacheDirectory { get; }
