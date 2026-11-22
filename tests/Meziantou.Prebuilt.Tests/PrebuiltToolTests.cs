@@ -180,6 +180,9 @@ public sealed class PrebuiltToolTests
         Assert.Equal("zbarimg", PrebuiltTools.ZBarImg.Name);
         Assert.Equal("7zz", PrebuiltTools.SevenZip.Name);
         Assert.Equal("unrar", PrebuiltTools.Unrar.Name);
+        Assert.Equal("pngquant", PrebuiltTools.Pngquant.Name);
+        Assert.Equal("mozjpeg-cjpeg", PrebuiltTools.MozjpegCjpeg.Name);
+        Assert.Equal("mozjpeg-jpegtran", PrebuiltTools.MozjpegJpegtran.Name);
     }
 
     public static bool IsManifestEmbedded => PrebuiltManifest.IsEmbedded;

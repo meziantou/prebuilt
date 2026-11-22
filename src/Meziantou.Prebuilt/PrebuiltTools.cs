@@ -20,6 +20,15 @@ public static class PrebuiltTools
     /// <summary>pngout, Ken Silverman's PNG optimizer.</summary>
     public static PrebuiltTool Pngout { get; } = new("pngout");
 
+    /// <summary>pngquant, the lossy PNG compressor: it converts a truecolor PNG file to a palette of at most 256 colors with libimagequant, with dithering, and keeps the alpha channel in a tRNS chunk. It exits with 98 when <c>--skip-if-larger</c> skips a file the conversion does not make small enough, and with 99 when the minimum of <c>--quality</c> cannot be met; it writes no output file then. pngquant is available under the GNU General Public License, version 3 or later.</summary>
+    public static PrebuiltTool Pngquant { get; } = new("pngquant");
+
+    /// <summary>mozjpeg-cjpeg, the cjpeg of mozjpeg: a JPEG encoder that writes smaller files than libjpeg-turbo at the same quality (progressive, with optimized scans, trellis quantization). It reads PNG, PPM, BMP, Targa and JPEG files: a JPEG file is decoded and encoded again with the options, with its COM and APPn markers (EXIF, ICC profile, XMP). It is named mozjpeg-cjpeg, as libjpeg-turbo has a cjpeg too. mozjpeg is available under the IJG License, the Modified (3-clause) BSD License and the zlib License.</summary>
+    public static PrebuiltTool MozjpegCjpeg { get; } = new("mozjpeg-cjpeg");
+
+    /// <summary>mozjpeg-jpegtran, the jpegtran of mozjpeg: lossless transformations of a JPEG file, which keep its DCT coefficients (<c>-copy none -optimize -progressive</c> strips the metadata and optimizes the Huffman coding and the progressive scans). It is named mozjpeg-jpegtran, as libjpeg-turbo has a jpegtran too. mozjpeg is available under the IJG License, the Modified (3-clause) BSD License and the zlib License.</summary>
+    public static PrebuiltTool MozjpegJpegtran { get; } = new("mozjpeg-jpegtran");
+
     /// <summary>ffmpeg, statically linked with a pinned codec set.</summary>
     public static PrebuiltTool Ffmpeg { get; } = new("ffmpeg");
 
@@ -329,6 +338,9 @@ public static class PrebuiltTools
         Zopfli,
         Oxipng,
         Pngout,
+        Pngquant,
+        MozjpegCjpeg,
+        MozjpegJpegtran,
         Ffmpeg,
         Ffprobe,
         X265,

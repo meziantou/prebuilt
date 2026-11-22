@@ -510,6 +510,8 @@ $availableLatestVersions = [ordered]@{
     "OPENIMAGEIO_VERSION" = Get-ReleaseTag -Repository "AcademySoftwareFoundation/OpenImageIO" -TrimV
     "DNG_SDK_VERSION" = Get-LatestDngSdkVersion
     "EXPAT_VERSION" = (Get-ReleaseTag -Repository "libexpat/libexpat") -replace '^R_', '' -replace '_', '.'
+    "PNGQUANT_VERSION" = Get-LatestTag -Repository "kornelski/pngquant" -Pattern "^(?<version>\d+\.\d+\.\d+)$"
+    "MOZJPEG_VERSION" = Get-LatestTag -Repository "mozilla/mozjpeg" -Pattern "^v(?<version>\d+\.\d+\.\d+)$"
 }
 
 $selectedVariableNames =

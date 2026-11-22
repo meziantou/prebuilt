@@ -125,6 +125,9 @@ $versionKeys = [ordered]@{
     "zbarimg"          = "ZBar"
     "7zz"              = "SevenZip"
     "unrar"            = "Unrar"
+    "pngquant"         = "Pngquant"
+    "mozjpeg-cjpeg"    = "Mozjpeg"
+    "mozjpeg-jpegtran" = "Mozjpeg"
 }
 
 $versionsPath = Join-Path $BinariesPath "versions.json"
