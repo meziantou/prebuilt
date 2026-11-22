@@ -24,7 +24,7 @@ var cache = new PrebuiltToolCache(cacheDirectory: "/tmp/tools", httpClient: myHt
 string cwebp = await cache.GetOrDownloadAsync(PrebuiltTools.Cwebp, runtimeIdentifier: "linux-arm64");
 ```
 
-Tools: `Zopfli`, `Oxipng`, `Pngout`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `Ssimulacra2`, `Butteraugli`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `ExrHeader`, `ExrInfo`, `ExrMakeTiled`, `ExrMetrics`, `ExrStdAttr`, `ExrCheck`, `ExrMultiPart`, `ExrMultiView`, `ExrEnvMap`, `ExrMakePreview`, `ExrManifest`, `Exr2Aces`, `ExrFromRaw`, `ExrToRaw`, `IsoJpeg`, `Pvalue`, `RadianceGetInfo`, `Pflip`, `Protate`, `RaXyze`, `RaRgbe`, `RaPpm`, `RaBmp`, `Magick`, `PsdTools`, `Astcenc`, `Basisu`, `Ktx`, `Toktx`, `Ktx2Check`, `DcrawEmu`, `RawIdentify`, `UnprocessedRaw`, `HmScmEncoder`, `HmScmDecoder`, `Texconv`, `Texdiag`, `Texassemble`, `IccFromXml`, `IccToXml`, `IccFromJson`, `IccToJson`, `IccDumpProfile`, `IccRoundTrip`, `IccApplyNamedCmm`, `IccApplyToLink`, `OpenCvOracle`, `OiioTool`, `Iinfo`, `DngValidate`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`, `Zint`, `ZXingReader`, `ZBarImg`, `SevenZip`, `Unrar`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
+Tools: `Zopfli`, `Oxipng`, `Pngout`, `Pngquant`, `MozjpegCjpeg`, `MozjpegJpegtran`, `Ffmpeg`, `Ffprobe`, `X265`, `Kvazaar`, `Cwebp`, `Dwebp`, `Webpmux`, `WebpAnimDump`, `Avifenc`, `Avifdec`, `Cjxl`, `Djxl`, `Jxlinfo`, `JxlFromTree`, `Ssimulacra2`, `Butteraugli`, `JxlOxide`, `HbShape`, `HbInfo`, `HbSubset`, `HbVector`, `HbRaster`, `Woff2Compress`, `Woff2Decompress`, `Woff2Info`, `OpjCompress`, `OpjDecompress`, `OpjDump`, `OjphCompress`, `OjphExpand`, `ExrHeader`, `ExrInfo`, `ExrMakeTiled`, `ExrMetrics`, `ExrStdAttr`, `ExrCheck`, `ExrMultiPart`, `ExrMultiView`, `ExrEnvMap`, `ExrMakePreview`, `ExrManifest`, `Exr2Aces`, `ExrFromRaw`, `ExrToRaw`, `IsoJpeg`, `Pvalue`, `RadianceGetInfo`, `Pflip`, `Protate`, `RaXyze`, `RaRgbe`, `RaPpm`, `RaBmp`, `Magick`, `PsdTools`, `Astcenc`, `Basisu`, `Ktx`, `Toktx`, `Ktx2Check`, `DcrawEmu`, `RawIdentify`, `UnprocessedRaw`, `HmScmEncoder`, `HmScmDecoder`, `Texconv`, `Texdiag`, `Texassemble`, `IccFromXml`, `IccToXml`, `IccFromJson`, `IccToJson`, `IccDumpProfile`, `IccRoundTrip`, `IccApplyNamedCmm`, `IccApplyToLink`, `OpenCvOracle`, `OiioTool`, `Iinfo`, `DngValidate`, `Dec265`, `HeifEnc`, `HeifDec`, `HeifInfo`, `HmEncoder`, `HmDecoder`, `Qpdf`, `Mutool`, `Pdftoppm`, `Pdftotext`, `Pdffonts`, `Pdfinfo`, `Pdfsig`, `ArlingtonTestGrammar`, `VeraPdf`, `PdfiumTest`, `Zint`, `ZXingReader`, `ZBarImg`, `SevenZip`, `Unrar`. Not every tool is available for every runtime identifier; use `tool.IsSupported()` or `tool.Assets` to check.
 
 On `win-arm64`, a tool that is not built for Arm64 (e.g. `pngout`) falls back to its `win-x64` build, which Windows on Arm runs through emulation. Pass `allowEmulation: false` to `GetAsset`, `IsSupported` or `GetOrDownloadAsync` to only get native builds:
 
@@ -248,6 +248,41 @@ using (var process = Process.Start(unrar, ["x", "-o+", "-p-", "archive.rar", "ou
 - On `win-x64`, `SevenZip` is `7za.exe`, the standalone console 7-Zip of the 7-Zip Extra package: it packs and unpacks 7z, xz, bzip2, gzip, zip and tar, and unpacks lzma, cab and zstd only. It has no RAR codec; use `Unrar`.
 - Without `-p`, both tools ask for the password of an encrypted archive on the console: pass `-p<password>` (or `-p-` to `unrar`) so that they fail instead.
 - 7-Zip is available under the GNU Lesser General Public License, version 2.1 or later, with the unRAR license restriction for its RAR code and the BSD 3-Clause and 2-Clause licenses for some code; unrar under the freeware unRAR license. `rar`, the RAR archiver, is proprietary and not available.
+
+## PNG and JPEG compression
+
+`Pngquant` (`pngquant`) makes PNG files smaller with a palette of at most 256 colors, and `MozjpegCjpeg` (`mozjpeg-cjpeg`) and `MozjpegJpegtran` (`mozjpeg-jpegtran`), the cjpeg and jpegtran of mozjpeg, encode and optimize JPEG files:
+
+```csharp
+string pngquant = await PrebuiltTools.Pngquant.GetOrDownloadAsync();
+string cjpeg = await PrebuiltTools.MozjpegCjpeg.GetOrDownloadAsync();
+string jpegtran = await PrebuiltTools.MozjpegJpegtran.GetOrDownloadAsync();
+
+// pngquant exits with 98 (--skip-if-larger) or 99 (--quality) and writes nothing when the result is not worth it
+using (var process = Process.Start(pngquant, ["--quality", "65-80", "--speed", "1", "--strip", "--skip-if-larger", "--force", "--output", "output.png", "input.png"]))
+{
+    await process.WaitForExitAsync();
+    bool converted = process.ExitCode == 0; // 98 or 99: keep input.png
+}
+
+// cjpeg reads PNG, PPM, BMP, Targa and JPEG files; it is progressive with optimized scans by default
+using (var process = Process.Start(cjpeg, ["-quality", "82", "-outfile", "output.jpg", "input.jpg"]))
+{
+    await process.WaitForExitAsync();
+}
+
+// jpegtran is lossless: it keeps the DCT coefficients and drops the metadata
+using (var process = Process.Start(jpegtran, ["-copy", "none", "-optimize", "-progressive", "-outfile", "optimized.jpg", "input.jpg"]))
+{
+    await process.WaitForExitAsync();
+}
+```
+
+- `pngquant --version` prints its version (`3.0.3`). It reads PNG files only, any color type, converts the pixels of a file with an ICC profile to sRGB (LittleCMS), and keeps the alpha channel in a tRNS chunk. It exits with 98 when `--skip-if-larger` skips a file the conversion does not make small enough (smaller than the input, and much smaller when the quality drops), with 99 when the minimum of `--quality` cannot be met, with 2 when it cannot read the input and with 25 when the input is not a PNG file; it writes no output file then. Without `--force`, it does not overwrite an output file (exit code 15).
+- **cjpeg reads JPEG files, so a JPEG file does not have to be decoded to PNG first.** cjpeg decodes it to pixels and encodes these again, with the options: the output has the quantization tables of `-quality`, and is a new lossy generation of the image (at a lower quality than the one of the input, the output can even be larger). cjpeg copies the COM and APPn markers of a JPEG input (EXIF, ICC profile, XMP) to the output: run `jpegtran -copy none` on the result to drop them. The alpha channel of a PNG input is dropped.
+- cjpeg exits with 0 after a warning of its JPEG reader, a truncated or corrupt JPEG input among them, even with `-strict`, and prints the warning (`Premature end of JPEG file`) on the standard error. jpegtran exits with 2 after a warning: running `jpegtran -copy none` on a JPEG input first tells whether it is damaged.
+- `-version` prints `mozjpeg version 4.1.5 (build <date>)` on the standard error. Pass `-outfile`, or redirect the standard output to a file: the tools write binary data to it.
+- pngquant is available under the GNU General Public License, version 3 or later, and so is libimagequant. mozjpeg is available under the IJG License, the Modified (3-clause) BSD License and the zlib License; this software is based in part on the work of the Independent JPEG Group.
 
 ## Tools with their files
 

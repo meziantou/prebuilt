@@ -22,7 +22,7 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.16.2
+  VERSION: 3.17.0
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
@@ -36,7 +36,7 @@ env:
   BROTLI_VERSION: "1.2.0" # https://github.com/google/brotli/tags
   HWY_VERSION: "1.4.0" # https://github.com/google/highway/tags - tags have no leading v
   JXL_VERSION: "0.13.0" # https://github.com/libjxl/libjxl/releases - the libjxl of ffmpeg and the released cjxl/djxl/jxlinfo/jxl_from_tree/ssimulacra2/butteraugli_main tools
-  LIBPNG_VERSION: "1.6.59" # https://github.com/pnggroup/libpng/tags - PNG and APNG support of cjxl/djxl, PNG glyphs and PNG output of the HarfBuzz tools; 1.6.x, the 1.7 tags are betas
+  LIBPNG_VERSION: "1.6.59" # https://github.com/pnggroup/libpng/tags - PNG and APNG support of cjxl/djxl, PNG glyphs and PNG output of the HarfBuzz tools, the PNG reader of pngquant and mozjpeg-cjpeg; 1.6.x, the 1.7 tags are betas
   JXL_OXIDE_VERSION: "0.12.6" # https://crates.io/crates/jxl-oxide-cli
   RUST_TOOLCHAIN: "1.99.0" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
   WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags - also the released cwebp/dwebp/webpmux/... tools
@@ -94,7 +94,7 @@ env:
   MUPDF_VERSION: "1.28.5" # https://mupdf.com/releases - mutool, built from mupdf-<version>-source.tar.gz with its third-party libraries
   POPPLER_VERSION: "26.10.0" # https://poppler.freedesktop.org/releases.html - pdftoppm/pdftotext/pdffonts/pdfinfo/pdfsig
   FREETYPE_VERSION: "2.15.0" # https://github.com/freetype/freetype/tags - the FreeType of Poppler (scripts/pdf-libs.sh), built from tag VER-<version with dashes>
-  LCMS2_VERSION: "2.19.1" # https://github.com/mm2/Little-CMS/releases - the LittleCMS of Poppler (scripts/pdf-libs.sh) and magick
+  LCMS2_VERSION: "2.19.1" # https://github.com/mm2/Little-CMS/releases - the LittleCMS of Poppler (scripts/pdf-libs.sh), magick and pngquant
   NSS_VERSION: "3.132" # https://ftp.mozilla.org/pub/security/nss/releases/ - the signature backend of pdfsig (scripts/pdf-libs.sh)
   NSPR_VERSION: "4.39" # the NSPR bundled with NSS_VERSION: nss-<NSS_VERSION>-with-nspr-<NSPR_VERSION>.tar.gz
   ARLINGTON_COMMIT: "d148fee5a0cb6dcacadf58c09ed842e32847024d" # https://github.com/pdf-association/arlington-pdf-model - master branch; TestGrammar and the TSV files of the model; no release since v0.5 (2021)
@@ -118,6 +118,8 @@ env:
   UNRAR_VERSION: "7.23" # https://www.rarlab.com/rar_add.htm - the version unrar prints (RARVER_MAJOR.RARVER_MINOR of version.hpp), a stable release, not a beta - scripts/build-unrar.sh fails when the tarball is not
   UNRAR_SOURCE_VERSION: "7.2.7" # the unrarsrc-<version>.tar.gz of UNRAR_VERSION: RARLAB numbers its tarballs with a counter of its own
   UNRAR_SHA256: "01d903a7dcf413cb2925696d7796e48e38d471f79bfe7ef3ad2aebf6c12dbefd" # the SHA-256 of unrarsrc-<UNRAR_SOURCE_VERSION>.tar.gz: RARLAB publishes no checksum
+  PNGQUANT_VERSION: "3.0.3" # https://crates.io/crates/pngquant - pngquant, built from the crate of the release, with the libimagequant 4 (imagequant crate) of its Cargo.lock and the zlib, libpng and LittleCMS above
+  MOZJPEG_VERSION: "4.1.5" # https://github.com/mozilla/mozjpeg/releases - mozjpeg-cjpeg/mozjpeg-jpegtran, built from tag v<version> with the zlib and libpng above
 
 jobs:
   create-release:
@@ -214,7 +216,11 @@ jobs:
       sevenzip,
       sevenzip-windows-test,
       unrar,
-      unrar-windows-test
+      unrar-windows-test,
+      pngquant,
+      pngquant-windows-test,
+      mozjpeg,
+      mozjpeg-windows-test
     ]
     # The jobs and matrix legs whose units are reused do not run: skipped, they
     # must not skip the release. reuse-artifacts uploads their artifacts.
@@ -420,6 +426,8 @@ jobs:
         $versions.SevenZip = "${{ env.SEVENZIP_VERSION }}"
         # The version unrar prints, not the one of the unrarsrc tarball.
         $versions.Unrar = "${{ env.UNRAR_VERSION }}"
+        $versions.Pngquant = "${{ env.PNGQUANT_VERSION }}"
+        $versions.Mozjpeg = "${{ env.MOZJPEG_VERSION }}"
         ConvertTo-Json $versions | Out-File versions.json
     - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
       with:
@@ -4142,6 +4150,205 @@ jobs:
     - name: Smoke test
       shell: bash
       run: bash scripts/verify-unrar.sh win-x64 run
+
+  # pngquant, the lossy PNG compressor: palette quantization with libimagequant
+  # 4, written in Rust. Its releases have no binaries, so every target is built
+  # from the pngquant crate of the release with Cargo (scripts/build-pngquant.sh),
+  # with the zlib, libpng and LittleCMS of the other tools, built first and
+  # linked statically instead of the copies the -sys crates bundle. The Linux
+  # build runs in Alpine, against musl, with the Rust of rustup; win-x64 is
+  # cross-compiled to x86_64-pc-windows-gnullvm with llvm-mingw.
+  # No Windows arm64 build, as for the image tools.
+  pngquant:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['pngquant'] }}
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.build-plan.outputs.matrix)['pngquant'] }}
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Build (Alpine, fully static against musl)
+      if: startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e LIBPNG_VERSION -e LCMS2_VERSION -e PNGQUANT_VERSION -e RUST_TOOLCHAIN \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang cmake ninja-build ninja-is-really-ninja \
+              curl bash linux-headers tar rustup
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            # rustup installs RUST_TOOLCHAIN in the build script.
+            rustup-init -y --no-modify-path --profile minimal --default-toolchain none
+            export PATH="$HOME/.cargo/bin:$PATH"
+            bash scripts/build-pngquant.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build curl xz-utils file
+    - name: Install llvm-mingw
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      # The rustup of the runner installs RUST_TOOLCHAIN.
+      run: bash scripts/build-pngquant.sh win-x64
+    - name: Build (macOS)
+      if: matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-pngquant.sh asserts with otool -L.
+      run: |
+        brew install cmake ninja
+        bash scripts/build-pngquant.sh osx-arm64
+    - name: Verify and smoke test
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binary
+      # runs outside of Alpine. The Windows binary is cross-compiled, so it
+      # cannot be executed here; pngquant-windows-test runs its smoke tests.
+      run: bash scripts/verify-pngquant.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-pngquant-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: pngquant-${{ matrix.rid }}*
+
+  pngquant-windows-test:
+    runs-on: windows-latest
+    needs: [build-plan, pngquant, reuse-artifacts]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['pngquant-windows-test'] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-pngquant-win-x64
+        path: .
+    - name: Smoke test
+      shell: bash
+      run: bash scripts/verify-pngquant.sh win-x64 run
+
+  # mozjpeg-cjpeg and mozjpeg-jpegtran, the cjpeg and jpegtran of mozjpeg, the
+  # JPEG encoder of Mozilla. Its releases have Windows binaries only, so every
+  # target is built from the release tag with its CMake build
+  # (scripts/build-mozjpeg.sh), statically linked, with the SIMD code (nasm on
+  # x64) and with libpng, so that cjpeg reads PNG files. The tools are renamed:
+  # libjpeg-turbo has a cjpeg and a jpegtran too.
+  # No Windows arm64 build, as for the image tools.
+  mozjpeg:
+    needs: [build-plan]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['mozjpeg'] }}
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.build-plan.outputs.matrix)['mozjpeg'] }}
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - name: Build (Alpine, fully static against musl)
+      if: startsWith(matrix.rid, 'linux-')
+      shell: bash
+      run: |
+        # `docker run` rather than a job-level `container:`, as for ffmpeg-linux.
+        image="$(bash scripts/docker-pull.sh "$ALPINE_IMAGE")"
+        docker run --rm \
+          -v "$PWD:/work" -w /work \
+          -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+          -e ZLIB_VERSION -e LIBPNG_VERSION -e MOZJPEG_VERSION \
+          "$image" sh -euc '
+            apk add --no-cache build-base clang cmake ninja-build ninja-is-really-ninja nasm \
+              curl bash linux-headers tar
+            # Everything written to /work is root-owned; hand it back to the
+            # runner user so the next steps and the post-job cleanup work.
+            trap "chown -R $HOST_UID:$HOST_GID /work || true" EXIT
+            bash scripts/build-mozjpeg.sh ${{ matrix.rid }}
+          '
+    - name: Install build tools
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          build-essential cmake ninja-build nasm curl xz-utils file
+    - name: Install llvm-mingw
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: |
+        uri="https://github.com/mstorsjo/llvm-mingw/releases/download/$LLVM_MINGW_VERSION/llvm-mingw-$LLVM_MINGW_VERSION-ucrt-ubuntu-22.04-x86_64.tar.xz"
+        for attempt in 1 2 3 4 5; do
+          if curl -fsSL "$uri" -o llvm-mingw.tar.xz && tar -tJf llvm-mingw.tar.xz > /dev/null 2>&1; then
+            break
+          fi
+          if [ "$attempt" -eq 5 ]; then echo "failed to download llvm-mingw" >&2; exit 1; fi
+          sleep $((2 * attempt))
+        done
+        mkdir -p "$HOME/llvm-mingw"
+        tar -xJf llvm-mingw.tar.xz -C "$HOME/llvm-mingw" --strip-components=1
+        echo "LLVM_MINGW_ROOT=$HOME/llvm-mingw" >> "$GITHUB_ENV"
+        echo "$HOME/llvm-mingw/bin" >> "$GITHUB_PATH"
+    - name: Cross-compile for Windows x64
+      if: matrix.rid == 'win-x64'
+      shell: bash
+      run: bash scripts/build-mozjpeg.sh win-x64
+    - name: Build (macOS)
+      if: matrix.rid == 'osx-arm64'
+      shell: bash
+      # macOS has no static libSystem, so this cannot be fully static; the bar
+      # is "no non-system dylibs", which verify-mozjpeg.sh asserts with otool -L.
+      run: |
+        brew install cmake ninja
+        bash scripts/build-mozjpeg.sh osx-arm64
+    - name: Verify and smoke test
+      shell: bash
+      # On the runner itself: for Linux this also checks that the musl binaries
+      # run outside of Alpine. The Windows binaries are cross-compiled, so they
+      # cannot be executed here; mozjpeg-windows-test runs their smoke tests.
+      run: bash scripts/verify-mozjpeg.sh ${{ matrix.rid }} ${{ matrix.rid == 'win-x64' && 'link' || 'all' }}
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      with:
+        name: binaries-mozjpeg-${{ matrix.rid }}
+        if-no-files-found: error
+        retention-days: 1
+        path: |
+          mozjpeg-cjpeg-${{ matrix.rid }}*
+          mozjpeg-jpegtran-${{ matrix.rid }}*
+
+  mozjpeg-windows-test:
+    runs-on: windows-latest
+    needs: [build-plan, mozjpeg, reuse-artifacts]
+    if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['mozjpeg-windows-test'] }}
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+    - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+      with:
+        name: binaries-mozjpeg-win-x64
+        path: .
+    - name: Smoke test
+      shell: bash
+      run: bash scripts/verify-mozjpeg.sh win-x64 run
 
   ffmpeg-linux:
     needs: [build-plan]

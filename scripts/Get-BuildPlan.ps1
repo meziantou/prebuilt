@@ -79,7 +79,7 @@ function New-MatrixEntry([string]$Rid) {
     return [ordered]@{ rid = $Rid; os = $defaultRunners[$Rid] }
 }
 
-foreach ($job in "libavif", "libjxl", "jxl-oxide", "woff2", "harfbuzz", "openjpeg", "openjph", "openexr", "iso-jpeg", "radiance", "imagemagick", "psd-tools", "astcenc", "basisu", "ktx-software", "libraw", "hm-scm", "iccdev", "opencv", "openimageio", "dng-sdk", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf", "pdfium", "zint", "zxing-cpp", "zbar", "sevenzip", "unrar") {
+foreach ($job in "libavif", "libjxl", "jxl-oxide", "woff2", "harfbuzz", "openjpeg", "openjph", "openexr", "iso-jpeg", "radiance", "imagemagick", "psd-tools", "astcenc", "basisu", "ktx-software", "libraw", "hm-scm", "iccdev", "opencv", "openimageio", "dng-sdk", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf", "pdfium", "zint", "zxing-cpp", "zbar", "sevenzip", "unrar", "pngquant", "mozjpeg") {
     foreach ($rid in $rids) {
         $units["binaries-$job-$rid"] = @{ job = $job; rid = $rid; matrix = New-MatrixEntry $rid }
     }
@@ -135,7 +135,7 @@ foreach ($rid in $ffmpegArtifacts.Keys) {
     $units[$artifact] = @{ job = $artifact -replace '^binaries-', ''; rid = $rid }
 }
 
-foreach ($job in "libjxl", "woff2", "harfbuzz", "openjpeg", "openjph", "openexr", "iso-jpeg", "radiance", "imagemagick", "astcenc", "basisu", "ktx-software", "libraw", "hm-scm", "iccdev", "opencv", "openimageio", "dng-sdk", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf", "zint", "sevenzip", "unrar") {
+foreach ($job in "libjxl", "woff2", "harfbuzz", "openjpeg", "openjph", "openexr", "iso-jpeg", "radiance", "imagemagick", "astcenc", "basisu", "ktx-software", "libraw", "hm-scm", "iccdev", "opencv", "openimageio", "dng-sdk", "libheif", "hm", "qpdf", "mupdf", "poppler", "arlington", "verapdf", "zint", "sevenzip", "unrar", "pngquant", "mozjpeg") {
     $units["$job-windows-test"] = @{ job = "$job-windows-test"; rid = "win-x64"; inputs = @("binaries-$job-win-x64") }
 }
 # The barcode readers are tested with the barcodes zint writes.

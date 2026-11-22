@@ -701,6 +701,29 @@
       "depNameTemplate": "AcademySoftwareFoundation/OpenImageIO",
       "extractVersionTemplate": "^v(?<version>.*)$",
       "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "PNGQUANT_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "crate",
+      "depNameTemplate": "pngquant"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github/workflows/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "MOZJPEG_VERSION: \"(?<currentValue>.*?)\""
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "mozilla/mozjpeg",
+      "extractVersionTemplate": "^v(?<version>\\d+\\.\\d+\\.\\d+)$"
     }
   ]
 }
