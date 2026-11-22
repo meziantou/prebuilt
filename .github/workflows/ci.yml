@@ -32,20 +32,20 @@ env:
   LLVM_MINGW_VERSION: "20261006" # https://github.com/mstorsjo/llvm-mingw/releases
   # Alpine 3.23 ships CMake 4, which several of the dependencies below reject.
   ALPINE_IMAGE: "alpine:3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce"
-  ZLIB_VERSION: "1.3.2" # https://github.com/madler/zlib/tags
-  BROTLI_VERSION: "1.2.0" # https://github.com/google/brotli/tags
+  ZLIB_VERSION: "1.4" # https://github.com/madler/zlib/tags
+  BROTLI_VERSION: "1.2.1" # https://github.com/google/brotli/tags
   HWY_VERSION: "1.4.0" # https://github.com/google/highway/tags - tags have no leading v
   JXL_VERSION: "0.13.0" # https://github.com/libjxl/libjxl/releases - the libjxl of ffmpeg and the released cjxl/djxl/jxlinfo/jxl_from_tree/ssimulacra2/butteraugli_main tools
   LIBPNG_VERSION: "1.6.59" # https://github.com/pnggroup/libpng/tags - PNG and APNG support of cjxl/djxl, PNG glyphs and PNG output of the HarfBuzz tools, the PNG reader of pngquant and mozjpeg-cjpeg; 1.6.x, the 1.7 tags are betas
   JXL_OXIDE_VERSION: "0.12.6" # https://crates.io/crates/jxl-oxide-cli
-  RUST_TOOLCHAIN: "1.99.0" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
+  RUST_TOOLCHAIN: "1.99.1" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
   WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags - also the released cwebp/dwebp/webpmux/... tools
   LIBAVIF_VERSION: "1.4.2" # https://github.com/AOMediaCodec/libavif/releases - avifenc/avifdec; releases only: the Windows and macOS binaries are release assets
   HARFBUZZ_VERSION: "14.6.0" # https://github.com/harfbuzz/harfbuzz/releases - hb-shape/hb-info/hb-subset/hb-vector/hb-raster; glib, libffi, pcre2 and freetype are the versions its meson wraps pin
   WOFF2_COMMIT: "fb9c3379f2605b10f3e8f1d9636664ab5576775c" # https://github.com/google/woff2 - master branch; woff2_compress/woff2_decompress/woff2_info; no tag since v1.0.2 (2017)
   OPENJPEG_VERSION: "2.5.4" # https://github.com/uclouvain/openjpeg/releases - opj_compress/opj_decompress/opj_dump, built from tag v<version>
-  OPENJPH_VERSION: "0.32.0" # https://github.com/aous72/OpenJPH/releases - ojph_compress/ojph_expand; tags have no leading v
-  OPENEXR_VERSION: "3.5.2" # https://github.com/AcademySoftwareFoundation/openexr/releases - exrheader/exrinfo/exrmaketiled/... and exr-from-raw/exr-to-raw, built from tag v<version> with the libdeflate, zstd and OpenJPH of its tarball
+  OPENJPH_VERSION: "0.33.0" # https://github.com/aous72/OpenJPH/releases - ojph_compress/ojph_expand; tags have no leading v
+  OPENEXR_VERSION: "3.5.3" # https://github.com/AcademySoftwareFoundation/openexr/releases - exrheader/exrinfo/exrmaketiled/... and exr-from-raw/exr-to-raw, built from tag v<version> with the libdeflate, zstd and OpenJPH of its tarball
   IMATH_VERSION: "3.2.3" # the Imath OPENEXR_VERSION pins (OPENEXR_IMATH_TAG of its cmake/OpenEXRSetup.cmake) - scripts/build-openexr.sh fails when it is not
   ISO_JPEG_COMMIT: "702114c8130ae818ccd2354cc03e879dac69e579" # https://github.com/thorfdbg/libjpeg - master branch; the jpeg tool of the ISO JPEG reference codec, released as iso-jpeg; no release tag
   ISO_JPEG_VERSION: "1.72" # last release of README.history at ISO_JPEG_COMMIT - scripts/build-iso-jpeg.sh fails when it is not
@@ -60,7 +60,7 @@ env:
   PILLOW_VERSION: "13.0.0" # https://pypi.org/project/pillow/ - a dependency of psd-tools
   ATTRS_VERSION: "26.1.0" # https://pypi.org/project/attrs/ - a dependency of psd-tools
   ASTCENC_VERSION: "5.7.1" # https://github.com/ARM-software/astc-encoder/releases - astcenc, the ASTC encoder and decoder of Arm, built from the release tag
-  BASISU_VERSION: "2.50" # https://github.com/BinomialLLC/basis_universal/releases - basisu, built from tag v<major>_<minor>
+  BASISU_VERSION: "2.50.0" # https://github.com/BinomialLLC/basis_universal/releases - basisu, built from tag v<major>_<minor>
   KTX_SOFTWARE_VERSION: "4.4.2" # https://github.com/KhronosGroup/KTX-Software/releases - ktx/toktx/ktx2check, built from tag v<version> (cloned: the version comes from git describe)
   LIBRAW_VERSION: "0.22.3" # https://www.libraw.org/download - dcraw_emu/raw-identify/unprocessed_raw, built from LibRaw-<version>.tar.gz with zlib, libjpeg-turbo and LittleCMS 2
   HM_SCM_VERSION: "16.21+8.8" # https://vcgit.hhi.fraunhofer.de/jvet/HM/-/tags - TAppEncoderSCM/TAppDecoderSCM, built from tag HM-<HM version>+SCM-<SCM version>, the last HM release with the screen content coding extensions
@@ -82,19 +82,19 @@ env:
   OPUS_VERSION: "1.5.2" # https://github.com/xiph/opus/releases - releases only; v1.6.x tags ship no tarball
   LIBVPX_VERSION: "1.17.0" # https://github.com/webmproject/libvpx/tags
   AOM_VERSION: "3.15.1" # https://aomedia.googlesource.com/aom
-  SVT_AV1_VERSION: "4.2.0" # https://gitlab.com/AOMediaCodec/SVT-AV1/-/tags
+  SVT_AV1_VERSION: "4.3.0" # https://gitlab.com/AOMediaCodec/SVT-AV1/-/tags
   DAV1D_VERSION: "1.5.4" # https://code.videolan.org/videolan/dav1d/-/tags
   X265_VERSION: "4.2" # https://bitbucket.org/multicoreware/x265_git/downloads/?tab=tags - built for 8, 10 and 12 bits; also the released x265 tool and the encoder of heif-enc
   KVAZAAR_VERSION: "2.3.2" # https://github.com/ultravideo/kvazaar/tags - libkvazaar of ffmpeg and the released kvazaar tool
   LIBDE265_VERSION: "1.1.3" # https://github.com/strukturag/libde265/releases - dec265 and the decoder of heif-dec
-  LIBHEIF_VERSION: "1.23.6" # https://github.com/strukturag/libheif/releases - heif-enc/heif-dec/heif-info
+  LIBHEIF_VERSION: "1.23.7" # https://github.com/strukturag/libheif/releases - heif-enc/heif-dec/heif-info
   HM_VERSION: "18.0" # https://vcgit.hhi.fraunhofer.de/jvet/HM/-/tags - TAppEncoder/TAppDecoder, built from tag HM-<version>
   QPDF_VERSION: "12.4.2" # https://github.com/qpdf/qpdf/releases - qpdf, built from the release tarball of tag v<version>
-  LIBJPEG_TURBO_VERSION: "3.2.0" # https://github.com/libjpeg-turbo/libjpeg-turbo/releases - the libjpeg of qpdf (scripts/pdf-libs.sh)
+  LIBJPEG_TURBO_VERSION: "3.2.1" # https://github.com/libjpeg-turbo/libjpeg-turbo/releases - the libjpeg of qpdf (scripts/pdf-libs.sh)
   MUPDF_VERSION: "1.28.5" # https://mupdf.com/releases - mutool, built from mupdf-<version>-source.tar.gz with its third-party libraries
-  POPPLER_VERSION: "26.10.0" # https://poppler.freedesktop.org/releases.html - pdftoppm/pdftotext/pdffonts/pdfinfo/pdfsig
+  POPPLER_VERSION: "26.11.0" # https://poppler.freedesktop.org/releases.html - pdftoppm/pdftotext/pdffonts/pdfinfo/pdfsig
   FREETYPE_VERSION: "2.15.0" # https://github.com/freetype/freetype/tags - the FreeType of Poppler (scripts/pdf-libs.sh), built from tag VER-<version with dashes>
-  LCMS2_VERSION: "2.19.1" # https://github.com/mm2/Little-CMS/releases - the LittleCMS of Poppler (scripts/pdf-libs.sh), magick and pngquant
+  LCMS2_VERSION: "2.20" # https://github.com/mm2/Little-CMS/releases - the LittleCMS of Poppler (scripts/pdf-libs.sh), magick and pngquant
   NSS_VERSION: "3.132" # https://ftp.mozilla.org/pub/security/nss/releases/ - the signature backend of pdfsig (scripts/pdf-libs.sh)
   NSPR_VERSION: "4.39" # the NSPR bundled with NSS_VERSION: nss-<NSS_VERSION>-with-nspr-<NSPR_VERSION>.tar.gz
   ARLINGTON_COMMIT: "d148fee5a0cb6dcacadf58c09ed842e32847024d" # https://github.com/pdf-association/arlington-pdf-model - master branch; TestGrammar and the TSV files of the model; no release since v0.5 (2021)
