@@ -255,7 +255,10 @@ pkg-config --exists GraphicsMagickWand || { echo "no GraphicsMagickWand.pc in $P
 # ---------------------------------------------------------------------------
 
 ZBAR_SOURCE="$SRCDIR/zbar-$ZBAR_VERSION"
-fetch zbar "https://linuxtv.org/downloads/zbar/zbar-$ZBAR_VERSION.tar.gz" \
+# The GitHub archive of the tag, not linuxtv.org/downloads/zbar: linuxtv.org
+# answers non-browser clients with an Anubis challenge page. ZBar is built with
+# meson, so the git tree is all it needs.
+fetch zbar "https://github.com/mchehab/zbar/archive/refs/tags/$ZBAR_VERSION.tar.gz" \
       "zbar-$ZBAR_VERSION.tar.gz" "zbar-$ZBAR_VERSION"
 
 if [ -n "$MINGW_TRIPLE" ]; then

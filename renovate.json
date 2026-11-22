@@ -602,7 +602,8 @@
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "BinomialLLC/basis_universal",
       "extractVersionTemplate": "^v(?<major>\\d+)_(?<minor>\\d+)$",
-      "versioningTemplate": "loose"
+      "versioningTemplate": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)(?:\\.(?<patch>\\d+))?$",
+      "autoReplaceStringTemplate": "BASISU_VERSION: \"{{{replace '[.]0$' '' newValue}}}\""
     },
     {
       "customType": "regex",
@@ -724,6 +725,16 @@
       "datasourceTemplate": "github-tags",
       "depNameTemplate": "mozilla/mozjpeg",
       "extractVersionTemplate": "^v(?<version>\\d+\\.\\d+\\.\\d+)$"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "The shared preset reads the tag of every github.com/<owner>/<repo>/releases/download/<tag>/ URL; in the build scripts the tag is a shell expression (lcms$LCMS2_VERSION, v$ZLIB_VERSION, ...) set from ci.yml, which the custom managers above update",
+      "matchDatasources": [
+        "github-releases"
+      ],
+      "matchCurrentValue": "/\\$/",
+      "enabled": false
     }
   ]
 }
