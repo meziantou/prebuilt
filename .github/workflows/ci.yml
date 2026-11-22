@@ -22,14 +22,14 @@ defaults:
     shell: pwsh
 
 env:
-  VERSION: 3.17.2
+  VERSION: 3.17.3
   # Read by scripts/Get-BuildPlan.ps1: true builds everything (workflow_dispatch input).
   FORCE_REBUILD: ${{ inputs.rebuild == true }}
   PNGOUT_VERSION: 1.0.0 # http://advsys.net/ken/utils.htm#pngout - manual version
   ZOPFLI_VERSION: "1.0.3" # https://github.com/google/zopfli/tags
   OXIPNG_VERSION: "10.2.1" # https://github.com/shssoichiro/oxipng/releases
   FFMPEG_VERSION: "9.1" # https://github.com/FFmpeg/FFmpeg/tags - built from tag n<version>
-  LLVM_MINGW_VERSION: "20261006" # https://github.com/mstorsjo/llvm-mingw/releases
+  LLVM_MINGW_VERSION: "20261104" # https://github.com/mstorsjo/llvm-mingw/releases
   # Alpine 3.23 ships CMake 4, which several of the dependencies below reject.
   ALPINE_IMAGE: "alpine:3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce"
   ZLIB_VERSION: "1.4" # https://github.com/madler/zlib/tags
@@ -41,7 +41,7 @@ env:
   RUST_TOOLCHAIN: "1.99.1" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
   WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags - also the released cwebp/dwebp/webpmux/... tools
   LIBAVIF_VERSION: "1.4.2" # https://github.com/AOMediaCodec/libavif/releases - avifenc/avifdec; releases only: the Windows and macOS binaries are release assets
-  HARFBUZZ_VERSION: "14.6.0" # https://github.com/harfbuzz/harfbuzz/releases - hb-shape/hb-info/hb-subset/hb-vector/hb-raster; glib, libffi, pcre2 and freetype are the versions its meson wraps pin
+  HARFBUZZ_VERSION: "15.1.0" # https://github.com/harfbuzz/harfbuzz/releases - hb-shape/hb-info/hb-subset/hb-vector/hb-raster; glib, libffi, pcre2 and freetype are the versions its meson wraps pin
   WOFF2_COMMIT: "fb9c3379f2605b10f3e8f1d9636664ab5576775c" # https://github.com/google/woff2 - master branch; woff2_compress/woff2_decompress/woff2_info; no tag since v1.0.2 (2017)
   OPENJPEG_VERSION: "2.5.4" # https://github.com/uclouvain/openjpeg/releases - opj_compress/opj_decompress/opj_dump, built from tag v<version>
   OPENJPH_VERSION: "0.33.0" # https://github.com/aous72/OpenJPH/releases - ojph_compress/ojph_expand; tags have no leading v
@@ -88,7 +88,7 @@ env:
   KVAZAAR_VERSION: "2.3.2" # https://github.com/ultravideo/kvazaar/tags - libkvazaar of ffmpeg and the released kvazaar tool
   LIBDE265_VERSION: "1.1.3" # https://github.com/strukturag/libde265/releases - dec265 and the decoder of heif-dec
   LIBHEIF_VERSION: "1.23.7" # https://github.com/strukturag/libheif/releases - heif-enc/heif-dec/heif-info
-  HM_VERSION: "18.0" # https://vcgit.hhi.fraunhofer.de/jvet/HM/-/tags - TAppEncoder/TAppDecoder, built from tag HM-<version>
+  HM_VERSION: "19.0" # https://vcgit.hhi.fraunhofer.de/jvet/HM/-/tags - TAppEncoder/TAppDecoder, built from tag HM-<version>
   QPDF_VERSION: "12.4.2" # https://github.com/qpdf/qpdf/releases - qpdf, built from the release tarball of tag v<version>
   LIBJPEG_TURBO_VERSION: "3.2.1" # https://github.com/libjpeg-turbo/libjpeg-turbo/releases - the libjpeg of qpdf (scripts/pdf-libs.sh)
   MUPDF_VERSION: "1.28.5" # https://mupdf.com/releases - mutool, built from mupdf-<version>-source.tar.gz with its third-party libraries
@@ -101,7 +101,7 @@ env:
   ARLINGTON_VERSION: "0.81" # TestGrammar_VERSION of TestGrammar/src/TestGrammarVers.h at ARLINGTON_COMMIT - scripts/build-arlington.sh fails when it is not
   VERAPDF_VERSION: "1.30.3" # https://software.verapdf.org/releases/ - the veraPDF CLI, from verapdf-greenfield-<version>-installer.zip; even minor versions are the releases
   TEMURIN_VERSION: "21.0.12.1+1" # https://adoptium.net/temurin/releases/ - the Java runtime of the veraPDF bundle (jlink); a release published for every target
-  PDFIUM_VERSION: "8111" # https://github.com/bblanchon/pdfium-binaries/releases - pdfium_test, built from the PDFium branch chromium/<version>
+  PDFIUM_VERSION: "8138" # https://github.com/bblanchon/pdfium-binaries/releases - pdfium_test, built from the PDFium branch chromium/<version>
   DEPOT_TOOLS_COMMIT: "b1c2e86792a7f2b6576c181b7327ddd53b1a42a8" # https://chromium.googlesource.com/chromium/tools/depot_tools - main branch; the gclient/gn/ninja of the PDFium build
   X264_COMMIT: "b35605ace3ddf7c1a5d67a2eb553f034aef41d55" # https://code.videolan.org/videolan/x264 - stable branch
   ZINT_VERSION: "2.16.0" # https://github.com/zint/zint/tags - zint, built from the release tag
@@ -461,7 +461,7 @@ jobs:
   zopfli-linux-arm64:
     needs: [build-plan]
     if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['zopfli-linux-arm64'] }}
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
@@ -2502,7 +2502,7 @@ jobs:
         path: pdfium_test-${{ matrix.rid }}.tar.gz
 
   pdfium-linux-arm64-test:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     needs: [build-plan, pdfium, reuse-artifacts]
     if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['pdfium-linux-arm64-test'] }}
     steps:
@@ -4413,7 +4413,7 @@ jobs:
   ffmpeg-linux-arm64:
     needs: [build-plan]
     if: ${{ !cancelled() && !failure() && fromJSON(needs.build-plan.outputs.build)['ffmpeg-linux-arm64'] }}
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-26.04-arm
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
     - id: ffmpeg-deps-key

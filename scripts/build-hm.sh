@@ -142,7 +142,7 @@ fi
 if grep -q 'warnings-as-errors' "$hm_cmake"; then
   echo "warnings are still errors in $hm_cmake" >&2; exit 1
 fi
-grep -q '^if( ( UNIX OR MINGW ) AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64|ARM64" )$' "$hm_cmake" \
+grep -Eq '^if\( \(? ?\(? ?UNIX OR MINGW ?\)? ?\)? AND NOT \(? ?CMAKE_SYSTEM_PROCESSOR MATCHES "arm64\|aarch64\|ARM64" ?\)? ?\)$' "$hm_cmake" \
   || { echo "the -msse4.1 option is not guarded in $hm_cmake" >&2; exit 1; }
 
 # The executables are written to bin/ in the sources, in a directory named
@@ -151,12 +151,15 @@ rm -rf "$SOURCE/bin" "$BUILD"
 
 # OpenMP and ccache are looked up unconditionally. HM has no OpenMP code, and
 # linking the OpenMP runtime the build machine has (Homebrew, llvm-mingw) would
-# add a dynamic library, so both are turned off.
+# add a dynamic library, so both are turned off. OpenSSL (HM 19.0 and later)
+# only signs the digitally signed content SEIs, which are still parsed without
+# it; the OpenSSL the build machine has would be linked dynamically, so it is
+# not looked up either.
 msg "configuring HM $HM_VERSION for $TARGET"
 # shellcheck disable=SC2086
 cmake -S "$SOURCE" -B "$BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release $CMAKE_CROSS_ARGS \
   -DHIGH_BITDEPTH=ON -DEXTENSION_360_VIDEO=OFF -DSET_ENABLE_TRACING=OFF \
-  -DCMAKE_DISABLE_FIND_PACKAGE_OpenMP=ON -DCCACHE_FOUND=OFF \
+  -DCMAKE_DISABLE_FIND_PACKAGE_OpenMP=ON -DCCACHE_FOUND=OFF -DENABLE_SEARCH_OPENSSL=OFF \
   "-DCMAKE_EXE_LINKER_FLAGS=$EXE_LDFLAGS"
 
 msg "building $TOOLS"

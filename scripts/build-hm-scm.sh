@@ -146,7 +146,7 @@ fi
 if grep -q 'warnings-as-errors' "$hm_cmake"; then
   echo "warnings are still errors in $hm_cmake" >&2; exit 1
 fi
-grep -q '^if( ( UNIX OR MINGW ) AND NOT CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64|ARM64" )$' "$hm_cmake" \
+grep -Eq '^if\( \(? ?\(? ?UNIX OR MINGW ?\)? ?\)? AND NOT \(? ?CMAKE_SYSTEM_PROCESSOR MATCHES "arm64\|aarch64\|ARM64" ?\)? ?\)$' "$hm_cmake" \
   || { echo "the -msse4.1 option is not guarded in $hm_cmake" >&2; exit 1; }
 
 # The executables are written to bin/ in the sources, in a directory named
