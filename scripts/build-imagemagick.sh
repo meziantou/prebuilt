@@ -206,7 +206,7 @@ fi
 [ -f "$PREFIX/lib/libpng16.a" ] || { echo "no static libpng in $PREFIX/lib" >&2; exit 1; }
 
 if ! stamp_done "lcms2-$LCMS2_VERSION"; then
-  fetch lcms2 "https://github.com/mm2/Little-CMS/releases/download/2.11/lcms2-$LCMS2_VERSION.tar.gz" \
+  fetch lcms2 "https://github.com/mm2/Little-CMS/releases/download/lcms$LCMS2_VERSION/lcms2-$LCMS2_VERSION.tar.gz" \
         "lcms2-$LCMS2_VERSION.tar.gz" "lcms2-$LCMS2_VERSION"
   run_cmake lcms2 "$SRCDIR/lcms2-$LCMS2_VERSION" \
     -DLCMS2_BUILD_SHARED=OFF -DLCMS2_BUILD_STATIC=ON -DLCMS2_BUILD_TOOLS=OFF -DLCMS2_BUILD_TESTS=OFF \

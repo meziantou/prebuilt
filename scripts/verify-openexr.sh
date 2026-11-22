@@ -38,18 +38,18 @@
 # - exrcheck reports a file with a BY or RY channel that is not subsampled 2x2
 #   as bad, although OpenEXR reads it: its RGBA reader takes them for the
 #   chroma channels of a luminance/chroma image.
-# - exrcheck reports a deep tiled file as bad, although OpenEXR reads it, when
-#   a level does not have as many rows of tiles as columns: it reads the sample
-#   counts of tile (x, y) with readPixelSampleCounts(x, y, x, y), whose
-#   arguments are dx1, dx2, dy1, dy2, and asks for tiles that do not exist.
+# - Before OpenEXR 3.5.3, exrcheck reported a deep tiled file as bad, although
+#   OpenEXR reads it, when a level did not have as many rows of tiles as
+#   columns: it read the sample counts of tile (x, y) with
+#   readPixelSampleCounts(x, y, x, y), whose arguments are dx1, dx2, dy1, dy2.
+#   The deep tiled file of 3 x 4 tiles asserts that it accepts them now.
 # - exrcheck reports a multi-part file with an image part and a deep part as
 #   bad, although OpenEXR reads it, exrmetrics --convert writes it again and
 #   exrcheck -c, the checks of OpenEXRCore, accept it.
-# - exrmultipart -combine leaves the offset tables of the parts it combines
-#   filled with zeros: all of them on Linux, all but the first on macOS. The
-#   file can only be read by rebuilding the tables, which OpenEXR (and
-#   exrcheck) does by default, and exr-to-raw does not, on purpose (exit code
-#   1). Use exr-from-raw to write a multi-part file.
+# - Before OpenEXR 3.5.3, exrmultipart -combine left the offset tables of the
+#   parts it combines filled with zeros: the file could only be read by
+#   rebuilding the tables, which exr-to-raw does not do, on purpose. It writes
+#   them now, and exr-to-raw reads the file it combines.
 # - exr2aces prints that it is deprecated.
 #
 # Kept bash 3.2 compatible -- see scripts/build-ffmpeg.sh.
@@ -697,7 +697,7 @@ $levels"
     for type in deepscanline deeptile; do
       name="$type-$compression"
       tiles=""
-      # 3 x 3 tiles: see exrcheck at the top.
+      # 3 x 3 tiles; 3 x 4 tiles below: see exrcheck at the top.
       [ "$type" = deeptile ] && tiles='"tiles": {"xSize": 8, "ySize": 5},'
       cat > "$name.json" <<EOF
 {"type": "$type", $tiles "dataWindow": [-4, 6, 14, 18], "compression": "$compression", "sampleCounts": "deep-counts.raw",
@@ -720,12 +720,9 @@ EOF
   dump deeptile-3x4.exr deeptile-3x4
   cmp -s deep-Z.raw deeptile-3x4/part0.channel1.raw || fail "deeptile-3x4: the samples changed"
   rewrite deeptile-3x4.exr deeptile-3x4
-  if "$EXRCHECK" deeptile-3x4.exr > /dev/null 2>&1; then
-    fail "exrcheck now accepts a deep tiled file of 3 x 4 tiles"
-  fi
-  ok "exrcheck reports a deep tiled file of 3 x 4 tiles as bad; OpenEXR reads it"
-  # Deep tiles with mipmaps, in random order; 16 x 16 pixels, so that every
-  # level has as many rows of tiles as columns (see exrcheck at the top).
+  check="$("$EXRCHECK" deeptile-3x4.exr 2>&1)" || fail "exrcheck reports a deep tiled file of 3 x 4 tiles as bad: $check"
+  ok "exrcheck accepts a deep tiled file of 3 x 4 tiles; OpenEXR reads it"
+  # Deep tiles with mipmaps, in random order; 16 x 16 pixels.
   name=deeptile-mipmap
   pixels=0
   for size in "16 16" "8 8" "4 4" "2 2" "1 1"; do
@@ -937,12 +934,15 @@ EOF
   rm -rf combined
   "$TO_RAW" --header-only combined.exr combined || fail "exr-to-raw --header-only combined.exr failed"
   assert_json combined/header.json '"name": "right"'
-  [ -z "$(chunk_table combined/header.json 1 | tr -d ' 0')" ] \
-    || fail "exrmultipart -combine now writes the offset table of the second part: $(chunk_table combined/header.json 1)"
-  status=0
-  "$TO_RAW" combined.exr combined 2> /dev/null || status=$?
-  [ "$status" -eq 1 ] || fail "exr-to-raw combined.exr exits with $status, not 1"
-  ok "exrmultipart -combine writes an offset table of zeros for the second part; exrcheck accepts the file, exr-to-raw refuses it"
+  for part in 0 1; do
+    [ -n "$(chunk_table combined/header.json $part | tr -d ' 0')" ] \
+      || fail "exrmultipart -combine writes an offset table of zeros for part $part"
+  done
+  "$TO_RAW" combined.exr combined || fail "exr-to-raw combined.exr failed"
+  # The channels of the dump are sorted by name: R is channel 3.
+  cmp -s HALF-R.raw combined/part0.channel3.raw && cmp -s FLOAT-R.raw combined/part1.channel3.raw \
+    || fail "exrmultipart -combine: the samples of R changed"
+  ok "exrmultipart -combine writes the offset tables; exrcheck and exr-to-raw read the file"
 
   "$(tool exrmultiview)" left scanline-ZIP-HALF.exr right scanline-PIZ-HALF.exr multiview.exr > /dev/null \
     || fail "exrmultiview failed"
