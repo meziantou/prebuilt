@@ -102,11 +102,12 @@ assert_linkage() {
       for dll in $imports; do
         # DLLs that ship with Windows itself; ucrtbase and the api-ms-win-crt-*
         # stubs are the UCRT, a Windows component since Windows 10; gdi32 is for
-        # the window of the ZBar processor (-d) and GraphicsMagick. Anything
+        # the window of the ZBar processor (-d) and GraphicsMagick; winmm is linked by
+        # the ZBar build on every Windows target (its timer functions). Anything
         # else means a dependency leaked in dynamically -- most likely
         # libiconv-2.dll, libpng16.dll or libwinpthread-1.dll.
         case "$dll" in
-          kernel32.dll|ntdll.dll|user32.dll|gdi32.dll|advapi32.dll|shell32.dll|ucrtbase.dll|api-ms-win-*) ;;
+          kernel32.dll|ntdll.dll|user32.dll|gdi32.dll|winmm.dll|advapi32.dll|shell32.dll|ucrtbase.dll|api-ms-win-*) ;;
           *) bad="$bad $dll" ;;
         esac
       done
