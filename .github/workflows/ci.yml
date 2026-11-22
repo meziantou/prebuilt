@@ -278,6 +278,9 @@ jobs:
   nuget:
     runs-on: ubuntu-latest
     needs: [create-release]
+    # Explicit: the implicit success() is false when any job up the needs chain
+    # was skipped, and the build jobs of the reused units always are.
+    if: ${{ !cancelled() && needs.create-release.result == 'success' }}
     permissions:
       id-token: write # Required for OIDC token issuance for trusted publishing
       contents: read
