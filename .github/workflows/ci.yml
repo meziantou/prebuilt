@@ -101,7 +101,7 @@ env:
   ARLINGTON_VERSION: "0.81" # TestGrammar_VERSION of TestGrammar/src/TestGrammarVers.h at ARLINGTON_COMMIT - scripts/build-arlington.sh fails when it is not
   VERAPDF_VERSION: "1.30.3" # https://software.verapdf.org/releases/ - the veraPDF CLI, from verapdf-greenfield-<version>-installer.zip; even minor versions are the releases
   TEMURIN_VERSION: "21.0.12.1+1" # https://adoptium.net/temurin/releases/ - the Java runtime of the veraPDF bundle (jlink); a release published for every target
-  PDFIUM_VERSION: "8138" # https://github.com/bblanchon/pdfium-binaries/releases - pdfium_test, built from the PDFium branch chromium/<version>
+  PDFIUM_VERSION: "8152" # https://github.com/bblanchon/pdfium-binaries/releases - pdfium_test, built from the PDFium branch chromium/<version>
   DEPOT_TOOLS_COMMIT: "b1c2e86792a7f2b6576c181b7327ddd53b1a42a8" # https://chromium.googlesource.com/chromium/tools/depot_tools - main branch; the gclient/gn/ninja of the PDFium build
   X264_COMMIT: "b35605ace3ddf7c1a5d67a2eb553f034aef41d55" # https://code.videolan.org/videolan/x264 - stable branch
   ZINT_VERSION: "2.16.0" # https://github.com/zint/zint/tags - zint, built from the release tag
