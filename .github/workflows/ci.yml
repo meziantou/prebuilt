@@ -38,14 +38,14 @@ env:
   JXL_VERSION: "0.13.0" # https://github.com/libjxl/libjxl/releases - the libjxl of ffmpeg and the released cjxl/djxl/jxlinfo/jxl_from_tree/ssimulacra2/butteraugli_main tools
   LIBPNG_VERSION: "1.6.59" # https://github.com/pnggroup/libpng/tags - PNG and APNG support of cjxl/djxl, PNG glyphs and PNG output of the HarfBuzz tools, the PNG reader of pngquant and mozjpeg-cjpeg; 1.6.x, the 1.7 tags are betas
   JXL_OXIDE_VERSION: "0.12.6" # https://crates.io/crates/jxl-oxide-cli
-  RUST_TOOLCHAIN: "1.99.1" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
+  RUST_TOOLCHAIN: "1.100.0" # https://github.com/rust-lang/rust/releases - builds jxl-oxide
   WEBP_VERSION: "1.6.0" # https://github.com/webmproject/libwebp/tags - also the released cwebp/dwebp/webpmux/... tools
   LIBAVIF_VERSION: "1.4.2" # https://github.com/AOMediaCodec/libavif/releases - avifenc/avifdec; releases only: the Windows and macOS binaries are release assets
   HARFBUZZ_VERSION: "15.1.0" # https://github.com/harfbuzz/harfbuzz/releases - hb-shape/hb-info/hb-subset/hb-vector/hb-raster; glib, libffi, pcre2 and freetype are the versions its meson wraps pin
   WOFF2_COMMIT: "fb9c3379f2605b10f3e8f1d9636664ab5576775c" # https://github.com/google/woff2 - master branch; woff2_compress/woff2_decompress/woff2_info; no tag since v1.0.2 (2017)
   OPENJPEG_VERSION: "2.5.4" # https://github.com/uclouvain/openjpeg/releases - opj_compress/opj_decompress/opj_dump, built from tag v<version>
   OPENJPH_VERSION: "0.33.0" # https://github.com/aous72/OpenJPH/releases - ojph_compress/ojph_expand; tags have no leading v
-  OPENEXR_VERSION: "3.5.3" # https://github.com/AcademySoftwareFoundation/openexr/releases - exrheader/exrinfo/exrmaketiled/... and exr-from-raw/exr-to-raw, built from tag v<version> with the libdeflate, zstd and OpenJPH of its tarball
+  OPENEXR_VERSION: "3.5.4" # https://github.com/AcademySoftwareFoundation/openexr/releases - exrheader/exrinfo/exrmaketiled/... and exr-from-raw/exr-to-raw, built from tag v<version> with the libdeflate, zstd and OpenJPH of its tarball
   IMATH_VERSION: "3.2.3" # the Imath OPENEXR_VERSION pins (OPENEXR_IMATH_TAG of its cmake/OpenEXRSetup.cmake) - scripts/build-openexr.sh fails when it is not
   ISO_JPEG_COMMIT: "702114c8130ae818ccd2354cc03e879dac69e579" # https://github.com/thorfdbg/libjpeg - master branch; the jpeg tool of the ISO JPEG reference codec, released as iso-jpeg; no release tag
   ISO_JPEG_VERSION: "1.72" # last release of README.history at ISO_JPEG_COMMIT - scripts/build-iso-jpeg.sh fails when it is not
